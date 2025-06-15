@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { showSuccess, showError } from '@/utils/toast';
+import VoiceRecorder from '@/components/VoiceRecorder'; // Import VoiceRecorder
 
 const formSchema = z.object({
   title: z.string().min(1, { message: 'Title is required.' }),
@@ -54,6 +55,10 @@ const NewNoteForm = ({ onNoteCreated }: { onNoteCreated: () => void }) => {
     }
   };
 
+  const handleTranscription = (text: string) => {
+    form.setValue('content', text, { shouldDirty: true, shouldValidate: true });
+  };
+
   return (
     <div className="p-6 bg-card rounded-lg shadow-md w-full max-w-2xl mx-auto">
       <h2 className="text-2xl font-bold mb-6 text-foreground">Create New Note</h2>
@@ -85,6 +90,7 @@ const NewNoteForm = ({ onNoteCreated }: { onNoteCreated: () => void }) => {
               </FormItem>
             )}
           />
+          <VoiceRecorder onTranscription={handleTranscription} />
           <Button type="submit" className="w-full">Create Note</Button>
         </form>
       </Form>
