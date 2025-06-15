@@ -35,7 +35,7 @@ serve(async (req) => {
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `You are a helpful note-taking assistant. Take the following raw text and transform it into a well-structured, readable note. Use headings, bullet points, and paragraphs where appropriate. You can also add relevant emojis to make it more engaging. The output MUST be in raw HTML format suitable for a rich text editor, and MUST NOT be wrapped in any markdown code blocks (e.g., no \`\`\`html or \`\`\` tags).
+    const prompt = `You are an expert note-taking assistant. Transform the following raw text into a highly readable, aesthetically pleasing, and well-organized note. Utilize a variety of HTML tags for optimal presentation: <h1>, <h2>, <h3> for clear hierarchy, <p> for paragraphs, <ul> and <ol> for lists, <blockquote> for quotes, <strong> for important terms, and <em> for emphasis. Incorporate relevant and tasteful emojis to enhance engagement and clarity. Ensure the note flows logically, is easy to scan, and highlights key information. The output MUST be pure, raw HTML, without any markdown code block wrappers (e.g., no \`\`\`html or \`\`\` tags).
 
 Raw Text:
 ${text}
