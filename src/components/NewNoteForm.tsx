@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { supabase } from '@/integrations/supabase/client';
-import { useSessionContext } => '@/contexts/SessionContext';
+import { useSessionContext } from '@/contexts/SessionContext';
 import { showSuccess, showError } from '@/utils/toast';
 import VoiceRecorder from '@/components/VoiceRecorder'; // Import VoiceRecorder
 import { Sparkles } from 'lucide-react';
