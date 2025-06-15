@@ -30,9 +30,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Import Popover
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import VoiceRecorder from '@/components/VoiceRecorder';
-import ColorPicker from '@/components/ColorPicker'; // Import new ColorPicker component
+import ColorPicker from '@/components/ColorPicker';
+import ExportOptions from '@/components/ExportOptions'; // Import the new ExportOptions component
 
 interface NoteEditorProps {} 
 
@@ -47,7 +48,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefiningAI, setIsRefiningAI] = useState(false);
-  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false); // State for color picker popover
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
@@ -348,6 +349,11 @@ const NoteEditor = ({}: NoteEditorProps) => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          <ExportOptions 
+            title={title} 
+            contentHtml={editor?.getHTML() || ''} 
+            contentPlainText={editor?.getText() || ''} 
+          />
           <Button variant="outline" onClick={() => navigate('/dashboard/all-notes')}>
             Close
           </Button>
