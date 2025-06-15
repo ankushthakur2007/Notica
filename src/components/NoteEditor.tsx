@@ -5,7 +5,7 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
-import TextStyle from '@tiptap/extension-text-align';
+import TextStyle from '@tiptap/extension-text-style'; // Corrected import
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
@@ -58,7 +58,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
         types: ['heading', 'paragraph'],
       }),
       Underline,
-      TextStyle,
+      TextStyle, // Ensure TextStyle is included
       Color,
       Highlight.configure({ multicolor: true }),
       Image.configure({
@@ -121,7 +121,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
     if (noteId) {
       fetchNote();
     }
-  }, [noteId, editor, onClose]); // Add editor to dependencies
+  }, [noteId, editor, onClose]);
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!user) {
