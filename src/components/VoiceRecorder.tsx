@@ -3,9 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Mic, StopCircle, Loader2 } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
 import { useSessionContext } from '@/contexts/SessionContext';
+import { cn } from '@/lib/utils'; // Import cn for conditional class names
 
 interface VoiceRecorderProps {
   onTranscription: (text: string) => void;
+  className?: string; // Allow parent to pass additional class names
 }
 
 // Define SpeechRecognition for broader browser compatibility
@@ -18,7 +20,7 @@ declare global {
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
+const VoiceRecorder = ({ onTranscription, className }: VoiceRecorderProps) => {
   const { session } = useSessionContext();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -138,22 +140,30 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
     }
   };
 
+  const handleClick = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
   return (
-    <div className="flex items-center space-x-2">
-      {!isRecording && !isProcessing ? (
-        <Button onClick={startRecording} className="w-full">
-          <Mic className="mr-2 h-4 w-4" /> Start Voice Note
-        </Button>
+    <Button 
+      onClick={handleClick} 
+      disabled={isProcessing} 
+      className={cn(className)} // Apply passed className
+      variant={isRecording ? "destructive" : "outline"} // Change variant when recording
+    >
+      {isProcessing ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
       ) : isRecording ? (
-        <Button onClick={stopRecording} variant="destructive" className="w-full">
-          <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
-        </Button>
+        <StopCircle className="h-4 w-4" />
       ) : (
-        <Button disabled className="w-full">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
-        </Button>
+        <Mic className="h-4 w-4" />
       )}
-    </div>
+      <span className="sr-only">{isRecording ? 'Stop Recording' : 'Start Voice Note'}</span>
+    </Button>
   );
 };
 

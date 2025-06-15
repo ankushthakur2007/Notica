@@ -5,7 +5,7 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
-import TextStyle from '@tiptap/extension-text-style'; // Corrected import
+import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
@@ -36,7 +36,7 @@ interface NoteEditorProps {}
 
 const NoteEditor = ({}: NoteEditorProps) => {
   const queryClient = useQueryClient();
-  const { user, session } = useSessionContext(); // Get session here
+  const { user, session } = useSessionContext();
   const navigate = useNavigate();
   const { noteId } = useParams<{ noteId: string }>();
 
@@ -85,7 +85,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         types: ['heading', 'paragraph'],
       }),
       Underline,
-      TextStyle, // This now refers to the correct TextStyle extension
+      TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
       Image.configure({
@@ -195,8 +195,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
         throw error;
       }
       showSuccess('Note saved successfully!');
-      queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate the list of notes
-      queryClient.invalidateQueries({ queryKey: ['note', noteId] }); // Invalidate the specific note to refetch
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      queryClient.invalidateQueries({ queryKey: ['note', noteId] });
     } catch (error: any) {
       console.error('Error saving note:', error);
       showError('Failed to save note: ' + error.message);
@@ -238,7 +238,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       return;
     }
 
-    if (!session?.access_token) { // Check for session token
+    if (!session?.access_token) {
       showError('You must be logged in to use AI refinement.');
       return;
     }
@@ -249,7 +249,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`, // Add Authorization header
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ text: currentContent }),
       });
@@ -278,7 +278,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   const handleTranscription = (text: string) => {
     if (editor) {
-      editor.chain().focus().insertContent(text + ' ').run(); // Insert transcribed text into the editor
+      editor.chain().focus().insertContent(text + ' ').run();
     }
   };
 
@@ -345,11 +345,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
           </Button>
         </div>
       </div>
-      {/* Voice Recorder moved to its own row */}
-      <div className="mb-4">
-        <VoiceRecorder onTranscription={handleTranscription} />
-      </div>
+      {/* Voice Recorder is now part of the toolbar */}
       <div className="mb-4 p-2 rounded-md border bg-muted flex flex-wrap gap-1">
+        <VoiceRecorder onTranscription={handleTranscription} className="h-9 px-3" /> {/* Added className for styling */}
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().toggleBold()}>
           <Bold className="h-4 w-4" />
         </Button>
