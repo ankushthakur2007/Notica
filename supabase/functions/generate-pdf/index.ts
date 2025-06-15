@@ -11,7 +11,6 @@ serve(async (req) => {
   }
 
   try {
-    // In a real scenario, you would get your external PDF API key from environment variables
     const pdfApiKey = Deno.env.get('PDF_API_KEY'); 
     if (!pdfApiKey) {
       console.error('PDF_API_KEY is not set in environment variables.');
@@ -31,51 +30,52 @@ serve(async (req) => {
     }
 
     console.log(`Received request to generate PDF for title: ${title || 'Untitled'}`);
-    // console.log('HTML Content (first 200 chars):', htmlContent.substring(0, 200));
 
-    // --- SIMULATED EXTERNAL PDF API CALL ---
-    // In a real application, you would make a fetch request to your chosen PDF API here.
-    // Example (conceptual, replace with actual service API):
-    /*
-    const externalPdfApiResponse = await fetch('https://api.your-pdf-service.com/generate', {
+    // Actual PDF.co API call
+    const pdfCoResponse = await fetch('https://api.pdf.co/v1/pdf/convert/from/html', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${pdfApiKey}`,
+        'x-api-key': pdfApiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         html: htmlContent,
-        options: {
-          // e.g., page size, margins, etc.
-        }
+        name: `${title || 'note'}.pdf`, // Suggested filename for PDF.co
+        // You can add more PDF.co options here, e.g., paperSize, margins, etc.
+        // See PDF.co documentation for available parameters.
       }),
     });
 
-    if (!externalPdfApiResponse.ok) {
-      const errorText = await externalPdfApiResponse.text();
-      console.error('External PDF API error:', externalPdfApiResponse.status, errorText);
-      return new Response(JSON.stringify({ error: 'Failed to generate PDF via external service.', details: errorText }), {
+    if (!pdfCoResponse.ok) {
+      const errorText = await pdfCoResponse.text();
+      console.error('PDF.co API error:', pdfCoResponse.status, errorText);
+      return new Response(JSON.stringify({ error: 'Failed to generate PDF via PDF.co.', details: errorText }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: externalPdfApiResponse.status,
+        status: pdfCoResponse.status,
       });
     }
 
-    const pdfBlob = await externalPdfApiResponse.blob(); // Or arrayBuffer()
-    // Return the PDF blob directly
+    const pdfCoData = await pdfCoResponse.json();
+    if (!pdfCoData.url) {
+      throw new Error('PDF.co did not return a URL for the generated PDF.');
+    }
+
+    // Fetch the generated PDF from the URL provided by PDF.co
+    const pdfFileResponse = await fetch(pdfCoData.url);
+
+    if (!pdfFileResponse.ok) {
+      throw new Error(`Failed to fetch PDF from PDF.co URL: ${pdfCoData.url}`);
+    }
+
+    const pdfBlob = await pdfFileResponse.blob();
+
+    // Return the PDF blob directly to the client
     return new Response(pdfBlob, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${title || 'note'}.pdf"`,
       },
-      status: 200,
-    });
-    */
-
-    // For now, we'll just return a success message and indicate where the PDF would come from.
-    // In a real app, the above commented-out block would be active.
-    return new Response(JSON.stringify({ message: 'PDF generation request received. In a real setup, the PDF would be returned here.', simulated: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 

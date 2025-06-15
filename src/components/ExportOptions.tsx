@@ -3,7 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from '@/components/ui/button';
 import { FileText, FileType, Copy, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
-import { useSessionContext } from '@/contexts/SessionContext'; // Import useSessionContext
+import { useSessionContext } from '@/contexts/SessionContext';
 
 interface ExportOptionsProps {
   title: string;
@@ -12,7 +12,7 @@ interface ExportOptionsProps {
 }
 
 const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsProps) => {
-  const { session } = useSessionContext(); // Get session for authorization
+  const { session } = useSessionContext();
   const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const exportAsPdf = async () => {
@@ -33,24 +33,23 @@ const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsPr
       });
 
       if (!response.ok) {
+        // If the response is not OK, it's likely an error JSON from the Edge Function
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to generate PDF.');
       }
 
-      // In a real scenario, the Edge Function would return the PDF file directly.
-      // You would then handle the file download here.
-      // Example:
-      // const pdfBlob = await response.blob();
-      // const url = window.URL.createObjectURL(pdfBlob);
-      // const a = document.createElement('a');
-      // a.href = url;
-      // a.download = `${title || 'Untitled Note'}.pdf`;
-      // document.body.appendChild(a);
-      // a.click();
-      // a.remove();
-      // window.URL.revokeObjectURL(url);
+      // If response is OK, it should be the PDF blob
+      const pdfBlob = await response.blob();
+      const url = window.URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title || 'Untitled Note'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
 
-      showSuccess('PDF generation request sent! (In a real app, your PDF would download now.)');
+      showSuccess('Note exported as PDF successfully!');
     } catch (error: any) {
       console.error('Error exporting PDF:', error);
       showError('Failed to export PDF: ' + error.message);
