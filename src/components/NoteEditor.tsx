@@ -8,8 +8,8 @@ import Underline from '@tiptap/extension-underline';
 import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
-import ImageExtension from '@tiptap-resizable-images/react'; // Changed import for Image extension
-import { ResizableImage } from '@tiptap-resizable-images/react'; // New import for ResizableImage component
+import ImageExtension from '@tiptap-resizable-images/react/Image'; // Corrected import for Image extension
+import { ResizableImage } from '@tiptap-resizable-images/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
