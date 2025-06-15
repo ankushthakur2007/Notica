@@ -1,9 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, StopCircle, Loader2, Download } from 'lucide-react';
+import { Mic, StopCircle, Loader2 } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
-import { useSessionContext } from '@/contexts/SessionContext';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'; // Import Tooltip components
+import { useSessionContext } from '@/contexts/SessionContext'; // Import useSessionContext
 
 interface VoiceRecorderProps {
   onTranscription: (text: string) => void;
@@ -20,7 +19,7 @@ declare global {
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
-  const { session } = useSessionContext();
+  const { session } = useSessionContext(); // Get session here
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -43,18 +42,19 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
           setIsProcessing(true);
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           
-          if (!session?.access_token) {
+          if (!session?.access_token) { // Check for session token
             showError('You must be logged in to record voice notes.');
             setIsProcessing(false);
             return;
           }
 
           try {
+            // Invoke the Supabase Edge Function for transcription
             const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/transcribe-audio', {
               method: 'POST',
               headers: {
                 'Content-Type': audioBlob.type,
-                'Authorization': `Bearer ${session.access_token}`,
+                'Authorization': `Bearer ${session.access_token}`, // Add Authorization header
               },
               body: audioBlob,
             });
@@ -85,8 +85,8 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
     } else if (SpeechRecognition) {
       // Fallback to Web Speech API
       recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
+      recognitionRef.current.continuous = false; // Get a single, final result
+      recognitionRef.current.interimResults = false; // Only final results
 
       recognitionRef.current.onstart = () => {
         setIsRecording(true);
@@ -121,7 +121,7 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
   const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop()); // Stop microphone access
       setIsRecording(false);
     } else if (recognitionRef.current) {
       recognitionRef.current.stop();
@@ -130,19 +130,11 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
   };
 
   return (
-    <>
+    <div className="flex items-center space-x-2">
       {!isRecording && !isProcessing && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button onClick={startRecording} variant="ghost" size="icon" disabled={isProcessing}>
-              <Mic className="h-4 w-4" />
-              <span className="sr-only">Start Voice Note</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Start Voice Note</p>
-          </TooltipContent>
-        </Tooltip>
+        <Button onClick={startRecording} className="w-full" disabled={isProcessing}>
+          <Mic className="mr-2 h-4 w-4" /> Start Voice Note
+        </Button>
       )}
       {isRecording && (
         <Button onClick={stopRecording} variant="destructive" className="w-full">
@@ -154,7 +146,7 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
           <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
         </Button>
       )}
-    </>
+    </div>
   );
 };
 
