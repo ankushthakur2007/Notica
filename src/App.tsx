@@ -18,7 +18,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      {/* Removed <Toaster /> and <Sonner /> components to disable popups */}
+      <Sonner /> {/* Re-enabled Sonner for toast notifications */}
       <BrowserRouter>
         <SessionContextProvider>
           <Routes>
@@ -33,7 +33,7 @@ const App = () => (
               <Route path="all-notes" element={<NoteList />} />
               <Route path="new-note" element={<NewNoteForm onNoteCreated={() => { /* Handle post-creation navigation */ }} />} />
               {/* NoteEditor now handles its own closing navigation */}
-              <Route path="edit-note/:noteId" element={<NoteEditor onClose={() => { /* No action needed here, NoteEditor handles it */ }} />} />
+              <Route path="edit-note/:noteId" element={<NoteEditor />} /> {/* Removed unnecessary onClose prop */}
             </Route>
 
             <Route path="/settings" element={<SettingsDashboard />} />
