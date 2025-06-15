@@ -8,8 +8,7 @@ import Underline from '@tiptap/extension-underline';
 import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
-import ImageExtension from '@tiptap-resizable-images/react/Image'; // Corrected import for Image extension
-import { ResizableImage } from '@tiptap-resizable-images/react';
+import Image from '@tiptap/extension-image'; // Reverted to standard Tiptap Image extension
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,7 +61,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
       TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
-      ImageExtension.configure({ // Use ImageExtension from resizable package
+      Image.configure({ // Using standard Tiptap Image extension
         inline: true,
         allowBase64: true,
       }),
@@ -351,9 +350,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
         </label>
       </div>
       <div className="flex-grow overflow-y-auto">
-        <ResizableImage editor={editor}>
-          <EditorContent editor={editor} />
-        </ResizableImage>
+        <EditorContent editor={editor} />
       </div>
     </div>
   );
