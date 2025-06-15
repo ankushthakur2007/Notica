@@ -23,8 +23,13 @@ const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsPr
         x: 10,
         y: 10,
         html2canvas: {
-          scale: 0.8, // Adjust scale for better fit
+          scale: 1.0, // Increased scale for better resolution
+          // You can also try other options like:
+          // logging: true, // For debugging html2canvas
+          // useCORS: true, // If images are from different origins
         },
+        margin: [10, 10, 10, 10], // Add margin around the content (top, right, bottom, left)
+        autoPaging: 'text', // Enable auto-paging for long content
       });
     } catch (error: any) {
       console.error('Error exporting PDF:', error);
