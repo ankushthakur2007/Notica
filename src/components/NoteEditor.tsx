@@ -46,6 +46,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefiningAI, setIsRefiningAI] = useState(false);
+  const [canEdit, setCanEdit] = useState(false); // New state for edit permission
 
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
@@ -71,6 +72,47 @@ const NoteEditor = ({}: NoteEditorProps) => {
     staleTime: 5 * 60 * 1000,
     cacheTime: 10 * 60 * 1000,
   });
+
+  // Fetch permission level for the current user on this note
+  const { data: permissionData, isLoading: isLoadingPermission } = useQuery<{ permission_level: 'read' | 'write' } | null, Error>({
+    queryKey: ['notePermission', noteId, user?.id],
+    queryFn: async () => {
+      if (!user || !noteId) return null;
+
+      // If current user is the owner, they have write access
+      if (note && note.user_id === user.id) {
+        return { permission_level: 'write' };
+      }
+
+      // Otherwise, check collaborators table
+      const { data, error } = await supabase
+        .from('collaborators')
+        .select('permission_level')
+        .eq('note_id', noteId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine
+        console.error('Error fetching collaboration permission:', error.message);
+        return null;
+      }
+      return data;
+    },
+    enabled: !!user && !!noteId && !!note, // Only run if user, noteId, and note data are available
+    staleTime: 5 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (note && user && !isLoadingPermission) {
+      if (note.user_id === user.id) {
+        setCanEdit(true); // Owner always has write access
+      } else if (permissionData?.permission_level === 'write') {
+        setCanEdit(true); // Collaborator with write access
+      } else {
+        setCanEdit(false); // Read-only or no permission
+      }
+    }
+  }, [note, user, permissionData, isLoadingPermission]);
 
   const editor = useEditor({
     extensions: [
@@ -100,6 +142,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         class: 'prose dark:prose-invert max-w-none focus:outline-none p-4 min-h-[300px] border rounded-md bg-background text-foreground',
       },
       handleDrop: (view, event, slice, moved) => {
+        if (!canEdit) return false; // Prevent drop if not editable
         if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
           const file = event.dataTransfer.files[0];
           if (file.type.startsWith('image/')) {
@@ -110,6 +153,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         return false;
       },
       handlePaste: (view, event, slice) => {
+        if (!canEdit) return false; // Prevent paste if not editable
         if (event.clipboardData?.files && event.clipboardData.files[0]) {
           const file = event.clipboardData.files[0];
           if (file.type.startsWith('image/')) {
@@ -139,6 +183,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const handleImageUpload = useCallback(async (file: File) => {
     if (!user) {
       showError('You must be logged in to upload images.');
+      return;
+    }
+    if (!canEdit) {
+      showError('You do not have permission to upload images to this note.');
       return;
     }
 
@@ -174,10 +222,14 @@ const NoteEditor = ({}: NoteEditorProps) => {
     } finally {
       setIsUploadingImage(false);
     }
-  }, [user, editor]);
+  }, [user, editor, canEdit]);
 
   const handleSave = async () => {
     if (!note || !editor) return;
+    if (!canEdit) {
+      showError('You do not have permission to save changes to this note.');
+      return;
+    }
 
     setIsSaving(true);
     const updatedContent = editor.getHTML();
@@ -208,6 +260,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   const handleDelete = async () => {
     if (!note) return;
+    if (note.user_id !== user?.id) { // Only owner can delete
+      showError('You do not have permission to delete this note.');
+      return;
+    }
 
     setIsDeleting(true);
     try {
@@ -232,6 +288,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   const handleRefineAI = async () => {
     if (!editor) return;
+    if (!canEdit) {
+      showError('You do not have permission to refine this note with AI.');
+      return;
+    }
 
     const currentContent = editor.getHTML();
     if (!currentContent || currentContent === '<p></p>') {
@@ -278,15 +338,19 @@ const NoteEditor = ({}: NoteEditorProps) => {
   };
 
   const handleTranscription = (text: string) => {
+    if (!canEdit) {
+      showError('You do not have permission to add voice transcription to this note.');
+      return;
+    }
     if (editor) {
       editor.chain().focus().insertContent(text + ' ').run(); // Insert transcribed text into the editor
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingPermission) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Loading note...</p>
+        <p className="text-muted-foreground">Loading note and permissions...</p>
       </div>
     );
   }
@@ -315,15 +379,16 @@ const NoteEditor = ({}: NoteEditorProps) => {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Note Title"
+          disabled={!canEdit} // Disable title editing if not editable
         />
         <div className="flex space-x-2">
-          {noteId && <ShareNoteDialog noteId={noteId} />} {/* Add ShareNoteDialog here */}
-          <Button onClick={handleSave} disabled={isSaving}>
+          {noteId && <ShareNoteDialog noteId={noteId} />}
+          <Button onClick={handleSave} disabled={isSaving || !canEdit}>
             {isSaving ? 'Saving...' : 'Save Note'}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" disabled={isDeleting}>
+              <Button variant="destructive" disabled={isDeleting || note.user_id !== user?.id}> {/* Only owner can delete */}
                 <Trash2 className="h-4 w-4 mr-2" />
                 {isDeleting ? 'Deleting...' : 'Delete Note'}
               </Button>
@@ -348,70 +413,70 @@ const NoteEditor = ({}: NoteEditorProps) => {
         </div>
       </div>
       <div className="mb-4 p-2 rounded-md border bg-muted flex flex-wrap gap-1">
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().toggleBold()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().toggleBold() || !canEdit}>
           <Bold className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleItalic().run()} disabled={!editor.can().toggleItalic()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleItalic().run()} disabled={!editor.can().toggleItalic() || !canEdit}>
           <Italic className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleStrike().run()} disabled={!editor.can().toggleStrike()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleStrike().run()} disabled={!editor.can().toggleStrike() || !canEdit}>
           Strike
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleUnderline().run()} disabled={!editor.can().toggleUnderline()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleUnderline().run()} disabled={!editor.can().toggleUnderline() || !canEdit}>
           <UnderlineIcon className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleCode().run()} disabled={!editor.can().toggleCode()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleCode().run()} disabled={!editor.can().toggleCode() || !canEdit}>
           <Code className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setParagraph().run()} disabled={!editor.can().setParagraph()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setParagraph().run()} disabled={!editor.can().setParagraph() || !canEdit}>
           P
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} disabled={!editor.can().toggleHeading({ level: 1 })}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} disabled={!editor.can().toggleHeading({ level: 1 }) || !canEdit}>
           <Heading1 className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} disabled={!editor.can().toggleHeading({ level: 2 })}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} disabled={!editor.can().toggleHeading({ level: 2 }) || !canEdit}>
           <Heading2 className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBulletList().run()} disabled={!editor.can().toggleBulletList()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBulletList().run()} disabled={!editor.can().toggleBulletList() || !canEdit}>
           <List className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleOrderedList().run()} disabled={!editor.can().toggleOrderedList()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleOrderedList().run()} disabled={!editor.can().toggleOrderedList() || !canEdit}>
           <ListOrdered className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBlockquote().run()} disabled={!editor.can().toggleBlockquote()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBlockquote().run()} disabled={!editor.can().toggleBlockquote() || !canEdit}>
           <Quote className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setHorizontalRule().run()} disabled={!editor.can().setHorizontalRule()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setHorizontalRule().run()} disabled={!editor.can().setHorizontalRule() || !canEdit}>
           <Minus className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setHardBreak().run()} disabled={!editor.can().setHardBreak()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setHardBreak().run()} disabled={!editor.can().setHardBreak() || !canEdit}>
           BR
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo() || !canEdit}>
           <Undo className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo() || !canEdit}>
           <Redo className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('left').run()} disabled={!editor.can().setTextAlign('left')}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('left').run()} disabled={!editor.can().setTextAlign('left') || !canEdit}>
           <AlignLeft className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('center').run()} disabled={!editor.can().setTextAlign('center')}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('center').run()} disabled={!editor.can().setTextAlign('center') || !canEdit}>
           <AlignCenter className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('right').run()} disabled={!editor.can().setTextAlign('right')}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('right').run()} disabled={!editor.can().setTextAlign('right') || !canEdit}>
           <AlignRight className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('justify').run()} disabled={!editor.can().setTextAlign('justify')}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('justify').run()} disabled={!editor.can().setTextAlign('justify') || !canEdit}>
           <AlignJustify className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setColor('#958DF1').run()} disabled={!editor.can().setColor('#958DF1')}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setColor('#958DF1').run()} disabled={!editor.can().setColor('#958DF1') || !canEdit}>
           <Palette className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHighlight({ color: '#fae0e0' }).run()} disabled={!editor.can().toggleHighlight({ color: '#fae0e0' })}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHighlight({ color: '#fae0e0' }).run()} disabled={!editor.can().toggleHighlight({ color: '#fae0e0' }) || !canEdit}>
           <Highlighter className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().unsetColor().run()} disabled={!editor.can().unsetColor()}>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().unsetColor().run()} disabled={!editor.can().unsetColor() || !canEdit}>
           Unset Color
         </Button>
         <label htmlFor="image-upload" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 cursor-pointer">
@@ -423,14 +488,14 @@ const NoteEditor = ({}: NoteEditorProps) => {
             accept="image/*"
             onChange={handleFileSelect}
             className="hidden"
-            disabled={isUploadingImage}
+            disabled={isUploadingImage || !canEdit}
           />
         </label>
         <Button 
           variant="outline" 
           size="sm" 
           onClick={handleRefineAI} 
-          disabled={isRefiningAI || !editor.getHTML() || editor.getHTML() === '<p></p>'}
+          disabled={isRefiningAI || !editor.getHTML() || editor.getHTML() === '<p></p>' || !canEdit}
         >
           <Sparkles className="mr-2 h-4 w-4" /> 
           {isRefiningAI ? 'Refining...' : 'Refine with AI'}
@@ -438,7 +503,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         <VoiceRecorder onTranscription={handleTranscription} />
       </div>
       <div className="flex-grow overflow-y-auto">
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} editable={canEdit} /> {/* Set editable prop */}
       </div>
     </div>
   );
