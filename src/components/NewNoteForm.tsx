@@ -9,8 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { showSuccess, showError } from '@/utils/toast';
-import VoiceRecorder from '@/components/VoiceRecorder'; // Import VoiceRecorder
-import { Sparkles } from 'lucide-react';
+import VoiceRecorder from '@/components/VoiceRecorder';
 
 const formSchema = z.object({
   title: z.string().min(1, { message: 'Title is required.' }),
@@ -26,8 +25,6 @@ const NewNoteForm = ({ onNoteCreated }: { onNoteCreated: () => void }) => {
       content: '',
     },
   });
-
-  const [isGeneratingAI, setIsGeneratingAI] = React.useState(false);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) {
@@ -62,39 +59,6 @@ const NewNoteForm = ({ onNoteCreated }: { onNoteCreated: () => void }) => {
     form.setValue('content', text, { shouldDirty: true, shouldValidate: true });
   };
 
-  const handleGenerateAI = async () => {
-    const currentContent = form.getValues('content');
-    if (!currentContent) {
-      showError('Please add some content before generating with AI.');
-      return;
-    }
-
-    setIsGeneratingAI(true);
-    try {
-      const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/generate-note', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: currentContent }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate AI note.');
-      }
-
-      const data = await response.json();
-      form.setValue('content', data.generatedContent, { shouldDirty: true, shouldValidate: true });
-      showSuccess('AI note generated successfully!');
-    } catch (error: any) {
-      console.error('Error generating AI note:', error);
-      showError('Failed to generate AI note: ' + error.message);
-    } finally {
-      setIsGeneratingAI(false);
-    }
-  };
-
   return (
     <div className="p-6 bg-card rounded-lg shadow-md w-full max-w-2xl mx-auto">
       <h2 className="text-2xl font-bold mb-6 text-foreground">Create New Note</h2>
@@ -127,15 +91,6 @@ const NewNoteForm = ({ onNoteCreated }: { onNoteCreated: () => void }) => {
             )}
           />
           <VoiceRecorder onTranscription={handleTranscription} />
-          <Button 
-            type="button" 
-            onClick={handleGenerateAI} 
-            className="w-full" 
-            disabled={isGeneratingAI || !form.getValues('content')}
-          >
-            <Sparkles className="mr-2 h-4 w-4" /> 
-            {isGeneratingAI ? 'Generating...' : 'Generate with AI'}
-          </Button>
           <Button type="submit" className="w-full">Create Note</Button>
         </form>
       </Form>

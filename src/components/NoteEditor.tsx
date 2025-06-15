@@ -8,7 +8,7 @@ import Underline from '@tiptap/extension-underline';
 import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
-import Image from '@tiptap/extension-image'; // Reverted to standard Tiptap Image extension
+import Image from '@tiptap/extension-image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +16,7 @@ import { showError, showSuccess } from '@/utils/toast';
 import { Note } from '@/types';
 import { useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2 } from 'lucide-react';
+import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles } from 'lucide-react';
 import { useSessionContext } from '@/contexts/SessionContext';
 import {
   AlertDialog,
@@ -43,6 +43,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRefiningAI, setIsRefiningAI] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -61,12 +62,12 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
       TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
-      Image.configure({ // Using standard Tiptap Image extension
+      Image.configure({
         inline: true,
         allowBase64: true,
       }),
     ],
-    content: '', // Initialize with empty string, content will be set by useEffect
+    content: '',
     editorProps: {
       attributes: {
         class: 'prose dark:prose-invert max-w-none focus:outline-none p-4 min-h-[300px] border rounded-md bg-background text-foreground',
@@ -97,7 +98,6 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
   useEffect(() => {
     const fetchNote = async () => {
       if (!editor) {
-        // Editor not yet initialized, wait for next render cycle
         return;
       }
 
@@ -117,7 +117,6 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
       editor.commands.setContent(data.content || '');
     };
 
-    // Only fetch if noteId is present and editor is initialized
     if (noteId) {
       fetchNote();
     }
@@ -206,13 +205,48 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
         throw error;
       }
       showSuccess('Note deleted successfully!');
-      queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate notes query to refetch list
-      onClose(); // Close the editor after deletion
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      onClose();
     } catch (error: any) {
       console.error('Error deleting note:', error);
       showError('Failed to delete note: ' + error.message);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleRefineAI = async () => {
+    if (!editor) return;
+
+    const currentContent = editor.getHTML();
+    if (!currentContent || currentContent === '<p></p>') {
+      showError('Please add some content to the note before refining with AI.');
+      return;
+    }
+
+    setIsRefiningAI(true);
+    try {
+      const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/generate-note', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: currentContent }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to refine note with AI.');
+      }
+
+      const data = await response.json();
+      editor.commands.setContent(data.generatedContent);
+      showSuccess('Note refined with AI successfully!');
+    } catch (error: any) {
+      console.error('Error refining note with AI:', error);
+      showError('Failed to refine note with AI: ' + error.message);
+    } finally {
+      setIsRefiningAI(false);
     }
   };
 
@@ -348,6 +382,15 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
             disabled={isUploadingImage}
           />
         </label>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefineAI} 
+          disabled={isRefiningAI || !editor.getHTML() || editor.getHTML() === '<p></p>'}
+        >
+          <Sparkles className="mr-2 h-4 w-4" /> 
+          {isRefiningAI ? 'Refining...' : 'Refine with AI'}
+        </Button>
       </div>
       <div className="flex-grow overflow-y-auto">
         <EditorContent editor={editor} />
