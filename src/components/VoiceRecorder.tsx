@@ -6,6 +6,7 @@ import { useSessionContext } from '@/contexts/SessionContext'; // Import useSess
 
 interface VoiceRecorderProps {
   onTranscription: (text: string) => void;
+  isIconButton?: boolean; // New prop to control button style
 }
 
 // Define SpeechRecognition for broader browser compatibility
@@ -18,7 +19,7 @@ declare global {
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
+const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderProps) => {
   const { session } = useSessionContext(); // Get session here
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -128,6 +129,26 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
       setIsRecording(false);
     }
   };
+
+  if (isIconButton) {
+    return (
+      <Button 
+        onClick={isRecording ? stopRecording : startRecording} 
+        variant="outline" 
+        size="icon" 
+        disabled={isProcessing}
+      >
+        {isProcessing ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : isRecording ? (
+          <StopCircle className="h-4 w-4" />
+        ) : (
+          <Mic className="h-4 w-4" />
+        )}
+        <span className="sr-only">{isRecording ? 'Stop Recording' : 'Start Voice Note'}</span>
+      </Button>
+    );
+  }
 
   return (
     <div className="flex items-center space-x-2">
