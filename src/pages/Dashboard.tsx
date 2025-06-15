@@ -3,18 +3,16 @@ import { useSessionContext } from '@/contexts/SessionContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import Sidebar from '@/components/Sidebar';
-import MobileSidebar from '@/components/MobileSidebar'; // Import MobileSidebar
+import MobileSidebar from '@/components/MobileSidebar';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { useIsMobile } from '@/hooks/use-mobile'; // Import useIsMobile hook
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Dashboard = () => {
   const { session, signOut, loading } = useSessionContext();
   const location = useLocation();
   const navigate = useNavigate();
-  const isMobile = useIsMobile(); // Use the hook to detect mobile
+  const isMobile = useIsMobile();
 
-  // Redirect to default dashboard view if on /dashboard directly
   React.useEffect(() => {
     if (!loading && session && location.pathname === '/dashboard') {
       navigate('/dashboard/all-notes', { replace: true });
@@ -30,23 +28,20 @@ const Dashboard = () => {
   }
 
   if (!session) {
-    // If session is not available after loading, redirect to login
     navigate('/login', { replace: true });
-    return null; // Or a loading spinner
+    return null;
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <div className="absolute top-4 right-4 z-10">
-        <ThemeToggle />
-      </div>
-
       {isMobile ? (
         <div className="flex flex-col flex-grow">
-          <header className="flex items-center justify-between p-4 border-b border-border">
+          <header className="flex items-center p-4 border-b border-border relative">
             <MobileSidebar />
-            <h1 className="text-xl font-semibold">Notica</h1>
-            {/* ThemeToggle is already absolute, so it will float above */}
+            <h1 className="text-xl font-semibold absolute left-1/2 -translate-x-1/2">Notica</h1>
+            <div className="ml-auto"> {/* This pushes ThemeToggle to the right */}
+              <ThemeToggle />
+            </div>
           </header>
           <main className="flex-grow overflow-y-auto">
             <Outlet />
