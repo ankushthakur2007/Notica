@@ -1,13 +1,20 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, NotebookText, Settings } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 interface SidebarProps {
   onNavigate: (view: 'newNote' | 'allNotes' | 'welcome') => void;
 }
 
 const Sidebar = ({ onNavigate }: SidebarProps) => {
+  const navigate = useNavigate(); // Initialize useNavigate
+
+  const handleSettingsClick = () => {
+    console.log('Attempting to navigate to settings via useNavigate.');
+    navigate('/settings');
+  };
+
   return (
     <div className="flex flex-col h-full p-4 bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
       <div className="flex items-center justify-between mb-6">
@@ -32,15 +39,14 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
         </Button>
       </nav>
       <div className="mt-auto pt-4 border-t border-sidebar-border">
-        <Link to="/settings" onClick={() => console.log('Navigating to settings...')}>
-          <Button
-            variant="ghost"
-            className="justify-start w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </Button>
-        </Link>
+        <Button
+          variant="ghost"
+          className="justify-start w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          onClick={handleSettingsClick} // Use the new handler
+        >
+          <Settings className="mr-2 h-4 w-4" />
+          Settings
+        </Button>
       </div>
     </div>
   );
