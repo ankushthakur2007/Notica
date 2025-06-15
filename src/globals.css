@@ -13,7 +13,6 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* Default (Blue-ish) Accent Colors */
     --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
 
@@ -68,7 +67,6 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    /* Default (Blue-ish) Accent Colors for Dark Mode */
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
@@ -97,48 +95,6 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
-
-/* Accent Color Themes */
-.theme-green {
-  /* Light Mode */
-  --primary: 142.1 76.2% 36.3%; /* Green */
-  --primary-foreground: 210 40% 98%;
-  --secondary: 142.1 76.2% 90%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --accent: 142.1 76.2% 90%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-}
-
-.dark .theme-green {
-  /* Dark Mode */
-  --primary: 142.1 76.2% 60%; /* Lighter green for dark mode primary */
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 142.1 76.2% 20%;
-  --secondary-foreground: 210 40% 98%;
-  --accent: 142.1 76.2% 20%;
-  --accent-foreground: 210 40% 98%;
-}
-
-.theme-purple {
-  /* Light Mode */
-  --primary: 270 70% 50%; /* Purple */
-  --primary-foreground: 210 40% 98%;
-  --secondary: 270 70% 90%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --accent: 270 70% 90%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-}
-
-.dark .theme-purple {
-  /* Dark Mode */
-  --primary: 270 70% 70%; /* Lighter purple for dark mode primary */
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 270 70% 20%;
-  --secondary-foreground: 210 40% 98%;
-  --accent: 270 70% 20%;
-  --accent-foreground: 210 40% 98%;
-}
-
 
 @layer base {
   * {

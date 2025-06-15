@@ -3,17 +3,15 @@ import App from "./App.tsx";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import React from "react"; // Import React for useEffect
-import { cn } from "./lib/utils.ts"; // Import cn utility
 
-// Function to apply font and accent color classes from localStorage
-const applyThemeClasses = () => {
+// Function to apply font class from localStorage
+const applyFontClass = () => {
   const savedFont = localStorage.getItem('app-font') || 'font-inter'; // Default to Inter
-  const savedAccent = localStorage.getItem('app-accent-color') || 'theme-default'; // Default to theme-default
-  document.documentElement.className = cn(savedFont, savedAccent);
+  document.documentElement.className = savedFont;
 };
 
-// Apply font and accent color classes on initial load
-applyThemeClasses();
+// Apply font class on initial load
+applyFontClass();
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
