@@ -16,7 +16,9 @@ const NoteList = () => {
   const { data: notes, isLoading, isError, error, refetch } = useQuery<Note[], Error>({
     queryKey: ['notes', user?.id],
     queryFn: async () => {
+      console.log('Attempting to fetch notes for user:', user?.id); // Debug log
       if (!user) {
+        console.error('NoteList: User not logged in, cannot fetch notes.'); // Debug log
         throw new Error('User not logged in.');
       }
       const { data, error } = await supabase
@@ -25,8 +27,10 @@ const NoteList = () => {
         .order('updated_at', { ascending: false });
 
       if (error) {
+        console.error('NoteList: Error fetching notes from Supabase:', error.message, error); // Debug log
         throw error;
       }
+      console.log('NoteList: Successfully fetched notes:', data); // Debug log
       return data;
     },
     enabled: !!user,
