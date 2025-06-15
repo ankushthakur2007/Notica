@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,30 @@ serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client within the Edge Function to verify the user's session
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
+
+    // Get user from the session to ensure authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      console.error('Authentication error in generate-pdf:', authError?.message || 'User not authenticated');
+      return new Response(JSON.stringify({ error: 'Unauthorized: User not authenticated.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    console.log('User authenticated in generate-pdf function:', user.id);
+
     const pdfApiKey = Deno.env.get('PDF_API_KEY'); 
     if (!pdfApiKey) {
       console.error('PDF_API_KEY is not set in environment variables.');
@@ -29,7 +54,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`Received request to generate PDF for title: ${title || 'Untitled'}`);
+    console.log(`Received request to generate PDF for title: ${title || 'Untitled'} by user: ${user.id}`);
 
     // Actual PDF.co API call
     const pdfCoResponse = await fetch('https://api.pdf.co/v1/pdf/convert/from/html', {
@@ -40,9 +65,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         html: htmlContent,
-        name: `${title || 'note'}.pdf`, // Suggested filename for PDF.co
-        // You can add more PDF.co options here, e.g., paperSize, margins, etc.
-        // See PDF.co documentation for available parameters.
+        name: `${title || 'note'}.pdf`,
       }),
     });
 
