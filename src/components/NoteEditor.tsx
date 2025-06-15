@@ -46,13 +46,20 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefiningAI, setIsRefiningAI] = useState(false);
 
+  console.log('NoteEditor: Rendering component.');
+  console.log('NoteEditor: noteId from params:', noteId);
+  console.log('NoteEditor: user from session context:', user ? user.id : 'not available');
+
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
     queryFn: async () => {
+      console.log('NoteEditor: Running queryFn for note:', noteId);
       if (!user) {
+        console.error('NoteEditor: User not logged in, cannot fetch note.');
         throw new Error('User not logged in.');
       }
       if (!noteId) {
+        console.error('NoteEditor: Note ID is missing, cannot fetch note.');
         throw new Error('Note ID is missing.');
       }
       const { data, error } = await supabase
@@ -62,14 +69,20 @@ const NoteEditor = ({}: NoteEditorProps) => {
         .single();
 
       if (error) {
+        console.error('NoteEditor: Supabase fetch error:', error);
         throw error;
       }
+      console.log('NoteEditor: Supabase fetch successful, data:', data);
       return data;
     },
     enabled: !!user && !!noteId,
     staleTime: 5 * 60 * 1000,
     cacheTime: 10 * 60 * 1000,
   });
+
+  console.log('NoteEditor: isLoading:', isLoading);
+  console.log('NoteEditor: isError:', isError, 'Error object:', error);
+  console.log('NoteEditor: current note data:', note);
 
   const editor = useEditor({
     extensions: [
@@ -122,14 +135,19 @@ const NoteEditor = ({}: NoteEditorProps) => {
   });
 
   useEffect(() => {
+    console.log('NoteEditor: useEffect for setting editor content triggered.');
     if (editor && note) {
       setTitle(note.title);
+      console.log('NoteEditor: Setting editor content with:', note.content);
       editor.commands.setContent(note.content || '');
+    } else if (editor && !note && !isLoading && !isError) {
+      console.log('NoteEditor: Editor ready, but no note data yet (or note not found).');
     }
-  }, [editor, note]);
+  }, [editor, note, isLoading, isError]);
 
   useEffect(() => {
     if (isError) {
+      console.error('NoteEditor: Encountered an error, navigating to all-notes:', error?.message);
       showError('Failed to load note: ' + error?.message);
       navigate('/dashboard/all-notes');
     }
@@ -180,6 +198,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
     setIsSaving(true);
     const updatedContent = editor.getHTML();
+    console.log('NoteEditor: Saving note with content:', updatedContent);
 
     try {
       const { error } = await supabase
@@ -283,6 +302,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   };
 
   if (isLoading) {
+    console.log('NoteEditor: Displaying loading state.');
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">Loading note...</p>
@@ -291,6 +311,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   }
 
   if (isError) {
+    console.log('NoteEditor: Displaying error state.');
     return (
       <div className="flex items-center justify-center h-full text-destructive">
         <p>Error loading note. Please try again.</p>
@@ -299,6 +320,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   }
 
   if (!note) {
+    console.log('NoteEditor: Displaying note not found state.');
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">Note not found.</p>
@@ -306,6 +328,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
     );
   }
 
+  console.log('NoteEditor: Displaying editor content.');
   return (
     <div className="p-6 w-full max-w-4xl mx-auto overflow-y-auto h-full flex flex-col">
       <div className="flex justify-between items-center mb-4">
