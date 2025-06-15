@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, StopCircle, Loader2 } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
-import { useSessionContext } from '@/contexts/SessionContext'; // Import useSessionContext
+import { useSessionContext } from '@/contexts/SessionContext';
 
 interface VoiceRecorderProps {
   onTranscription: (text: string) => void;
@@ -19,12 +19,49 @@ declare global {
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
-  const { session } = useSessionContext(); // Get session here
+  const { session } = useSessionContext();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  const startWebSpeechApi = () => {
+    if (!SpeechRecognition) {
+      showError('Web Speech API is not supported in your browser.');
+      return;
+    }
+
+    recognitionRef.current = new SpeechRecognition();
+    recognitionRef.current.continuous = false; // Get a single, final result
+    recognitionRef.current.interimResults = false; // Only final results
+
+    recognitionRef.current.onstart = () => {
+      setIsRecording(true);
+      showSuccess('Recording started (Web Speech API)...');
+    };
+
+    recognitionRef.current.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0])
+        .map(alternative => alternative.transcript)
+        .join('');
+      onTranscription(transcript);
+      showSuccess('Web Speech API transcription complete!');
+    };
+
+    recognitionRef.current.onerror = (event) => {
+      console.error('Web Speech API error:', event.error);
+      showError('Web Speech API error: ' + event.error);
+      setIsRecording(false);
+    };
+
+    recognitionRef.current.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current.start();
+  };
 
   const startRecording = async () => {
     // Prioritize MediaRecorder with Deepgram for better control and quality
@@ -42,19 +79,18 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
           setIsProcessing(true);
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           
-          if (!session?.access_token) { // Check for session token
+          if (!session?.access_token) {
             showError('You must be logged in to record voice notes.');
             setIsProcessing(false);
             return;
           }
 
           try {
-            // Invoke the Supabase Edge Function for transcription
             const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/transcribe-audio', {
               method: 'POST',
               headers: {
                 'Content-Type': audioBlob.type,
-                'Authorization': `Bearer ${session.access_token}`, // Add Authorization header
+                'Authorization': `Bearer ${session.access_token}`,
               },
               body: audioBlob,
             });
@@ -68,8 +104,8 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
             onTranscription(data.transcription);
             showSuccess('Transcription complete!');
           } catch (error: any) {
-            console.error('Error during transcription:', error);
-            showError('Failed to transcribe audio: ' + error.message);
+            console.error('Error during Deepgram transcription:', error);
+            showError('Failed to transcribe audio with Deepgram: ' + error.message);
           } finally {
             setIsProcessing(false);
           }
@@ -78,43 +114,16 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
         mediaRecorderRef.current.start();
         setIsRecording(true);
         showSuccess('Recording started (Deepgram)...');
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error accessing microphone for MediaRecorder:', err);
-        showError('Failed to start recording. Please check microphone permissions.');
+        showError('Failed to start recording with Deepgram. Attempting Web Speech API fallback...');
+        // Fallback to Web Speech API if MediaRecorder fails
+        startWebSpeechApi();
       }
-    } else if (SpeechRecognition) {
-      // Fallback to Web Speech API
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false; // Get a single, final result
-      recognitionRef.current.interimResults = false; // Only final results
-
-      recognitionRef.current.onstart = () => {
-        setIsRecording(true);
-        showSuccess('Recording started (Web Speech API)...');
-      };
-
-      recognitionRef.current.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0])
-          .map(alternative => alternative.transcript)
-          .join('');
-        onTranscription(transcript);
-        showSuccess('Web Speech API transcription complete!');
-      };
-
-      recognitionRef.current.onerror = (event) => {
-        console.error('Web Speech API error:', event.error);
-        showError('Web Speech API error: ' + event.error);
-        setIsRecording(false);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsRecording(false);
-      };
-
-      recognitionRef.current.start();
     } else {
-      showError('Neither MediaRecorder nor Web Speech API is supported in your browser.');
+      // Directly use Web Speech API if MediaRecorder is not available at all
+      showError('MediaRecorder not supported. Attempting Web Speech API...');
+      startWebSpeechApi();
     }
   };
 
@@ -131,17 +140,15 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
 
   return (
     <div className="flex items-center space-x-2">
-      {!isRecording && !isProcessing && (
-        <Button onClick={startRecording} className="w-full" disabled={isProcessing}>
+      {!isRecording && !isProcessing ? (
+        <Button onClick={startRecording} className="w-full">
           <Mic className="mr-2 h-4 w-4" /> Start Voice Note
         </Button>
-      )}
-      {isRecording && (
+      ) : isRecording ? (
         <Button onClick={stopRecording} variant="destructive" className="w-full">
           <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
         </Button>
-      )}
-      {isProcessing && (
+      ) : (
         <Button disabled className="w-full">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
         </Button>
