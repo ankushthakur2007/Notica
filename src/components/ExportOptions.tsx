@@ -11,7 +11,7 @@ interface ExportOptionsProps {
   contentPlainText: string;
 }
 
-const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsProps) => { // Destructure contentHtml here
+const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsProps) => {
   const { session } = useSessionContext();
   const [isExportingPdf, setIsExportingPdf] = useState(false);
 
@@ -29,7 +29,7 @@ const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsPr
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ htmlContent, title }),
+        body: JSON.stringify({ htmlContent: contentHtml, title }), // Corrected line: mapping contentHtml prop to htmlContent key
       });
 
       if (!response.ok) {
@@ -38,7 +38,7 @@ const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsPr
       }
 
       const pdfBlob = await response.blob();
-      const url = window.URL.createObjectURL(pdfBlob);
+      const url = window.URL.create(pdfBlob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `${title || 'Untitled Note'}.pdf`;
