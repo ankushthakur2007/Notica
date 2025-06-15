@@ -1,7 +1,6 @@
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from 'next-themes';
 
@@ -51,7 +50,6 @@ const Login = () => {
           redirectTo={window.location.origin + '/dashboard'}
         />
       </div>
-      <MadeWithDyad />
     </div>
   );
 };

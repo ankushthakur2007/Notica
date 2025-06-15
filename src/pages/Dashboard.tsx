@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import Sidebar from '@/components/Sidebar';
 import NewNoteForm from '@/components/NewNoteForm';
 import NoteList from '@/components/NoteList';
-import NoteEditor from '@/components/NoteEditor'; // Import the new NoteEditor component
+import NoteEditor from '@/components/NoteEditor';
 
 type DashboardView = 'welcome' | 'newNote' | 'allNotes' | 'editNote';
 
@@ -81,7 +80,6 @@ const Dashboard = () => {
           {renderMainContent()}
         </ResizablePanel>
       </ResizablePanelGroup>
-      <MadeWithDyad />
     </div>
   );
 };

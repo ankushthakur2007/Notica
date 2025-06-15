@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { MadeWithDyad } from '@/components/made-with-dyad';
 
 const Index = () => {
   const { session, loading } = useSessionContext();
@@ -31,7 +30,6 @@ const Index = () => {
         <h1 className="text-4xl font-bold mb-4 text-foreground">Redirecting...</h1>
         <p className="text-xl text-muted-foreground">Please wait while we check your session.</p>
       </div>
-      <MadeWithDyad />
     </div>
   );
 };
