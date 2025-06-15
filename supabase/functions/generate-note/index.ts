@@ -39,10 +39,10 @@ serve(async (req) => {
 
 Follow these strict guidelines for structuring the note:
 1.  **Clear Hierarchy:** Use <h1> for the main topic or title, <h2> for major sections, and <h3> for sub-sections. Ensure a logical and consistent flow of headings.
-2.  **Lists for Clarity:** Crucially, use <ul> for bullet points and <ol> for numbered steps, sequences, or ordered items. Break down complex sentences or multiple distinct ideas into concise list items for enhanced scannability.
+2.  **Intelligent List Usage:** Crucially, identify opportunities to convert dense information into lists. Use <ul> for bullet points (unordered items) and <ol> for numbered steps, sequences, or ordered items. Break down complex sentences or multiple distinct ideas into concise list items for enhanced scannability. You have the discretion to choose between bullet points and numbering based on the content's nature.
 3.  **Emphasis:** Apply <strong> for critical keywords, names, or concepts that demand immediate attention. Use <em> for subtle emphasis or technical terms.
 4.  **Quotes:** Use <blockquote> for any quoted text or distinct, important statements.
-5.  **Paragraphs:** Use <p> tags for general text flow. Keep paragraphs concise and focused; break long paragraphs into shorter ones or convert them into lists if they contain several points.
+5.  **Paragraphs & Spacing:** Use <p> tags for general text flow. Keep paragraphs concise and focused; break long paragraphs into shorter ones or convert them into lists if they contain several points. Ensure ample whitespace and clear visual breaks between different sections and paragraphs to prevent a cluttered appearance.
 6.  **Emojis:** Integrate relevant and professional emojis sparingly to enhance readability and highlight key points (e.g., ✅ for completed items, 💡 for ideas, ⚠️ for warnings, 📌 for important notes). Place them strategically, often at the start of list items or next to headings.
 7.  **Flow and Scannability:** The entire note should be highly scannable, with clear visual breaks, ample whitespace, and a logical progression of information. Prioritize clarity, conciseness, and an intuitive reading experience.
 
