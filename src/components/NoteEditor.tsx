@@ -5,19 +5,30 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
-import TextStyle from '@tiptap/extension-text-style';
+import TextStyle from '@tiptap/extension-text-align';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
-import Image from '@tiptap/extension-image'; // Import Image extension
+import Image from '@tiptap/extension-image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Note } from '@/types';
 import { useQueryClient } from '@tanstack/react-query';
-import { v4 as uuidv4 } from 'uuid'; // Import uuid for unique filenames
-import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2 } from 'lucide-react';
 import { useSessionContext } from '@/contexts/SessionContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface NoteEditorProps {
   noteId: string;
@@ -31,6 +42,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
   const [title, setTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchNote = async () => {
@@ -61,7 +73,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
 
     setIsUploadingImage(true);
     const fileExtension = file.name.split('.').pop();
-    const fileName = `${user.id}/${uuidv4()}.${fileExtension}`; // Store images in user-specific folders
+    const fileName = `${user.id}/${uuidv4()}.${fileExtension}`;
     
     try {
       const { data, error } = await supabase.storage
@@ -112,7 +124,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
       Highlight.configure({ multicolor: true }),
       Image.configure({
         inline: true,
-        allowBase64: true, // Allow base64 images for drag/drop initially, but we'll convert to URL
+        allowBase64: true,
       }),
     ],
     content: note?.content || '',
@@ -125,7 +137,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
           const file = event.dataTransfer.files[0];
           if (file.type.startsWith('image/')) {
             handleImageUpload(file);
-            return true; // Prevent default image handling
+            return true;
           }
         }
         return false;
@@ -135,7 +147,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
           const file = event.clipboardData.files[0];
           if (file.type.startsWith('image/')) {
             handleImageUpload(file);
-            return true; // Prevent default image handling
+            return true;
           }
         }
         return false;
@@ -163,12 +175,36 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
         throw error;
       }
       showSuccess('Note saved successfully!');
-      queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate notes query to refetch list
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
     } catch (error: any) {
       console.error('Error saving note:', error);
       showError('Failed to save note: ' + error.message);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!note) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', note.id);
+
+      if (error) {
+        throw error;
+      }
+      showSuccess('Note deleted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate notes query to refetch list
+      onClose(); // Close the editor after deletion
+    } catch (error: any) {
+      console.error('Error deleting note:', error);
+      showError('Failed to delete note: ' + error.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -199,6 +235,27 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? 'Saving...' : 'Save Note'}
           </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={isDeleting}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                {isDeleting ? 'Deleting...' : 'Delete Note'}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your note
+                  and remove its data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
