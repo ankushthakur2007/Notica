@@ -3,7 +3,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -12,7 +11,7 @@ import NewNoteForm from "./components/NewNoteForm";
 import NoteList from "./components/NoteList";
 import NoteEditor from "./components/NoteEditor";
 import { SessionContextProvider } from "./contexts/SessionContext";
-import TryNow from "./pages/TryNow"; // Import the new TryNow page
+import TryNow from "./pages/TryNow"; // Import the TryNow page
 
 const queryClient = new QueryClient();
 
@@ -23,7 +22,7 @@ const App = () => (
       <BrowserRouter>
         <SessionContextProvider>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<TryNow />} /> {/* Set TryNow as the landing page */}
             <Route path="/login" element={<Login />} />
             <Route path="/try-now" element={<TryNow />} />
             

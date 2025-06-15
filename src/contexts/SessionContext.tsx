@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
+import { useNavigate, useLocation } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 
 interface SessionContextType {
@@ -18,7 +18,7 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const location = useLocation(); // Get current location
+  const location = useLocation();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
@@ -27,8 +27,8 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
         setUser(currentSession?.user || null);
         if (currentSession) {
           showSuccess('Successfully signed in!');
-          // Only navigate to dashboard if coming from login or root
-          if (location.pathname === '/login' || location.pathname === '/') {
+          // Only navigate to dashboard if coming from login or root/try-now
+          if (location.pathname === '/login' || location.pathname === '/' || location.pathname === '/try-now') {
             navigate('/dashboard');
           }
         }
@@ -41,14 +41,14 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
         setSession(currentSession);
         setUser(currentSession?.user || null);
         if (currentSession) {
-          // Only navigate to dashboard if coming from login or root
-          if (location.pathname === '/login' || location.pathname === '/') {
+          // Only navigate to dashboard if coming from login or root/try-now
+          if (location.pathname === '/login' || location.pathname === '/' || location.pathname === '/try-now') {
             navigate('/dashboard');
           }
         } else {
-          // If no session and not on login, redirect to login
-          if (location.pathname !== '/login') {
-            navigate('/login');
+          // If no session and not on login or try-now, redirect to try-now
+          if (location.pathname !== '/login' && location.pathname !== '/try-now') {
+            navigate('/try-now');
           }
         }
       }
@@ -56,7 +56,7 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, location.pathname]); // Add location.pathname to dependencies
+  }, [navigate, location.pathname]);
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
