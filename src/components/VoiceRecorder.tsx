@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, StopCircle, Loader2 } from 'lucide-react';
 import { showError, showSuccess } from '@/utils/toast';
+import { useSessionContext } from '@/contexts/SessionContext'; // Import useSessionContext
 
 interface VoiceRecorderProps {
   onTranscription: (text: string) => void;
@@ -18,6 +19,7 @@ declare global {
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
+  const { session } = useSessionContext(); // Get session here
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -40,12 +42,19 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
           setIsProcessing(true);
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           
+          if (!session?.access_token) { // Check for session token
+            showError('You must be logged in to record voice notes.');
+            setIsProcessing(false);
+            return;
+          }
+
           try {
             // Invoke the Supabase Edge Function for transcription
             const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/transcribe-audio', {
               method: 'POST',
               headers: {
                 'Content-Type': audioBlob.type,
+                'Authorization': `Bearer ${session.access_token}`, // Add Authorization header
               },
               body: audioBlob,
             });

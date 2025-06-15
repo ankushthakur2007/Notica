@@ -30,13 +30,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import VoiceRecorder from '@/components/VoiceRecorder'; // Import VoiceRecorder
+import VoiceRecorder from '@/components/VoiceRecorder';
 
 interface NoteEditorProps {} 
 
 const NoteEditor = ({}: NoteEditorProps) => {
   const queryClient = useQueryClient();
-  const { user } = useSessionContext();
+  const { user, session } = useSessionContext(); // Get session here
   const navigate = useNavigate();
   const { noteId } = useParams<{ noteId: string }>();
 
@@ -238,12 +238,18 @@ const NoteEditor = ({}: NoteEditorProps) => {
       return;
     }
 
+    if (!session?.access_token) { // Check for session token
+      showError('You must be logged in to use AI refinement.');
+      return;
+    }
+
     setIsRefiningAI(true);
     try {
       const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/generate-note', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`, // Add Authorization header
         },
         body: JSON.stringify({ text: currentContent }),
       });
@@ -339,7 +345,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
           </Button>
         </div>
       </div>
-      <div className="mb-4 p-2 rounded-md border bg-muted flex flex-wrap gap-1"> {/* Optimized toolbar styling */}
+      <div className="mb-4 p-2 rounded-md border bg-muted flex flex-wrap gap-1">
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().toggleBold()}>
           <Bold className="h-4 w-4" />
         </Button>
@@ -427,7 +433,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
           <Sparkles className="mr-2 h-4 w-4" /> 
           {isRefiningAI ? 'Refining...' : 'Refine with AI'}
         </Button>
-        {/* Voice Recorder integrated here */}
         <VoiceRecorder onTranscription={handleTranscription} />
       </div>
       <div className="flex-grow overflow-y-auto">
