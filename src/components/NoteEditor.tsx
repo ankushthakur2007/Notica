@@ -33,7 +33,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import VoiceRecorder from '@/components/VoiceRecorder';
 import ColorPicker from '@/components/ColorPicker';
-import ExportOptions from '@/components/ExportOptions'; // Import the new ExportOptions component
+import ExportOptions from '@/components/ExportOptions';
 
 interface NoteEditorProps {} 
 
@@ -354,7 +354,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
           </Button>
         </div>
       </div>
-      <div className="mb-4 p-2 rounded-md border bg-muted flex flex-wrap gap-1">
+      <div className="mb-4 p-2 rounded-md border bg-muted flex flex-wrap gap-1 overflow-x-auto"> {/* Added overflow-x-auto */}
         <VoiceRecorder onTranscription={handleTranscription} className="h-9 px-3" />
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().toggleBold()}>
           <Bold className="h-4 w-4" />
