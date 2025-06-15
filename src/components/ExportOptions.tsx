@@ -11,7 +11,7 @@ interface ExportOptionsProps {
   contentPlainText: string;
 }
 
-const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsProps) => {
+const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsProps) => { // Destructure contentHtml here
   const { session } = useSessionContext();
   const [isExportingPdf, setIsExportingPdf] = useState(false);
 
@@ -33,12 +33,10 @@ const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsPr
       });
 
       if (!response.ok) {
-        // If the response is not OK, it's likely an error JSON from the Edge Function
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to generate PDF.');
       }
 
-      // If response is OK, it should be the PDF blob
       const pdfBlob = await response.blob();
       const url = window.URL.createObjectURL(pdfBlob);
       const a = document.createElement('a');
