@@ -46,11 +46,11 @@ const TryNow = () => {
         <Card className="text-center p-6 flex flex-col items-center shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
           <Sparkles className="h-14 w-14 text-primary mb-5" />
           <CardHeader className="p-0 mb-3">
-            <CardTitle className="text-2xl font-semibold">AI-Generated Notes</CardTitle>
+            <CardTitle className="text-2xl font-semibold">AI Refinement</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <p className="text-muted-foreground text-base">
-              Let AI transform raw transcripts into organized, readable notes with
+              Let AI transform raw transcripts or existing content into organized, readable notes with
               headings, bullet points, and emojis.
             </p>
           </CardContent>
