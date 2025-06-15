@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,6 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showError, showSuccess } from '@/utils/toast';
 import { User } from 'lucide-react';
-import { useTheme } from 'next-themes';
 
 const FONT_OPTIONS = [
   { label: 'Default (Inter)', value: 'font-inter' },
@@ -20,7 +19,7 @@ const FONT_OPTIONS = [
 ];
 
 const SettingsDashboard = () => {
-  console.log('SettingsDashboard component is rendering.');
+  console.log('SettingsDashboard component is rendering.'); // Added log
   const { user, signOut } = useSessionContext();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -28,31 +27,6 @@ const SettingsDashboard = () => {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [selectedFont, setSelectedFont] = useState<string>(() => localStorage.getItem('app-font') || 'font-inter');
-  const prevFontClassRef = useRef<string | null>(null); // Ref to store the previously applied font class
-
-  // Initialize font class on mount and clean up on unmount
-  useEffect(() => {
-    const initialFont = localStorage.getItem('app-font') || 'font-inter';
-    document.documentElement.classList.add(initialFont);
-    prevFontClassRef.current = initialFont;
-
-    return () => {
-      // Clean up the font class when the component unmounts
-      if (prevFontClassRef.current) {
-        document.documentElement.classList.remove(prevFontClassRef.current);
-      }
-    };
-  }, []); // Empty dependency array means this runs once on mount and once on unmount
-
-  // Update font class when selectedFont changes
-  useEffect(() => {
-    if (prevFontClassRef.current && prevFontClassRef.current !== selectedFont) {
-      document.documentElement.classList.remove(prevFontClassRef.current);
-    }
-    document.documentElement.classList.add(selectedFont);
-    localStorage.setItem('app-font', selectedFont);
-    prevFontClassRef.current = selectedFont; // Update the ref with the new font
-  }, [selectedFont]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -69,7 +43,7 @@ const SettingsDashboard = () => {
             console.warn('No profile found for user. This is expected for new users. A profile will be created on first save.');
             // No toast needed for this expected case
           } else {
-            console.error('Error fetching profile:', error.message, error);
+            console.error('Error fetching profile:', error.message, error); // Log the full error object
             showError('Failed to load profile data: ' + error.message);
           }
         } else if (data) {
@@ -84,6 +58,11 @@ const SettingsDashboard = () => {
     };
     fetchProfile();
   }, [user]);
+
+  useEffect(() => {
+    document.documentElement.className = selectedFont;
+    localStorage.setItem('app-font', selectedFont);
+  }, [selectedFont]);
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();

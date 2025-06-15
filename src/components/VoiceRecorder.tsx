@@ -132,21 +132,18 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
   return (
     <div className="flex items-center space-x-2">
       {!isRecording && !isProcessing && (
-        <Button onClick={startRecording} size="sm" variant="outline" disabled={isProcessing}>
-          <Mic className="h-4 w-4" />
-          <span className="sr-only">Start Voice Note</span>
+        <Button onClick={startRecording} className="w-full" disabled={isProcessing}>
+          <Mic className="mr-2 h-4 w-4" /> Start Voice Note
         </Button>
       )}
       {isRecording && (
-        <Button onClick={stopRecording} variant="outline" size="sm">
-          <StopCircle className="h-4 w-4" />
-          <span className="sr-only">Stop Recording</span>
+        <Button onClick={stopRecording} variant="destructive" className="w-full">
+          <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
         </Button>
       )}
       {isProcessing && (
-        <Button disabled size="sm" variant="outline">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="sr-only">Processing Voice Note</span>
+        <Button disabled className="w-full">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...
         </Button>
       )}
     </div>

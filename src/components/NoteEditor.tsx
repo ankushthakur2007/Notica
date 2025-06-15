@@ -16,7 +16,7 @@ import { showError, showSuccess } from '@/utils/toast';
 import { Note } from '@/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles, Download } from 'lucide-react';
+import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles } from 'lucide-react';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -270,24 +270,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
     }
   };
 
-  const handleExportPlainText = () => {
-    if (!editor || !note) {
-      showError('No note content to export.');
-      return;
-    }
-    const plainTextContent = editor.getText();
-    const blob = new Blob([plainTextContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${note.title || 'Untitled Note'}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showSuccess('Note exported as plain text!');
-  };
-
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       handleImageUpload(event.target.files[0]);
@@ -450,15 +432,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
         >
           <Sparkles className="mr-2 h-4 w-4" /> 
           {isRefiningAI ? 'Refining...' : 'Refine with AI'}
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleExportPlainText} 
-          disabled={!editor || editor.isEmpty}
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Export Text
         </Button>
         <VoiceRecorder onTranscription={handleTranscription} />
       </div>
