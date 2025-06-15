@@ -339,7 +339,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
           </Button>
         </div>
       </div>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 p-2 rounded-md border bg-muted flex flex-wrap gap-1"> {/* Optimized toolbar styling */}
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().toggleBold()}>
           <Bold className="h-4 w-4" />
         </Button>
