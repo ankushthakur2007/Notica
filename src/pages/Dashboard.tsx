@@ -6,13 +6,15 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import Sidebar from '@/components/Sidebar';
 import NewNoteForm from '@/components/NewNoteForm';
-import NoteList from '@/components/NoteList'; // Import the new NoteList component
+import NoteList from '@/components/NoteList';
+import NoteEditor from '@/components/NoteEditor'; // Import the new NoteEditor component
 
-type DashboardView = 'welcome' | 'newNote' | 'allNotes';
+type DashboardView = 'welcome' | 'newNote' | 'allNotes' | 'editNote';
 
 const Dashboard = () => {
   const { session, signOut } = useSessionContext();
   const [activeView, setActiveView] = useState<DashboardView>('welcome');
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
   if (!session) {
     return (
@@ -22,12 +24,33 @@ const Dashboard = () => {
     );
   }
 
+  const handleNavigate = (view: DashboardView) => {
+    setActiveView(view);
+    if (view !== 'editNote') {
+      setSelectedNoteId(null); // Clear selected note when changing view
+    }
+  };
+
+  const handleSelectNote = (noteId: string) => {
+    setSelectedNoteId(noteId);
+    setActiveView('editNote');
+  };
+
   const renderMainContent = () => {
     switch (activeView) {
       case 'newNote':
-        return <NewNoteForm onNoteCreated={() => setActiveView('allNotes')} />; // After creating, switch to all notes view
+        return <NewNoteForm onNoteCreated={() => handleNavigate('allNotes')} />;
       case 'allNotes':
-        return <NoteList />; // Render the NoteList component
+        return <NoteList onSelectNote={handleSelectNote} />;
+      case 'editNote':
+        if (selectedNoteId) {
+          return <NoteEditor noteId={selectedNoteId} onClose={() => handleNavigate('allNotes')} />;
+        }
+        return (
+          <div className="flex items-center justify-center h-full text-destructive">
+            <p>No note selected for editing.</p>
+          </div>
+        );
       case 'welcome':
       default:
         return (
@@ -51,7 +74,7 @@ const Dashboard = () => {
       </div>
       <ResizablePanelGroup direction="horizontal" className="flex-grow">
         <ResizablePanel defaultSize={20} minSize={15} maxSize={25}>
-          <Sidebar onNavigate={setActiveView} />
+          <Sidebar onNavigate={handleNavigate} />
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={80}>

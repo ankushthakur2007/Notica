@@ -7,7 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Note } from '@/types';
 
-const NoteList = () => {
+interface NoteListProps {
+  onSelectNote: (noteId: string) => void;
+}
+
+const NoteList = ({ onSelectNote }: NoteListProps) => {
   const { user } = useSessionContext();
 
   const { data: notes, isLoading, isError, error, refetch } = useQuery<Note[], Error>({
@@ -61,12 +65,12 @@ const NoteList = () => {
       <h2 className="text-3xl font-bold mb-6 text-foreground">Your Notes</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {notes.map((note) => (
-          <Card key={note.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card key={note.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => onSelectNote(note.id)}>
             <CardHeader>
               <CardTitle className="text-lg">{note.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-2 line-clamp-3">{note.content || 'No content preview available.'}</p>
+              <p className="text-sm text-muted-foreground mb-2 line-clamp-3">{note.content ? 'Content available' : 'No content preview available.'}</p>
               <p className="text-xs text-gray-500">Created: {format(new Date(note.created_at), 'PPP')}</p>
               <p className="text-xs text-gray-500">Updated: {format(new Date(note.updated_at), 'PPP')}</p>
             </CardContent>
