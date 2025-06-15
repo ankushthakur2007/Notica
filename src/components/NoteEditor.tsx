@@ -14,11 +14,11 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Note } from '@/types';
-import { useQuery, useQueryClient } from '@tanstack/react-query'; // Import useQuery
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles } from 'lucide-react';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom'; // Import useParams
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,15 +31,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-interface NoteEditorProps {
-  noteId: string;
-  onClose: () => void;
-}
+// Removed noteId and onClose from props interface
+interface NoteEditorProps {} 
 
-const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
+const NoteEditor = ({}: NoteEditorProps) => { // Destructure empty props
   const queryClient = useQueryClient();
   const { user } = useSessionContext();
   const navigate = useNavigate();
+  const { noteId } = useParams<{ noteId: string }>(); // Get noteId from URL parameters
+
   const [title, setTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -52,6 +52,9 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
     queryFn: async () => {
       if (!user) {
         throw new Error('User not logged in.');
+      }
+      if (!noteId) { // Ensure noteId is available from useParams
+        throw new Error('Note ID is missing.');
       }
       const { data, error } = await supabase
         .from('notes')
