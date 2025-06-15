@@ -14,11 +14,11 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Note } from '@/types';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query'; // Import useQuery
 import { v4 as uuidv4 } from 'uuid';
 import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles } from 'lucide-react';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,19 +33,41 @@ import {
 
 interface NoteEditorProps {
   noteId: string;
-  onClose: () => void; // Keep onClose prop for external triggers if needed, but internal navigation will be primary
+  onClose: () => void;
 }
 
 const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
   const queryClient = useQueryClient();
   const { user } = useSessionContext();
-  const navigate = useNavigate(); // Initialize useNavigate
-  const [note, setNote] = useState<Note | null>(null);
+  const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefiningAI, setIsRefiningAI] = useState(false);
+
+  // Use useQuery to fetch the note data
+  const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
+    queryKey: ['note', noteId],
+    queryFn: async () => {
+      if (!user) {
+        throw new Error('User not logged in.');
+      }
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('id', noteId)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+      return data;
+    },
+    enabled: !!user && !!noteId, // Only run query if user and noteId are available
+    staleTime: 5 * 60 * 1000, // Data is considered fresh for 5 minutes
+    cacheTime: 10 * 60 * 1000, // Data stays in cache for 10 minutes
+  });
 
   const editor = useEditor({
     extensions: [
@@ -69,7 +91,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
         allowBase64: true,
       }),
     ],
-    content: '',
+    content: '', // Initial content will be set by useEffect after data loads
     editorProps: {
       attributes: {
         class: 'prose dark:prose-invert max-w-none focus:outline-none p-4 min-h-[300px] border rounded-md bg-background text-foreground',
@@ -97,32 +119,21 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
     },
   });
 
+  // Effect to set editor content and title once note data and editor are ready
   useEffect(() => {
-    const fetchNote = async () => {
-      if (!editor) {
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('id', noteId)
-        .single();
-
-      if (error) {
-        showError('Failed to load note: ' + error.message);
-        navigate('/dashboard/all-notes'); // Navigate back on error
-        return;
-      }
-      setNote(data);
-      setTitle(data.title);
-      editor.commands.setContent(data.content || '');
-    };
-
-    if (noteId) {
-      fetchNote();
+    if (editor && note) {
+      setTitle(note.title);
+      editor.commands.setContent(note.content || '');
     }
-  }, [noteId, editor, navigate]); // Added navigate to dependencies
+  }, [editor, note]);
+
+  // Handle error from useQuery
+  useEffect(() => {
+    if (isError) {
+      showError('Failed to load note: ' + error?.message);
+      navigate('/dashboard/all-notes');
+    }
+  }, [isError, error, navigate]);
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!user) {
@@ -208,7 +219,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
       }
       showSuccess('Note deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['notes'] });
-      navigate('/dashboard/all-notes'); // Navigate back after deletion
+      navigate('/dashboard/all-notes');
     } catch (error: any) {
       console.error('Error deleting note:', error);
       showError('Failed to delete note: ' + error.message);
@@ -258,10 +269,27 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
     }
   };
 
-  if (!note || !editor) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">Loading note...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center h-full text-destructive">
+        <p>Error loading note. Please try again.</p>
+      </div>
+    );
+  }
+
+  // If note is null after loading (e.g., not found), redirect
+  if (!note) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">Note not found.</p>
       </div>
     );
   }
@@ -300,7 +328,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button variant="outline" onClick={() => navigate('/dashboard/all-notes')}> {/* Navigate back to all notes */}
+          <Button variant="outline" onClick={() => navigate('/dashboard/all-notes')}>
             Close
           </Button>
         </div>
