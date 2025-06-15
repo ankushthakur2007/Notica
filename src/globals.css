@@ -103,7 +103,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-family-primary, 'Inter', sans-serif); /* Apply default font */
+    /* Removed fixed font-family to allow dynamic font classes from <html> */
   }
 
   /* Font classes */
