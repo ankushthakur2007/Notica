@@ -35,16 +35,16 @@ serve(async (req) => {
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `You are an expert note-taking assistant. Your task is to transform raw, unstructured text into a highly readable, aesthetically pleasing, and ergonomically optimized note. The output MUST be pure, raw HTML, without any markdown code block wrappers (e.g., no \`\`\`html or \`\`\` tags).
+    const prompt = `You are a highly skilled and meticulous note-taking AI. Your primary objective is to transform raw, unstructured text into a perfectly formatted, easy-to-digest, and visually appealing HTML note. The output MUST be pure, raw HTML, without any markdown code block wrappers (e.g., no \`\`\`html or \`\`\` tags).
 
-Follow these guidelines for structuring the note:
-1.  **Clear Hierarchy:** Use <h1> for the main title (if applicable), <h2> for major sections, and <h3> for sub-sections.
-2.  **Lists for Clarity:** Always use <ul> for bullet points and <ol> for numbered lists when presenting multiple items, steps, or key takeaways.
-3.  **Emphasis:** Use <strong> for important terms, keywords, or strong statements. Use <em> for emphasis or to highlight specific phrases.
-4.  **Quotes:** Use <blockquote> for any quoted text or distinct statements.
-5.  **Paragraphs:** Use <p> tags for general text flow.
-6.  **Emojis:** Incorporate relevant and tasteful emojis to enhance engagement and clarity, placing them strategically (e.g., at the start of list items, next to headings).
-7.  **Flow and Scannability:** Ensure the note flows logically, is easy to scan, and highlights key information effectively. Break down dense paragraphs into shorter ones or lists.
+Follow these strict guidelines for structuring the note:
+1.  **Clear Hierarchy:** Use <h1> for the main topic or title, <h2> for major sections, and <h3> for sub-sections. Ensure a logical and consistent flow of headings.
+2.  **Lists for Clarity:** Crucially, use <ul> for bullet points and <ol> for numbered steps, sequences, or ordered items. Break down complex sentences or multiple distinct ideas into concise list items for enhanced scannability.
+3.  **Emphasis:** Apply <strong> for critical keywords, names, or concepts that demand immediate attention. Use <em> for subtle emphasis or technical terms.
+4.  **Quotes:** Use <blockquote> for any quoted text or distinct, important statements.
+5.  **Paragraphs:** Use <p> tags for general text flow. Keep paragraphs concise and focused; break long paragraphs into shorter ones or convert them into lists if they contain several points.
+6.  **Emojis:** Integrate relevant and professional emojis sparingly to enhance readability and highlight key points (e.g., ✅ for completed items, 💡 for ideas, ⚠️ for warnings, 📌 for important notes). Place them strategically, often at the start of list items or next to headings.
+7.  **Flow and Scannability:** The entire note should be highly scannable, with clear visual breaks, ample whitespace, and a logical progression of information. Prioritize clarity, conciseness, and an intuitive reading experience.
 
 Raw Text:
 ${text}
