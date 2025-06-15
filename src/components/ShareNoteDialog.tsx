@@ -34,7 +34,7 @@ interface Collaborator {
 }
 
 const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
-  const { user: currentUser } = useSessionContext();
+  const { user: currentUser, session } = useSessionContext();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [searchEmail, setSearchEmail] = useState('');
@@ -84,37 +84,31 @@ const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
     }
     setIsSearching(true);
     try {
-      // Search for users in auth.users (email is available there)
-      // Note: Supabase RLS on auth.users might prevent direct email search for non-admin roles.
-      // A common pattern is to have a 'profiles' table with public emails.
-      // For now, we'll assume profiles table has email or we're searching by ID.
-      // Since we don't have email in profiles, we'll search by email in auth.users
-      // and then fetch profile data. This is a simplified approach.
-      // A better approach for production would be an Edge Function to search users.
+      if (!session?.access_token) {
+        showError('You must be logged in to search users.');
+        setIsSearching(false);
+        return;
+      }
 
-      // For now, let's assume we can search profiles by email if it were exposed.
-      // Since it's not, we'll simulate by just showing a dummy user or requiring exact ID.
-      // Given the current schema, we can't search by email directly from client.
-      // Let's adjust to search by first_name/last_name for demonstration, or assume email is in profiles.
-      // For a real app, you'd likely have a server-side function to search auth.users.
+      const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/search-users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ searchTerm: searchEmail }),
+      });
 
-      // Let's search the profiles table for first_name or last_name for now.
-      // Or, if we want to search by email, we'd need an Edge Function.
-      // For simplicity, let's assume the user will input an email that corresponds to a user ID
-      // or we'll just show a placeholder.
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to search users.');
+      }
 
-      // A more realistic client-side search would be:
-      const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, avatar_url')
-        .ilike('first_name', `%${searchEmail}%`) // Assuming search by name for now
-        .limit(5);
-
-      if (profileError) throw profileError;
-
-      // Filter out current user and existing collaborators
-      const filteredResults = profiles.filter(
-        (profile) =>
+      const data = await response.json();
+      
+      // Filter out current user and existing collaborators from search results
+      const filteredResults = data.profiles.filter(
+        (profile: any) =>
           profile.id !== currentUser?.id &&
           !currentCollaborators.some((collab) => collab.user_id === profile.id)
       );
@@ -222,7 +216,7 @@ const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
             </Label>
             <Input
               id="search-email"
-              placeholder="Search by name..."
+              placeholder="Search by email..."
               className="col-span-3"
               value={searchEmail}
               onChange={(e) => setSearchEmail(e.target.value)}
