@@ -2,8 +2,9 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { showError } from '@/utils/toast'; // Corrected this line
+import { showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge'; // Import Badge component
 import { format } from 'date-fns';
 import { Note } from '@/types';
 import { useNavigate } from 'react-router-dom';
@@ -67,8 +68,11 @@ const NoteList = () => {
             className="hover:shadow-lg transition-shadow cursor-pointer" 
             onClick={() => navigate(`/dashboard/edit-note/${note.id}`)}
           >
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg">{note.title}</CardTitle>
+              {user && note.user_id !== user.id && (
+                <Badge variant="secondary" className="ml-2">Shared</Badge>
+              )}
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-2 line-clamp-3">{note.content ? 'Content available' : 'No content preview available.'}</p>
