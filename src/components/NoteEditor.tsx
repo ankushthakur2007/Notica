@@ -44,8 +44,63 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+      }),
+      Placeholder.configure({
+        placeholder: 'Start typing your note content here...',
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Underline,
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+      }),
+    ],
+    content: '', // Initialize with empty string, content will be set by useEffect
+    editorProps: {
+      attributes: {
+        class: 'prose dark:prose-invert max-w-none focus:outline-none p-4 min-h-[300px] border rounded-md bg-background text-foreground',
+      },
+      handleDrop: (view, event, slice, moved) => {
+        if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
+          const file = event.dataTransfer.files[0];
+          if (file.type.startsWith('image/')) {
+            handleImageUpload(file);
+            return true;
+          }
+        }
+        return false;
+      },
+      handlePaste: (view, event, slice) => {
+        if (event.clipboardData?.files && event.clipboardData.files[0]) {
+          const file = event.clipboardData.files[0];
+          if (file.type.startsWith('image/')) {
+            handleImageUpload(file);
+            return true;
+          }
+        }
+        return false;
+      },
+    },
+  });
+
   useEffect(() => {
     const fetchNote = async () => {
+      if (!editor) {
+        // Editor not yet initialized, wait for next render cycle
+        return;
+      }
+
       const { data, error } = await supabase
         .from('notes')
         .select('*')
@@ -59,11 +114,14 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
       }
       setNote(data);
       setTitle(data.title);
-      editor?.commands.setContent(data.content || '');
+      editor.commands.setContent(data.content || '');
     };
 
-    fetchNote();
-  }, [noteId]);
+    // Only fetch if noteId is present and editor is initialized
+    if (noteId) {
+      fetchNote();
+    }
+  }, [noteId, editor, onClose]); // Add editor to dependencies
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!user) {
@@ -104,56 +162,6 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
       setIsUploadingImage(false);
     }
   }, [user, editor]);
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-      }),
-      Placeholder.configure({
-        placeholder: 'Start typing your note content here...',
-      }),
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      Underline,
-      TextStyle,
-      Color,
-      Highlight.configure({ multicolor: true }),
-      Image.configure({
-        inline: true,
-        allowBase64: true,
-      }),
-    ],
-    content: note?.content || '',
-    editorProps: {
-      attributes: {
-        class: 'prose dark:prose-invert max-w-none focus:outline-none p-4 min-h-[300px] border rounded-md bg-background text-foreground',
-      },
-      handleDrop: (view, event, slice, moved) => {
-        if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
-          const file = event.dataTransfer.files[0];
-          if (file.type.startsWith('image/')) {
-            handleImageUpload(file);
-            return true;
-          }
-        }
-        return false;
-      },
-      handlePaste: (view, event, slice) => {
-        if (event.clipboardData?.files && event.clipboardData.files[0]) {
-          const file = event.clipboardData.files[0];
-          if (file.type.startsWith('image/')) {
-            handleImageUpload(file);
-            return true;
-          }
-        }
-        return false;
-      },
-    },
-  });
 
   const handleSave = async () => {
     if (!note || !editor) return;
