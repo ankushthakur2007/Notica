@@ -1,19 +1,13 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, NotebookText, Settings } from 'lucide-react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate, useLocation } from 'react-router-dom'; // Import useLocation to highlight active link
 
-interface SidebarProps {
-  onNavigate: (view: 'newNote' | 'allNotes' | 'welcome') => void;
-}
+const Sidebar = () => {
+  const navigate = useNavigate();
+  const location = useLocation(); // Get current location to determine active link
 
-const Sidebar = ({ onNavigate }: SidebarProps) => {
-  const navigate = useNavigate(); // Initialize useNavigate
-
-  const handleSettingsClick = () => {
-    console.log('Attempting to navigate to settings via useNavigate.');
-    navigate('/settings');
-  };
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <div className="flex flex-col h-full p-4 bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
@@ -23,16 +17,16 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
       <nav className="flex flex-col space-y-2 flex-grow">
         <Button
           variant="ghost"
-          className="justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          onClick={() => onNavigate('newNote')}
+          className={`justify-start ${isActive('/dashboard/new-note') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`}
+          onClick={() => navigate('/dashboard/new-note')}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           New Note
         </Button>
         <Button
           variant="ghost"
-          className="justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          onClick={() => onNavigate('allNotes')}
+          className={`justify-start ${isActive('/dashboard/all-notes') || isActive('/dashboard') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`}
+          onClick={() => navigate('/dashboard/all-notes')}
         >
           <NotebookText className="mr-2 h-4 w-4" />
           All Notes
@@ -41,8 +35,11 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
       <div className="mt-auto pt-4 border-t border-sidebar-border">
         <Button
           variant="ghost"
-          className="justify-start w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          onClick={handleSettingsClick} // Use the new handler
+          className={`justify-start w-full ${isActive('/settings') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`}
+          onClick={() => {
+            console.log('Attempting to navigate to settings via useNavigate.');
+            navigate('/settings');
+          }}
         >
           <Settings className="mr-2 h-4 w-4" />
           Settings
