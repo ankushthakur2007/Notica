@@ -30,16 +30,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import VoiceRecorder from '@/components/VoiceRecorder';
-import ColorPicker from '@/components/ColorPicker';
-import ExportOptions from '@/components/ExportOptions';
 
 interface NoteEditorProps {} 
 
 const NoteEditor = ({}: NoteEditorProps) => {
   const queryClient = useQueryClient();
-  const { user, session } = useSessionContext();
+  const { user, session } = useSessionContext(); // Get session here
   const navigate = useNavigate();
   const { noteId } = useParams<{ noteId: string }>();
 
@@ -48,7 +45,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefiningAI, setIsRefiningAI] = useState(false);
-  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
@@ -199,8 +195,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
         throw error;
       }
       showSuccess('Note saved successfully!');
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-      queryClient.invalidateQueries({ queryKey: ['note', noteId] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate the list of notes
+      queryClient.invalidateQueries({ queryKey: ['note', noteId] }); // Invalidate the specific note to refetch
     } catch (error: any) {
       console.error('Error saving note:', error);
       showError('Failed to save note: ' + error.message);
@@ -242,7 +238,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       return;
     }
 
-    if (!session?.access_token) {
+    if (!session?.access_token) { // Check for session token
       showError('You must be logged in to use AI refinement.');
       return;
     }
@@ -253,7 +249,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${session.access_token}`, // Add Authorization header
         },
         body: JSON.stringify({ text: currentContent }),
       });
@@ -282,13 +278,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   const handleTranscription = (text: string) => {
     if (editor) {
-      editor.chain().focus().insertContent(text + ' ').run();
+      editor.chain().focus().insertContent(text + ' ').run(); // Insert transcribed text into the editor
     }
-  };
-
-  const handleColorChange = (color: string) => {
-    editor?.chain().focus().setColor(color).run();
-    setIsColorPickerOpen(false); // Close popover after selection
   };
 
   if (isLoading) {
@@ -354,8 +345,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
           </Button>
         </div>
       </div>
-      <div className="mb-4 p-2 rounded-md border bg-muted flex flex-wrap gap-1 overflow-x-auto"> {/* Added overflow-x-auto */}
-        <VoiceRecorder onTranscription={handleTranscription} className="h-9 px-3" />
+      <div className="mb-4 p-2 rounded-md border bg-muted flex flex-wrap gap-1">
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().toggleBold()}>
           <Bold className="h-4 w-4" />
         </Button>
@@ -413,19 +403,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('justify').run()} disabled={!editor.can().setTextAlign('justify')}>
           <AlignJustify className="h-4 w-4" />
         </Button>
-        <Popover open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" disabled={!editor?.can().setColor('#000000')}>
-              <Palette className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <ColorPicker 
-              onSelectColor={handleColorChange} 
-              currentColor={editor?.getAttributes('textStyle').color}
-            />
-          </PopoverContent>
-        </Popover>
+        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setColor('#958DF1').run()} disabled={!editor.can().setColor('#958DF1')}>
+          <Palette className="h-4 w-4" />
+        </Button>
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHighlight({ color: '#fae0e0' }).run()} disabled={!editor.can().toggleHighlight({ color: '#fae0e0' })}>
           <Highlighter className="h-4 w-4" />
         </Button>
@@ -453,11 +433,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
           <Sparkles className="mr-2 h-4 w-4" /> 
           {isRefiningAI ? 'Refining...' : 'Refine with AI'}
         </Button>
-        <ExportOptions 
-            title={title} 
-            contentHtml={editor?.getHTML() || ''} 
-            contentPlainText={editor?.getText() || ''} 
-          />
+        <VoiceRecorder onTranscription={handleTranscription} />
       </div>
       <div className="flex-grow overflow-y-auto">
         <EditorContent editor={editor} />
