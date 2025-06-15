@@ -19,6 +19,7 @@ const FONT_OPTIONS = [
 ];
 
 const SettingsDashboard = () => {
+  console.log('SettingsDashboard component is rendering.'); // Added log
   const { user, signOut } = useSessionContext();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
