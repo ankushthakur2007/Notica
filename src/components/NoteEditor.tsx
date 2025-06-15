@@ -349,11 +349,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <ExportOptions 
-            title={title} 
-            contentHtml={editor?.getHTML() || ''} 
-            contentPlainText={editor?.getText() || ''} 
-          />
           <Button variant="outline" onClick={() => navigate('/dashboard/all-notes')}>
             Close
           </Button>
@@ -458,6 +453,11 @@ const NoteEditor = ({}: NoteEditorProps) => {
           <Sparkles className="mr-2 h-4 w-4" /> 
           {isRefiningAI ? 'Refining...' : 'Refine with AI'}
         </Button>
+        <ExportOptions 
+            title={title} 
+            contentHtml={editor?.getHTML() || ''} 
+            contentPlainText={editor?.getText() || ''} 
+          />
       </div>
       <div className="flex-grow overflow-y-auto">
         <EditorContent editor={editor} />
