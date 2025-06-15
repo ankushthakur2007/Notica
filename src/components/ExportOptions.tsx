@@ -21,6 +21,8 @@ const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsPr
       return;
     }
 
+    console.log('Attempting to export PDF. Access Token:', session.access_token); // Added log
+
     setIsExportingPdf(true);
     try {
       const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/generate-pdf', {
@@ -29,7 +31,7 @@ const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsPr
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ htmlContent: contentHtml, title }), // Corrected line: mapping contentHtml prop to htmlContent key
+        body: JSON.stringify({ htmlContent, title }),
       });
 
       if (!response.ok) {
@@ -38,7 +40,7 @@ const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsPr
       }
 
       const pdfBlob = await response.blob();
-      const url = window.URL.create(pdfBlob);
+      const url = window.URL.createObjectURL(pdfBlob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `${title || 'Untitled Note'}.pdf`;
