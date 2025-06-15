@@ -35,7 +35,16 @@ serve(async (req) => {
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `You are an expert note-taking assistant. Transform the following raw text into a highly readable, aesthetically pleasing, and well-organized note. Utilize a variety of HTML tags for optimal presentation: <h1>, <h2>, <h3> for clear hierarchy, <p> for paragraphs, <ul> and <ol> for lists, <blockquote> for quotes, <strong> for important terms, and <em> for emphasis. Incorporate relevant and tasteful emojis to enhance engagement and clarity. Ensure the note flows logically, is easy to scan, and highlights key information. The output MUST be pure, raw HTML, without any markdown code block wrappers (e.g., no \`\`\`html or \`\`\` tags).
+    const prompt = `You are an expert note-taking assistant. Your task is to transform raw, unstructured text into a highly readable, aesthetically pleasing, and ergonomically optimized note. The output MUST be pure, raw HTML, without any markdown code block wrappers (e.g., no \`\`\`html or \`\`\` tags).
+
+Follow these guidelines for structuring the note:
+1.  **Clear Hierarchy:** Use <h1> for the main title (if applicable), <h2> for major sections, and <h3> for sub-sections.
+2.  **Lists for Clarity:** Always use <ul> for bullet points and <ol> for numbered lists when presenting multiple items, steps, or key takeaways.
+3.  **Emphasis:** Use <strong> for important terms, keywords, or strong statements. Use <em> for emphasis or to highlight specific phrases.
+4.  **Quotes:** Use <blockquote> for any quoted text or distinct statements.
+5.  **Paragraphs:** Use <p> tags for general text flow.
+6.  **Emojis:** Incorporate relevant and tasteful emojis to enhance engagement and clarity, placing them strategically (e.g., at the start of list items, next to headings).
+7.  **Flow and Scannability:** Ensure the note flows logically, is easy to scan, and highlights key information effectively. Break down dense paragraphs into shorter ones or lists.
 
 Raw Text:
 ${text}
