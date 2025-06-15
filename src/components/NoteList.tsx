@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { showError } from '@/utils/toast';
+import { showError } => '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Note } from '@/types';
@@ -18,10 +18,11 @@ const NoteList = () => { // Removed onSelectNote prop
       if (!user) {
         throw new Error('User not logged in.');
       }
+      // RLS policies on the 'notes' table will automatically filter notes
+      // to only show those owned by the user or shared with them.
       const { data, error } = await supabase
         .from('notes')
         .select('*')
-        .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
       if (error) {
