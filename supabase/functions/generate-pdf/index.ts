@@ -12,22 +12,29 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client within the Edge Function to verify the user's session
+    const authHeader = req.headers.get('Authorization');
+    console.log('Incoming Authorization header:', authHeader ? 'Present' : 'Missing');
+    if (authHeader) {
+      console.log('Auth header starts with:', authHeader.substring(0, 20) + '...'); // Log first 20 chars to avoid exposing full token
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader! },
         },
       }
     );
 
-    // Get user from the session to ensure authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       console.error('Authentication error in generate-pdf:', authError?.message || 'User not authenticated');
+      if (authError) {
+        console.error('Full auth error object:', JSON.stringify(authError, null, 2));
+      }
       return new Response(JSON.stringify({ error: 'Unauthorized: User not authenticated.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
@@ -56,7 +63,6 @@ serve(async (req) => {
 
     console.log(`Received request to generate PDF for title: ${title || 'Untitled'} by user: ${user.id}`);
 
-    // Actual PDF.co API call
     const pdfCoResponse = await fetch('https://api.pdf.co/v1/pdf/convert/from/html', {
       method: 'POST',
       headers: {
@@ -83,7 +89,6 @@ serve(async (req) => {
       throw new Error('PDF.co did not return a URL for the generated PDF.');
     }
 
-    // Fetch the generated PDF from the URL provided by PDF.co
     const pdfFileResponse = await fetch(pdfCoData.url);
 
     if (!pdfFileResponse.ok) {
@@ -92,7 +97,6 @@ serve(async (req) => {
 
     const pdfBlob = await pdfFileResponse.blob();
 
-    // Return the PDF blob directly to the client
     return new Response(pdfBlob, {
       headers: {
         ...corsHeaders,
