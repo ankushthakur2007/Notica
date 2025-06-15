@@ -195,7 +195,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
         throw error;
       }
       showSuccess('Note saved successfully!');
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate the list of notes
+      queryClient.invalidateQueries({ queryKey: ['note', noteId] }); // Invalidate the specific note to refetch
     } catch (error: any) {
       console.error('Error saving note:', error);
       showError('Failed to save note: ' + error.message);
