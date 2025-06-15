@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, NotebookText } from 'lucide-react';
+import { PlusCircle, NotebookText, Settings } from 'lucide-react'; // Import Settings icon
+import { Link } from 'react-router-dom'; // Import Link for navigation
 
 interface SidebarProps {
   onNavigate: (view: 'newNote' | 'allNotes' | 'welcome') => void;
@@ -12,7 +13,7 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-sidebar-primary-foreground">Notica</h2>
       </div>
-      <nav className="flex flex-col space-y-2">
+      <nav className="flex flex-col space-y-2 flex-grow"> {/* Added flex-grow here */}
         <Button
           variant="ghost"
           className="justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -30,6 +31,17 @@ const Sidebar = ({ onNavigate }: SidebarProps) => {
           All Notes
         </Button>
       </nav>
+      <div className="mt-auto pt-4 border-t border-sidebar-border"> {/* This div pushes content to bottom */}
+        <Link to="/settings">
+          <Button
+            variant="ghost"
+            className="justify-start w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Settings
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 };

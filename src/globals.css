@@ -49,6 +49,12 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Font Variables */
+    --font-inter: 'Inter', sans-serif;
+    --font-roboto: 'Roboto', sans-serif;
+    --font-opensans: 'Open Sans', sans-serif;
+    --font-lato: 'Lato', sans-serif;
   }
 
   .dark {
@@ -97,5 +103,20 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-family-primary, 'Inter', sans-serif); /* Apply default font */
+  }
+
+  /* Font classes */
+  .font-inter {
+    font-family: var(--font-inter);
+  }
+  .font-roboto {
+    font-family: var(--font-roboto);
+  }
+  .font-opensans {
+    font-family: var(--font-opensans);
+  }
+  .font-lato {
+    font-family: var(--font-lato);
   }
 }
