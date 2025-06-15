@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,17 +22,6 @@ interface ShareNoteDialogProps {
   noteId: string;
 }
 
-interface Collaborator {
-  id: string;
-  user_id: string;
-  permission_level: 'read' | 'write';
-  profiles: {
-    first_name: string | null;
-    last_name: string | null;
-    avatar_url: string | null;
-  } | null;
-}
-
 const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
   const { user: currentUser, session } = useSessionContext();
   const queryClient = useQueryClient();
@@ -41,44 +30,8 @@ const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [permissionLevel, setPermissionLevel] = useState<'read' | 'write'>('read');
-  const [currentCollaborators, setCurrentCollaborators] = useState<Collaborator[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
-  const [isUpdatingCollaborator, setIsUpdatingCollaborator] = useState(false);
-  const [isRemovingCollaborator, setIsRemovingCollaborator] = useState(false);
-
-  const fetchCollaborators = async () => {
-    if (!noteId) return;
-    console.log('Fetching collaborators for noteId:', noteId); // Debug log
-    const { data, error } = await supabase
-      .from('collaborators')
-      .select(`
-        id,
-        user_id,
-        permission_level,
-        profiles (
-          first_name,
-          last_name,
-          avatar_url
-        )
-      `)
-      .eq('note_id', noteId);
-
-    if (error) {
-      console.error('Error fetching collaborators:', error.message);
-      showError('Failed to load collaborators.');
-    } else {
-      console.log('Fetched collaborators raw data:', data); // Debug log
-      setCurrentCollaborators(data as Collaborator[]);
-      console.log('Current collaborators state after setting:', data); // Debug log
-    }
-  };
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchCollaborators();
-    }
-  }, [isOpen, noteId]);
 
   const handleSearchUsers = async () => {
     if (!searchEmail) {
@@ -109,11 +62,9 @@ const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
 
       const data = await response.json();
       
-      // Filter out current user and existing collaborators from search results
+      // Filter out current user from search results
       const filteredResults = data.profiles.filter(
-        (profile: any) =>
-          profile.id !== currentUser?.id &&
-          !currentCollaborators.some((collab) => collab.user_id === profile.id)
+        (profile: any) => profile.id !== currentUser?.id
       );
       setSearchResults(filteredResults);
     } catch (error: any) {
@@ -143,57 +94,12 @@ const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
       setSearchResults([]);
       setSelectedUser(null);
       setPermissionLevel('read');
-      fetchCollaborators(); // Refresh the list
       queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate notes list to reflect changes
     } catch (error: any) {
       console.error('Error adding collaborator:', error.message);
       showError('Failed to add collaborator: ' + error.message);
     } finally {
       setIsAddingCollaborator(false);
-    }
-  };
-
-  const handleUpdatePermission = async (collaboratorId: string, newPermission: 'read' | 'write') => {
-    setIsUpdatingCollaborator(true);
-    try {
-      const { error } = await supabase
-        .from('collaborators')
-        .update({ permission_level: newPermission })
-        .eq('id', collaboratorId);
-
-      if (error) {
-        throw error;
-      }
-      showSuccess('Permission updated!');
-      fetchCollaborators(); // Refresh the list
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-    } catch (error: any) {
-      console.error('Error updating permission:', error.message);
-      showError('Failed to update permission: ' + error.message);
-    } finally {
-      setIsUpdatingCollaborator(false);
-    }
-  };
-
-  const handleRemoveCollaborator = async (collaboratorId: string) => {
-    setIsRemovingCollaborator(true);
-    try {
-      const { error } = await supabase
-        .from('collaborators')
-        .delete()
-        .eq('id', collaboratorId);
-
-      if (error) {
-        throw error;
-      }
-      showSuccess('Collaborator removed!');
-      fetchCollaborators(); // Refresh the list
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-    } catch (error: any) {
-      console.error('Error removing collaborator:', error.message);
-      showError('Failed to remove collaborator: ' + error.message);
-    } finally {
-      setIsRemovingCollaborator(false);
     }
   };
 
@@ -209,7 +115,7 @@ const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
         <DialogHeader>
           <DialogTitle>Share Note</DialogTitle>
           <DialogDescription>
-            Add or manage collaborators for this note.
+            Add new collaborators for this note.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -271,49 +177,6 @@ const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
               </Button>
             </div>
           )}
-
-          <div className="space-y-2 mt-4">
-            <Label>Current Collaborators</Label>
-            {currentCollaborators.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No collaborators yet.</p>
-            ) : (
-              currentCollaborators.map((collab) => (
-                <div key={collab.id} className="flex items-center justify-between p-2 border rounded-md">
-                  <div className="flex items-center space-x-2">
-                    <User className="h-4 w-4" />
-                    <span>
-                      {collab.profiles ? 
-                        `${collab.profiles.first_name || ''} ${collab.profiles.last_name || ''}`.trim() || 'Unknown User'
-                        : 'Unknown User'}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Select
-                      value={collab.permission_level}
-                      onValueChange={(value: 'read' | 'write') => handleUpdatePermission(collab.id, value)}
-                      disabled={isUpdatingCollaborator}
-                    >
-                      <SelectTrigger className="w-[100px] h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="read">Read</SelectItem>
-                        <SelectItem value="write">Write</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveCollaborator(collab.id)}
-                      disabled={isRemovingCollaborator}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)}>Close</Button>
