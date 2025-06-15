@@ -19,14 +19,13 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
+      {/* Removed <Toaster /> and <Sonner /> components to disable popups */}
       <BrowserRouter>
         <SessionContextProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/try-now" element={<TryNow />} /> {/* New route for TryNow page */}
+            <Route path="/try-now" element={<TryNow />} />
             
             {/* Dashboard and its nested routes */}
             <Route path="/dashboard" element={<Dashboard />}>
