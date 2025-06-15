@@ -30,20 +30,29 @@ const SettingsDashboard = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       if (user) {
+        console.log('Attempting to fetch profile for user ID:', user.id);
         const { data, error } = await supabase
           .from('profiles')
           .select('first_name, last_name, avatar_url')
           .eq('id', user.id)
           .single();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
-          console.error('Error fetching profile:', error.message);
-          showError('Failed to load profile data.');
+        if (error) {
+          if (error.code === 'PGRST116') {
+            console.warn('No profile found for user. This is expected for new users. A profile will be created on first save.');
+            // No toast needed for this expected case
+          } else {
+            console.error('Error fetching profile:', error.message, error); // Log the full error object
+            showError('Failed to load profile data: ' + error.message);
+          }
         } else if (data) {
           setFirstName(data.first_name || '');
           setLastName(data.last_name || '');
           setAvatarUrl(data.avatar_url);
+          console.log('Profile data loaded successfully:', data);
         }
+      } else {
+        console.log('User not available, skipping profile fetch in SettingsDashboard.');
       }
     };
     fetchProfile();
