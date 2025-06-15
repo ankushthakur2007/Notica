@@ -517,14 +517,42 @@ const NoteEditor = ({}: NoteEditorProps) => {
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('justify').run()} disabled={!editor.can().setTextAlign('justify') || !canEdit}>
           <AlignJustify className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setColor('#958DF1').run()} disabled={!editor.can().setColor('#958DF1') || !canEdit}>
-          <Palette className="h-4 w-4" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={!canEdit}>
+              <Palette className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#FF0000').run()} disabled={!editor.can().setColor('#FF0000') || !canEdit}>
+              <span className="w-4 h-4 rounded-full bg-red-500 mr-2"></span> Red
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#0000FF').run()} disabled={!editor.can().setColor('#0000FF') || !canEdit}>
+              <span className="w-4 h-4 rounded-full bg-blue-500 mr-2"></span> Blue
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#008000').run()} disabled={!editor.can().setColor('#008000') || !canEdit}>
+              <span className="w-4 h-4 rounded-full bg-green-500 mr-2"></span> Green
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#800080').run()} disabled={!editor.can().setColor('#800080') || !canEdit}>
+              <span className="w-4 h-4 rounded-full bg-purple-500 mr-2"></span> Purple
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#FFA500').run()} disabled={!editor.can().setColor('#FFA500') || !canEdit}>
+              <span className="w-4 h-4 rounded-full bg-orange-500 mr-2"></span> Orange
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#000000').run()} disabled={!editor.can().setColor('#000000') || !canEdit}>
+              <span className="w-4 h-4 rounded-full bg-black mr-2"></span> Black
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#FFFFFF').run()} disabled={!editor.can().setColor('#FFFFFF') || !canEdit}>
+              <span className="w-4 h-4 rounded-full bg-white border border-gray-300 mr-2"></span> White
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => editor.chain().focus().unsetColor().run()} disabled={!editor.can().unsetColor() || !canEdit}>
+              Unset Color
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHighlight({ color: '#fae0e0' }).run()} disabled={!editor.can().toggleHighlight({ color: '#fae0e0' }) || !canEdit}>
           <Highlighter className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().unsetColor().run()} disabled={!editor.can().unsetColor() || !canEdit}>
-          Unset Color
         </Button>
         <label htmlFor="image-upload" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 cursor-pointer">
           <ImageIcon className="h-4 w-4 mr-2" />
