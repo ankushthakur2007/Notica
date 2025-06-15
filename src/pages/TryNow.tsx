@@ -4,7 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Sparkles, PencilLine } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import ColorButton from '@/components/ColorButton'; // Import the new ColorButton
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const TryNow = () => {
   const navigate = useNavigate();
@@ -23,15 +28,24 @@ const TryNow = () => {
           Capture ideas effortlessly, organize them intelligently, and never miss a detail.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <ColorButton size="lg" onClick={() => navigate('/login')} textColorClass="text-blue-500">
-            Get Started - Blue Text
-          </ColorButton>
-          <ColorButton size="lg" variant="outline" onClick={() => navigate('/login')} textColorClass="text-green-600">
-            Get Started - Green Text
-          </ColorButton>
-          <ColorButton size="lg" variant="secondary" onClick={() => navigate('/login')} textColorClass="text-purple-700">
-            Get Started - Purple Text
-          </ColorButton>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="lg">
+                Get Started
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center">
+              <DropdownMenuItem onClick={() => navigate('/login')}>
+                Sign In with Google
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/login')}>
+                Sign In with Email
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/login')}>
+                Explore as Guest (Login Required)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
