@@ -430,23 +430,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
         />
         <div className="flex space-x-2">
           {noteId && <ShareNoteDialog noteId={noteId} />}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4" />
-                <span className="sr-only">Export Note</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportAsText} disabled={!editor || editor.isEmpty}>
-                Export as TXT
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleCopyToClipboard} disabled={!editor || editor.isEmpty}>
-                Copy to Clipboard
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           <Button onClick={handleSave} disabled={isSaving || !canEdit}>
             {isSaving ? 'Saving...' : 'Save Note'}
           </Button>
@@ -565,6 +548,23 @@ const NoteEditor = ({}: NoteEditorProps) => {
           {isRefiningAI ? 'Refining...' : 'Refine with AI'}
         </Button>
         <VoiceRecorder onTranscription={handleTranscription} isIconButton={true} />
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4" />
+                <span className="sr-only">Export Note</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportAsText} disabled={!editor || editor.isEmpty}>
+                Export as TXT
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleCopyToClipboard} disabled={!editor || editor.isEmpty}>
+                Copy to Clipboard
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
       </div>
       <div className="flex-grow overflow-y-auto">
         <EditorContent editor={editor} editable={canEdit} /> {/* Set editable prop */}
