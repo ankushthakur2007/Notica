@@ -11,4 +11,8 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   // In a production app, you might want to throw an error or show a more prominent message
 }
 
+// Add console logs to debug
+console.log('VITE_SUPABASE_URL:', SUPABASE_URL);
+console.log('VITE_SUPABASE_ANON_KEY:', SUPABASE_PUBLISHABLE_KEY);
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
