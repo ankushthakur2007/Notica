@@ -35,13 +35,13 @@ const TryNow = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center">
-              <DropdownMenuItem onClick={() => navigate('/login')}>
+              <DropdownMenuItem onClick={() => navigate('/login')} className="text-blue-600 hover:!bg-blue-50 hover:!text-blue-700">
                 Sign In with Google
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/login')}>
+              <DropdownMenuItem onClick={() => navigate('/login')} className="text-green-600 hover:!bg-green-50 hover:!text-green-700">
                 Sign In with Email
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/login')}>
+              <DropdownMenuItem onClick={() => navigate('/login')} className="text-purple-600 hover:!bg-purple-50 hover:!text-purple-700">
                 Explore as Guest (Login Required)
               </DropdownMenuItem>
             </DropdownMenuContent>
