@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -42,6 +42,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const { user, session } = useSessionContext();
   const navigate = useNavigate();
   const { noteId } = useParams<{ noteId: string }>();
+  const editorContentRef = useRef<HTMLDivElement>(null); // Ref for the editor content div
 
   const [title, setTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -457,9 +458,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
             title={title} 
             contentHtml={editor?.getHTML() || ''} 
             contentPlainText={editor?.getText() || ''} 
+            editorContentRef={editorContentRef} // Pass the ref here
           />
       </div>
-      <div className="flex-grow overflow-y-auto">
+      <div className="flex-grow overflow-y-auto" ref={editorContentRef}> {/* Attach the ref here */}
         <EditorContent editor={editor} />
       </div>
     </div>
