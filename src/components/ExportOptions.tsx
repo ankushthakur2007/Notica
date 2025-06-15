@@ -15,22 +15,29 @@ const ExportOptions = ({ title, contentHtml, contentPlainText }: ExportOptionsPr
   const exportAsPdf = () => {
     try {
       const doc = new jsPDF();
-      doc.html(contentHtml, {
-        callback: function (doc) {
-          doc.save(`${title || 'Untitled Note'}.pdf`);
-          showSuccess('Note exported as PDF!');
-        },
-        x: 10,
-        y: 10,
-        html2canvas: {
-          scale: 1.0, // Increased scale for better resolution
-          // You can also try other options like:
-          // logging: true, // For debugging html2canvas
-          // useCORS: true, // If images are from different origins
-        },
-        margin: [10, 10, 10, 10], // Add margin around the content (top, right, bottom, left)
-        autoPaging: 'text', // Enable auto-paging for long content
+      const margin = 10; // 10mm margin on all sides
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const maxWidth = pageWidth - 2 * margin; // Content width within margins
+
+      // Split the plain text into lines that fit within the page width
+      const textLines = doc.splitTextToSize(contentPlainText, maxWidth);
+
+      let y = margin; // Starting Y position for text
+
+      textLines.forEach((line: string) => {
+        // Check if the current line will exceed the page height
+        // If it does, add a new page and reset Y position
+        if (y + doc.getTextDimensions(line).h > pageHeight - margin) {
+          doc.addPage();
+          y = margin; // Reset Y for new page
+        }
+        doc.text(line, margin, y); // Add the line of text
+        y += doc.getTextDimensions(line).h; // Move Y down for the next line
       });
+
+      doc.save(`${title || 'Untitled Note'}.pdf`);
+      showSuccess('Note exported as PDF!');
     } catch (error: any) {
       console.error('Error exporting PDF:', error);
       showError('Failed to export PDF: ' + error.message);
