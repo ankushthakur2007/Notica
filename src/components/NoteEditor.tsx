@@ -5,7 +5,7 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
-import TextStyle from '@tiptap/extension-text-style';
+import TextStyle from '@tiptap/extension-text-align';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
@@ -345,6 +345,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
           </Button>
         </div>
       </div>
+      {/* Voice Recorder moved to its own row */}
+      <div className="mb-4">
+        <VoiceRecorder onTranscription={handleTranscription} />
+      </div>
       <div className="mb-4 p-2 rounded-md border bg-muted flex flex-wrap gap-1">
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().toggleBold()}>
           <Bold className="h-4 w-4" />
@@ -433,7 +437,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
           <Sparkles className="mr-2 h-4 w-4" /> 
           {isRefiningAI ? 'Refining...' : 'Refine with AI'}
         </Button>
-        <VoiceRecorder onTranscription={handleTranscription} />
       </div>
       <div className="flex-grow overflow-y-auto">
         <EditorContent editor={editor} />
