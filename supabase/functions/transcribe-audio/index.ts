@@ -13,19 +13,27 @@ serve(async (req) => {
   try {
     const deepgramApiKey = Deno.env.get('DEEPGRAM_API_KEY');
     if (!deepgramApiKey) {
-      throw new Error('Deepgram API key not set in environment variables.');
+      console.error('DEEPGRAM_API_KEY is not set in environment variables.');
+      return new Response(JSON.stringify({ error: 'Deepgram API key not set in environment variables.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
     }
+    console.log('DEEPGRAM_API_KEY is set.');
 
     const audioBlob = await req.blob();
+    console.log('Received audio blob. Type:', audioBlob.type, 'Size:', audioBlob.size, 'bytes');
 
     const deepgramResponse = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2', {
       method: 'POST',
       headers: {
         'Authorization': `Token ${deepgramApiKey}`,
-        'Content-Type': audioBlob.type,
+        'Content-Type': audioBlob.type, // Ensure content type matches the blob
       },
       body: audioBlob,
     });
+
+    console.log('Deepgram API response status:', deepgramResponse.status, deepgramResponse.statusText);
 
     if (!deepgramResponse.ok) {
       const errorText = await deepgramResponse.text();
@@ -38,14 +46,15 @@ serve(async (req) => {
 
     const deepgramData = await deepgramResponse.json();
     const transcription = deepgramData.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+    console.log('Deepgram transcription received. Length:', transcription.length, 'Transcription snippet:', transcription.substring(0, 100) + '...');
 
     return new Response(JSON.stringify({ transcription }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
-  } catch (error) {
-    console.error('Error in Edge Function:', error.message);
+  } catch (error: any) {
+    console.error('Error in Edge Function (transcribe-audio):', error.message, error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
