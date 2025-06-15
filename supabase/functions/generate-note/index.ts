@@ -20,7 +20,7 @@ serve(async (req) => {
         status: 500,
       });
     }
-    console.log('GEMINI_API_KEY is set.');
+    console.log('GEMINI_API_KEY is set.'); // Log that key is present (without logging the key itself)
 
     const { text } = await req.json();
     if (!text) {
@@ -30,7 +30,7 @@ serve(async (req) => {
         status: 400,
       });
     }
-    console.log('Received text for AI refinement. Length:', text.length, 'Text snippet:', text.substring(0, 100) + '...');
+    console.log('Received text for AI refinement. Length:', text.length);
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -42,13 +42,13 @@ ${text}
 
 Structured Note (HTML):`;
 
-    console.log('Sending prompt to Gemini API. Prompt length:', prompt.length, 'Prompt snippet:', prompt.substring(0, 200) + '...');
+    console.log('Sending prompt to Gemini API...');
     const result = await model.generateContent(prompt);
-    console.log('Received raw response from Gemini API:', JSON.stringify(result, null, 2));
+    console.log('Received response from Gemini API.');
 
     const response = await result.response;
     const generatedContent = response.text();
-    console.log('Generated content length:', generatedContent.length, 'Content snippet:', generatedContent.substring(0, 100) + '...');
+    console.log('Generated content length:', generatedContent.length);
 
     return new Response(JSON.stringify({ generatedContent }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -56,7 +56,7 @@ Structured Note (HTML):`;
     });
 
   } catch (error: any) {
-    console.error('Error in Edge Function (generate-note):', error.message, error);
+    console.error('Error in Edge Function:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
