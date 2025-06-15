@@ -4,25 +4,23 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { showSuccess, showError } from '@/utils/toast';
-import VoiceRecorder from '@/components/VoiceRecorder';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const formSchema = z.object({
   title: z.string().min(1, { message: 'Title is required.' }),
-  content: z.string().optional(),
 });
 
 const NewNoteForm = ({ onNoteCreated }: { onNoteCreated: () => void }) => {
   const { user } = useSessionContext();
+  const navigate = useNavigate(); // Initialize useNavigate
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
-      content: '',
     },
   });
 
@@ -38,25 +36,23 @@ const NewNoteForm = ({ onNoteCreated }: { onNoteCreated: () => void }) => {
         .insert({
           user_id: user.id,
           title: values.title,
-          content: values.content || null,
+          content: '', // Initialize with empty content
         })
-        .select();
+        .select('id') // Select the ID of the newly created note
+        .single();
 
       if (error) {
         throw error;
       }
 
-      showSuccess('Note created successfully!');
+      showSuccess('Note created successfully! Redirecting to editor...');
       form.reset();
-      onNoteCreated(); // Callback to notify parent component
+      onNoteCreated(); // Callback to notify parent component (e.g., to invalidate queries)
+      navigate(`/dashboard/edit-note/${data.id}`); // Navigate to the new note's editor
     } catch (error: any) {
       console.error('Error creating note:', error);
       showError('Failed to create note: ' + error.message);
     }
-  };
-
-  const handleTranscription = (text: string) => {
-    form.setValue('content', text, { shouldDirty: true, shouldValidate: true });
   };
 
   return (
@@ -69,7 +65,7 @@ const NewNoteForm = ({ onNoteCreated }: { onNoteCreated: () => void }) => {
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Title</FormLabel>
+                <FormLabel>Note Title</FormLabel>
                 <FormControl>
                   <Input placeholder="My awesome note" {...field} />
                 </FormControl>
@@ -77,20 +73,6 @@ const NewNoteForm = ({ onNoteCreated }: { onNoteCreated: () => void }) => {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="content"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Content (Optional)</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Start typing your note here..." rows={10} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <VoiceRecorder onTranscription={handleTranscription} />
           <Button type="submit" className="w-full">Create Note</Button>
         </form>
       </Form>

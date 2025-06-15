@@ -18,7 +18,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles } from 'lucide-react';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { useNavigate, useParams } from 'react-router-dom'; // Import useParams
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,15 +30,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import VoiceRecorder from '@/components/VoiceRecorder'; // Import VoiceRecorder
 
-// Removed noteId and onClose from props interface
 interface NoteEditorProps {} 
 
-const NoteEditor = ({}: NoteEditorProps) => { // Destructure empty props
+const NoteEditor = ({}: NoteEditorProps) => {
   const queryClient = useQueryClient();
   const { user } = useSessionContext();
   const navigate = useNavigate();
-  const { noteId } = useParams<{ noteId: string }>(); // Get noteId from URL parameters
+  const { noteId } = useParams<{ noteId: string }>();
 
   const [title, setTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -46,14 +46,13 @@ const NoteEditor = ({}: NoteEditorProps) => { // Destructure empty props
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefiningAI, setIsRefiningAI] = useState(false);
 
-  // Use useQuery to fetch the note data
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
     queryFn: async () => {
       if (!user) {
         throw new Error('User not logged in.');
       }
-      if (!noteId) { // Ensure noteId is available from useParams
+      if (!noteId) {
         throw new Error('Note ID is missing.');
       }
       const { data, error } = await supabase
@@ -67,9 +66,9 @@ const NoteEditor = ({}: NoteEditorProps) => { // Destructure empty props
       }
       return data;
     },
-    enabled: !!user && !!noteId, // Only run query if user and noteId are available
-    staleTime: 5 * 60 * 1000, // Data is considered fresh for 5 minutes
-    cacheTime: 10 * 60 * 1000, // Data stays in cache for 10 minutes
+    enabled: !!user && !!noteId,
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 10 * 60 * 1000,
   });
 
   const editor = useEditor({
@@ -94,7 +93,7 @@ const NoteEditor = ({}: NoteEditorProps) => { // Destructure empty props
         allowBase64: true,
       }),
     ],
-    content: '', // Initial content will be set by useEffect after data loads
+    content: '',
     editorProps: {
       attributes: {
         class: 'prose dark:prose-invert max-w-none focus:outline-none p-4 min-h-[300px] border rounded-md bg-background text-foreground',
@@ -122,7 +121,6 @@ const NoteEditor = ({}: NoteEditorProps) => { // Destructure empty props
     },
   });
 
-  // Effect to set editor content and title once note data and editor are ready
   useEffect(() => {
     if (editor && note) {
       setTitle(note.title);
@@ -130,7 +128,6 @@ const NoteEditor = ({}: NoteEditorProps) => { // Destructure empty props
     }
   }, [editor, note]);
 
-  // Handle error from useQuery
   useEffect(() => {
     if (isError) {
       showError('Failed to load note: ' + error?.message);
@@ -272,6 +269,12 @@ const NoteEditor = ({}: NoteEditorProps) => { // Destructure empty props
     }
   };
 
+  const handleTranscription = (text: string) => {
+    if (editor) {
+      editor.chain().focus().insertContent(text + ' ').run(); // Insert transcribed text into the editor
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -288,7 +291,6 @@ const NoteEditor = ({}: NoteEditorProps) => { // Destructure empty props
     );
   }
 
-  // If note is null after loading (e.g., not found), redirect
   if (!note) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -424,6 +426,8 @@ const NoteEditor = ({}: NoteEditorProps) => { // Destructure empty props
           <Sparkles className="mr-2 h-4 w-4" /> 
           {isRefiningAI ? 'Refining...' : 'Refine with AI'}
         </Button>
+        {/* Voice Recorder integrated here */}
+        <VoiceRecorder onTranscription={handleTranscription} />
       </div>
       <div className="flex-grow overflow-y-auto">
         <EditorContent editor={editor} />
