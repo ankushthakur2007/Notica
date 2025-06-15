@@ -6,6 +6,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import Sidebar from '@/components/Sidebar';
 import NewNoteForm from '@/components/NewNoteForm';
+import NoteList from '@/components/NoteList'; // Import the new NoteList component
 
 type DashboardView = 'welcome' | 'newNote' | 'allNotes';
 
@@ -24,15 +25,9 @@ const Dashboard = () => {
   const renderMainContent = () => {
     switch (activeView) {
       case 'newNote':
-        return <NewNoteForm onNoteCreated={() => setActiveView('allNotes')} />; // After creating, maybe show all notes
+        return <NewNoteForm onNoteCreated={() => setActiveView('allNotes')} />; // After creating, switch to all notes view
       case 'allNotes':
-        return (
-          <div className="flex flex-col items-center justify-center h-full p-4">
-            <h2 className="text-3xl font-bold mb-4">Your Notes</h2>
-            <p className="text-lg text-muted-foreground">This is where your notes will appear.</p>
-            {/* Placeholder for notes list */}
-          </div>
-        );
+        return <NoteList />; // Render the NoteList component
       case 'welcome':
       default:
         return (
