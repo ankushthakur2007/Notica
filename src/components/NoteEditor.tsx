@@ -30,7 +30,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Import Popover
 import VoiceRecorder from '@/components/VoiceRecorder';
+import ColorPicker from '@/components/ColorPicker'; // Import new ColorPicker component
 
 interface NoteEditorProps {} 
 
@@ -45,6 +47,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefiningAI, setIsRefiningAI] = useState(false);
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false); // State for color picker popover
 
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
@@ -282,6 +285,11 @@ const NoteEditor = ({}: NoteEditorProps) => {
     }
   };
 
+  const handleColorChange = (color: string) => {
+    editor?.chain().focus().setColor(color).run();
+    setIsColorPickerOpen(false); // Close popover after selection
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -345,9 +353,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
           </Button>
         </div>
       </div>
-      {/* Voice Recorder is now part of the toolbar */}
       <div className="mb-4 p-2 rounded-md border bg-muted flex flex-wrap gap-1">
-        <VoiceRecorder onTranscription={handleTranscription} className="h-9 px-3" /> {/* Added className for styling */}
+        <VoiceRecorder onTranscription={handleTranscription} className="h-9 px-3" />
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().toggleBold()}>
           <Bold className="h-4 w-4" />
         </Button>
@@ -405,9 +412,19 @@ const NoteEditor = ({}: NoteEditorProps) => {
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('justify').run()} disabled={!editor.can().setTextAlign('justify')}>
           <AlignJustify className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setColor('#958DF1').run()} disabled={!editor.can().setColor('#958DF1')}>
-          <Palette className="h-4 w-4" />
-        </Button>
+        <Popover open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" disabled={!editor?.can().setColor('#000000')}>
+              <Palette className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <ColorPicker 
+              onSelectColor={handleColorChange} 
+              currentColor={editor?.getAttributes('textStyle').color}
+            />
+          </PopoverContent>
+        </Popover>
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHighlight({ color: '#fae0e0' }).run()} disabled={!editor.can().toggleHighlight({ color: '#fae0e0' })}>
           <Highlighter className="h-4 w-4" />
         </Button>
