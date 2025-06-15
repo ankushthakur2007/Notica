@@ -6,13 +6,11 @@ import { showError } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Note } from '@/types';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
-interface NoteListProps {
-  onSelectNote: (noteId: string) => void;
-}
-
-const NoteList = ({ onSelectNote }: NoteListProps) => {
+const NoteList = () => { // Removed onSelectNote prop
   const { user } = useSessionContext();
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const { data: notes, isLoading, isError, error, refetch } = useQuery<Note[], Error>({
     queryKey: ['notes', user?.id],
@@ -65,7 +63,11 @@ const NoteList = ({ onSelectNote }: NoteListProps) => {
       <h2 className="text-3xl font-bold mb-6 text-foreground">Your Notes</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {notes.map((note) => (
-          <Card key={note.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => onSelectNote(note.id)}>
+          <Card 
+            key={note.id} 
+            className="hover:shadow-lg transition-shadow cursor-pointer" 
+            onClick={() => navigate(`/dashboard/edit-note/${note.id}`)} // Navigate to editor
+          >
             <CardHeader>
               <CardTitle className="text-lg">{note.title}</CardTitle>
             </CardHeader>

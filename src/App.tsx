@@ -8,9 +8,9 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import SettingsDashboard from "./pages/SettingsDashboard";
-import NewNoteForm from "./components/NewNoteForm"; // Import NewNoteForm
-import NoteList from "./components/NoteList"; // Import NoteList
-import NoteEditor from "./components/NoteEditor"; // Import NoteEditor
+import NewNoteForm from "./components/NewNoteForm";
+import NoteList from "./components/NoteList";
+import NoteEditor from "./components/NoteEditor";
 import { SessionContextProvider } from "./contexts/SessionContext";
 
 const queryClient = new QueryClient();
@@ -28,10 +28,12 @@ const App = () => (
             
             {/* Dashboard and its nested routes */}
             <Route path="/dashboard" element={<Dashboard />}>
-              <Route index element={<NoteList onSelectNote={(noteId) => { /* Handle navigation to editor */ }} />} /> {/* Default dashboard view */}
-              <Route path="all-notes" element={<NoteList onSelectNote={(noteId) => { /* Handle navigation to editor */ }} />} />
+              {/* NoteList now handles its own navigation */}
+              <Route index element={<NoteList />} />
+              <Route path="all-notes" element={<NoteList />} />
               <Route path="new-note" element={<NewNoteForm onNoteCreated={() => { /* Handle post-creation navigation */ }} />} />
-              <Route path="edit-note/:noteId" element={<NoteEditor onClose={() => { /* Handle close editor navigation */ }} />} />
+              {/* NoteEditor now handles its own closing navigation */}
+              <Route path="edit-note/:noteId" element={<NoteEditor onClose={() => { /* No action needed here, NoteEditor handles it */ }} />} />
             </Route>
 
             <Route path="/settings" element={<SettingsDashboard />} />

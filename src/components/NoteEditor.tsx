@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles } from 'lucide-react';
 import { useSessionContext } from '@/contexts/SessionContext';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,12 +33,13 @@ import {
 
 interface NoteEditorProps {
   noteId: string;
-  onClose: () => void;
+  onClose: () => void; // Keep onClose prop for external triggers if needed, but internal navigation will be primary
 }
 
 const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
   const queryClient = useQueryClient();
   const { user } = useSessionContext();
+  const navigate = useNavigate(); // Initialize useNavigate
   const [note, setNote] = useState<Note | null>(null);
   const [title, setTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -109,7 +111,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
 
       if (error) {
         showError('Failed to load note: ' + error.message);
-        onClose();
+        navigate('/dashboard/all-notes'); // Navigate back on error
         return;
       }
       setNote(data);
@@ -120,7 +122,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
     if (noteId) {
       fetchNote();
     }
-  }, [noteId, editor, onClose]);
+  }, [noteId, editor, navigate]); // Added navigate to dependencies
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!user) {
@@ -206,7 +208,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
       }
       showSuccess('Note deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['notes'] });
-      onClose();
+      navigate('/dashboard/all-notes'); // Navigate back after deletion
     } catch (error: any) {
       console.error('Error deleting note:', error);
       showError('Failed to delete note: ' + error.message);
@@ -298,7 +300,7 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={() => navigate('/dashboard/all-notes')}> {/* Navigate back to all notes */}
             Close
           </Button>
         </div>
