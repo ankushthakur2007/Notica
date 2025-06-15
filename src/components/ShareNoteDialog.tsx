@@ -49,6 +49,7 @@ const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
 
   const fetchCollaborators = async () => {
     if (!noteId) return;
+    console.log('Fetching collaborators for noteId:', noteId); // Debug log
     const { data, error } = await supabase
       .from('collaborators')
       .select(`
@@ -67,7 +68,9 @@ const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
       console.error('Error fetching collaborators:', error.message);
       showError('Failed to load collaborators.');
     } else {
+      console.log('Fetched collaborators raw data:', data); // Debug log
       setCurrentCollaborators(data as Collaborator[]);
+      console.log('Current collaborators state after setting:', data); // Debug log
     }
   };
 
@@ -278,7 +281,11 @@ const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
                 <div key={collab.id} className="flex items-center justify-between p-2 border rounded-md">
                   <div className="flex items-center space-x-2">
                     <User className="h-4 w-4" />
-                    <span>{collab.profiles?.first_name} {collab.profiles?.last_name}</span>
+                    <span>
+                      {collab.profiles ? 
+                        `${collab.profiles.first_name || ''} ${collab.profiles.last_name || ''}`.trim() || 'Unknown User'
+                        : 'Unknown User'}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Select
