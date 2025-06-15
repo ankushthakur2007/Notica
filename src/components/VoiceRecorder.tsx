@@ -27,18 +27,30 @@ const VoiceRecorder = ({ onTranscription }: VoiceRecorderProps) => {
         setIsProcessing(true);
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         
-        // In a real application, you would send this audioBlob to Deepgram API here.
-        // For now, we'll simulate a transcription.
-        console.log('Audio recorded:', audioBlob);
-        showSuccess('Recording stopped. Processing transcription...');
+        try {
+          // Invoke the Supabase Edge Function for transcription
+          const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/transcribe-audio', {
+            method: 'POST',
+            headers: {
+              'Content-Type': audioBlob.type,
+            },
+            body: audioBlob,
+          });
 
-        // Simulate API call delay
-        setTimeout(() => {
-          const simulatedTranscription = "This is a simulated transcription of your voice note. In a real app, Deepgram would provide this text.";
-          onTranscription(simulatedTranscription);
-          setIsProcessing(false);
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to transcribe audio.');
+          }
+
+          const data = await response.json();
+          onTranscription(data.transcription);
           showSuccess('Transcription complete!');
-        }, 2000);
+        } catch (error: any) {
+          console.error('Error during transcription:', error);
+          showError('Failed to transcribe audio: ' + error.message);
+        } finally {
+          setIsProcessing(false);
+        }
       };
 
       mediaRecorderRef.current.start();
