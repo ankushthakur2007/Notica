@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Sparkles, PencilLine } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import ColorButton from '@/components/ColorButton'; // Import the new ColorButton
 
 const TryNow = () => {
   const navigate = useNavigate();
@@ -21,9 +22,17 @@ const TryNow = () => {
           Transform your spoken thoughts into beautifully structured, AI-powered notes.
           Capture ideas effortlessly, organize them intelligently, and never miss a detail.
         </p>
-        <Button size="lg" onClick={() => navigate('/login')}>
-          Get Started - It's Free!
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <ColorButton size="lg" onClick={() => navigate('/login')} textColorClass="text-blue-500">
+            Get Started - Blue Text
+          </ColorButton>
+          <ColorButton size="lg" variant="outline" onClick={() => navigate('/login')} textColorClass="text-green-600">
+            Get Started - Green Text
+          </ColorButton>
+          <ColorButton size="lg" variant="secondary" onClick={() => navigate('/login')} textColorClass="text-purple-700">
+            Get Started - Purple Text
+          </ColorButton>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-8 w-full max-w-5xl">
