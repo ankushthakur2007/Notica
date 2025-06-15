@@ -12,6 +12,7 @@ import NewNoteForm from "./components/NewNoteForm";
 import NoteList from "./components/NoteList";
 import NoteEditor from "./components/NoteEditor";
 import { SessionContextProvider } from "./contexts/SessionContext";
+import TryNow from "./pages/TryNow"; // Import the new TryNow page
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/try-now" element={<TryNow />} /> {/* New route for TryNow page */}
             
             {/* Dashboard and its nested routes */}
             <Route path="/dashboard" element={<Dashboard />}>

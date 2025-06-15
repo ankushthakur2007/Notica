@@ -11,7 +11,7 @@ const Index = () => {
       if (session) {
         navigate('/dashboard');
       } else {
-        navigate('/login');
+        navigate('/try-now'); // Redirect to TryNow page if not logged in
       }
     }
   }, [session, loading, navigate]);
