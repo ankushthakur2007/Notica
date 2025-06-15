@@ -16,7 +16,7 @@ import { showError, showSuccess } from '@/utils/toast';
 import { Note } from '@/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles, Share2 } from 'lucide-react';
+import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles, Share2, Download } from 'lucide-react';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -30,6 +30,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import VoiceRecorder from '@/components/VoiceRecorder';
 import ShareNoteDialog from '@/components/ShareNoteDialog'; // Import the new component
 
@@ -347,6 +354,46 @@ const NoteEditor = ({}: NoteEditorProps) => {
     }
   };
 
+  const getPlainTextContent = () => {
+    if (!editor) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = editor.getHTML();
+    return tempDiv.textContent || tempDiv.innerText || '';
+  };
+
+  const handleExportAsText = () => {
+    if (!editor || editor.isEmpty) {
+      showError('Note is empty, nothing to export.');
+      return;
+    }
+    const plainText = getPlainTextContent();
+    const blob = new Blob([plainText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${title || 'untitled-note'}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showSuccess('Note exported as TXT!');
+  };
+
+  const handleCopyToClipboard = async () => {
+    if (!editor || editor.isEmpty) {
+      showError('Note is empty, nothing to copy.');
+      return;
+    }
+    const plainText = getPlainTextContent();
+    try {
+      await navigator.clipboard.writeText(plainText);
+      showSuccess('Note content copied to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+      showError('Failed to copy content to clipboard.');
+    }
+  };
+
   if (isLoading || isLoadingPermission) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -383,6 +430,23 @@ const NoteEditor = ({}: NoteEditorProps) => {
         />
         <div className="flex space-x-2">
           {noteId && <ShareNoteDialog noteId={noteId} />}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4" />
+                <span className="sr-only">Export Note</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportAsText} disabled={!editor || editor.isEmpty}>
+                Export as TXT
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleCopyToClipboard} disabled={!editor || editor.isEmpty}>
+                Copy to Clipboard
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button onClick={handleSave} disabled={isSaving || !canEdit}>
             {isSaving ? 'Saving...' : 'Save Note'}
           </Button>
@@ -500,7 +564,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
           <Sparkles className="mr-2 h-4 w-4" /> 
           {isRefiningAI ? 'Refining...' : 'Refine with AI'}
         </Button>
-        <VoiceRecorder onTranscription={handleTranscription} />
+        <VoiceRecorder onTranscription={handleTranscription} isIconButton={true} />
       </div>
       <div className="flex-grow overflow-y-auto">
         <EditorContent editor={editor} editable={canEdit} /> {/* Set editable prop */}
