@@ -2,15 +2,15 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { showError } => '@/utils/toast';
+import { showError } from '@/utils/toast'; // Corrected this line
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Note } from '@/types';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
 
-const NoteList = () => { // Removed onSelectNote prop
+const NoteList = () => {
   const { user } = useSessionContext();
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
   const { data: notes, isLoading, isError, error, refetch } = useQuery<Note[], Error>({
     queryKey: ['notes', user?.id],
@@ -18,8 +18,6 @@ const NoteList = () => { // Removed onSelectNote prop
       if (!user) {
         throw new Error('User not logged in.');
       }
-      // RLS policies on the 'notes' table will automatically filter notes
-      // to only show those owned by the user or shared with them.
       const { data, error } = await supabase
         .from('notes')
         .select('*')
@@ -30,7 +28,7 @@ const NoteList = () => { // Removed onSelectNote prop
       }
       return data;
     },
-    enabled: !!user, // Only run query if user is available
+    enabled: !!user,
   });
 
   if (isLoading) {
@@ -67,7 +65,7 @@ const NoteList = () => { // Removed onSelectNote prop
           <Card 
             key={note.id} 
             className="hover:shadow-lg transition-shadow cursor-pointer" 
-            onClick={() => navigate(`/dashboard/edit-note/${note.id}`)} // Navigate to editor
+            onClick={() => navigate(`/dashboard/edit-note/${note.id}`)}
           >
             <CardHeader>
               <CardTitle className="text-lg">{note.title}</CardTitle>
