@@ -1,15 +1,35 @@
-// Update this page (the content is just a fallback if you fail to update the page)
-
-import { MadeWithDyad } from "@/components/made-with-dyad";
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSessionContext } from '@/contexts/SessionContext';
+import { MadeWithDyad } from '@/components/made-with-dyad';
 
 const Index = () => {
+  const { session, loading } = useSessionContext();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading) {
+      if (session) {
+        navigate('/dashboard');
+      } else {
+        navigate('/login');
+      }
+    }
+  }, [session, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <p>Loading application...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">
-          Start building your amazing project here!
-        </p>
+        <h1 className="text-4xl font-bold mb-4 text-foreground">Redirecting...</h1>
+        <p className="text-xl text-muted-foreground">Please wait while we check your session.</p>
       </div>
       <MadeWithDyad />
     </div>
