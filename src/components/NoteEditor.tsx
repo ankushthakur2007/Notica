@@ -5,10 +5,11 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
-import TextStyle from '@tiptap/extension-text-style'; // Corrected import
+import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
-import Image from '@tiptap/extension-image';
+import ImageExtension from '@tiptap-resizable-images/react'; // Changed import for Image extension
+import { ResizableImage } from '@tiptap-resizable-images/react'; // New import for ResizableImage component
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,10 +59,10 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
         types: ['heading', 'paragraph'],
       }),
       Underline,
-      TextStyle, // Ensure TextStyle is included
+      TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
-      Image.configure({
+      ImageExtension.configure({ // Use ImageExtension from resizable package
         inline: true,
         allowBase64: true,
       }),
@@ -350,7 +351,9 @@ const NoteEditor = ({ noteId, onClose }: NoteEditorProps) => {
         </label>
       </div>
       <div className="flex-grow overflow-y-auto">
-        <EditorContent editor={editor} />
+        <ResizableImage editor={editor}>
+          <EditorContent editor={editor} />
+        </ResizableImage>
       </div>
     </div>
   );
