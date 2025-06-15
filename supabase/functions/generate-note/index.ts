@@ -35,7 +35,7 @@ serve(async (req) => {
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `You are a helpful note-taking assistant. Take the following raw text and transform it into a well-structured, readable note. Use headings, bullet points, and paragraphs where appropriate. You can also add relevant emojis to make it more engaging. The output should be in HTML format suitable for a rich text editor.
+    const prompt = `You are a helpful note-taking assistant. Take the following raw text and transform it into a well-structured, readable note. Use headings, bullet points, and paragraphs where appropriate. You can also add relevant emojis to make it more engaging. The output MUST be in raw HTML format suitable for a rich text editor, and MUST NOT be wrapped in any markdown code blocks (e.g., no \`\`\`html or \`\`\` tags).
 
 Raw Text:
 ${text}
@@ -47,8 +47,12 @@ Structured Note (HTML):`;
     console.log('Received response from Gemini API.');
 
     const response = await result.response;
-    const generatedContent = response.text();
-    console.log('Generated content length:', generatedContent.length);
+    let generatedContent = response.text();
+    console.log('Raw generated content length:', generatedContent.length);
+
+    // Post-process to remove markdown code block wrappers if they still appear
+    generatedContent = generatedContent.replace(/^```html\s*/, '').replace(/\s*```$/, '');
+    console.log('Cleaned generated content length:', generatedContent.length);
 
     return new Response(JSON.stringify({ generatedContent }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
