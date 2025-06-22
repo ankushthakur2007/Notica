@@ -32,15 +32,14 @@ Notica is a voice-based, AI-powered note-taking application designed to help you
     ```bash
     npm install
     ```
-3.  **Set up Supabase:**
-    -   Create a new project on Supabase.
-    -   Copy your Supabase Project URL and Anon Key.
-    -   Set up Google authentication in your Supabase project.
-    -   Create a `.env.local` file in the root of your project and add:
+3.  **Set up Supabase Environment Variables (Local Development):**
+    -   Create a `.env.local` file in the **root** of your project (the same directory as `package.json`).
+    -   Add the following content to `.env.local`:
         ```
-        VITE_SUPABASE_URL=YOUR_SUPABASE_URL
-        VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+        VITE_SUPABASE_URL=https://yibrrjblxuoebnecbntp.supabase.co
+        VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlpYnJyamJseHVvZWJuZWNibnRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTg2NzksImV4cCI6MjA2NTM3NDY3OX0.fl0Z5vt9wT4BwcGdIm-VW4Pm6AxjxYsNBm2TB2oP4tU
         ```
+    -   **Important:** This file is for local development only and should not be committed to Git. It's already ignored by default in `.gitignore`.
 4.  **Run the application:**
     ```bash
     npm run dev
