@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showError, showSuccess } from '@/utils/toast';
 import { User } from 'lucide-react';
+import { Link } from 'react-router-dom'; // Import Link
 
 const FONT_OPTIONS = [
   { label: 'Default (Inter)', value: 'font-inter' },
@@ -141,7 +142,7 @@ const SettingsDashboard = () => {
   }
 
   return (
-    <div className="p-6 w-full max-w-2xl mx-auto overflow-y-auto h-full">
+    <div className="p-6 w-full max-w-2xl mx-auto overflow-y-auto h-full flex flex-col">
       <h1 className="text-3xl font-bold mb-6 text-foreground">Settings</h1>
 
       <Card className="mb-6">
@@ -236,6 +237,20 @@ const SettingsDashboard = () => {
           </Button>
         </CardContent>
       </Card>
+
+      <footer className="mt-auto pt-6 text-center text-sm text-muted-foreground">
+        <p>
+          &copy; {new Date().getFullYear()} Notica. All rights reserved.
+        </p>
+        <div className="flex justify-center space-x-4 mt-2">
+          <Link to="/privacy-policy" className="hover:underline">
+            Privacy Policy
+          </Link>
+          <Link to="/terms-of-service" className="hover:underline">
+            Terms of Service
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 };

@@ -11,18 +11,20 @@ import NewNoteForm from "./components/NewNoteForm";
 import NoteList from "./components/NoteList";
 import NoteEditor from "./components/NoteEditor";
 import { SessionContextProvider } from "./contexts/SessionContext";
-import TryNow from "./pages/TryNow"; // Import the TryNow page
+import TryNow from "./pages/TryNow";
+import PrivacyPolicy from "./pages/PrivacyPolicy"; // Import PrivacyPolicy
+import TermsOfService from "./pages/TermsOfService"; // Import TermsOfService
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Sonner /> {/* Re-enabled Sonner for toast notifications */}
+      <Sonner />
       <BrowserRouter>
         <SessionContextProvider>
           <Routes>
-            <Route path="/" element={<TryNow />} /> {/* Set TryNow as the landing page */}
+            <Route path="/" element={<TryNow />} />
             <Route path="/login" element={<Login />} />
             <Route path="/try-now" element={<TryNow />} />
             
@@ -33,10 +35,12 @@ const App = () => (
               <Route path="all-notes" element={<NoteList />} />
               <Route path="new-note" element={<NewNoteForm onNoteCreated={() => { /* Handle post-creation navigation */ }} />} />
               {/* NoteEditor now handles its own closing navigation */}
-              <Route path="edit-note/:noteId" element={<NoteEditor />} /> {/* Removed unnecessary onClose prop */}
+              <Route path="edit-note/:noteId" element={<NoteEditor />} />
             </Route>
 
             <Route path="/settings" element={<SettingsDashboard />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} /> {/* New route */}
+            <Route path="/terms-of-service" element={<TermsOfService />} /> {/* New route */}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
