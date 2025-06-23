@@ -87,6 +87,3 @@ These secrets are used by your deployed Supabase Edge Functions (`transcribe-aud
 
 Your Supabase Edge Functions are automatically deployed when you make changes to the `supabase/functions` directory and approve them in Dyad, or when you deploy them manually via the Supabase CLI. Ensure the secrets mentioned above are set in your Supabase project for the functions to work correctly.
 
-## Credits
-
--   Built with Dyad.sh
