@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Sparkles, PencilLine } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // Import Link
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 const TryNow = () => {
@@ -68,6 +68,20 @@ const TryNow = () => {
           </CardContent>
         </Card>
       </div>
+
+      <footer className="mt-auto pt-6 text-center text-sm text-muted-foreground">
+        <p>
+          &copy; {new Date().getFullYear()} Notica. All rights reserved.
+        </p>
+        <div className="flex justify-center space-x-4 mt-2">
+          <Link to="/privacy-policy" className="hover:underline">
+            Privacy Policy
+          </Link>
+          <Link to="/terms-of-service" className="hover:underline">
+            Terms of Service
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 };
