@@ -7,6 +7,8 @@ import { useTheme } from 'next-themes';
 
 const Login = () => {
   const { theme } = useTheme();
+  const redirectToUrl = window.location.origin + '/dashboard';
+  console.log('Supabase Auth redirectTo URL:', redirectToUrl);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
@@ -48,7 +50,7 @@ const Login = () => {
             },
           }}
           theme={theme === 'dark' ? ThemeSupa : ThemeSupa} // Use ThemeSupa for both, but ensure the theme prop is dynamic
-          redirectTo={window.location.origin + '/dashboard'}
+          redirectTo={redirectToUrl}
         />
       </div>
     </div>

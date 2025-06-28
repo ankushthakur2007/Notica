@@ -13,7 +13,7 @@ interface SessionContextType {
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
-export const SessionContextProvider = ({ children }: { children: ReactNode }) => {
+export const SessionContextProvider = ({ children }: { ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,6 +22,9 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log('Supabase Auth Event:', event);
+      console.log('Current Session:', currentSession);
+
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
         setSession(currentSession);
         setUser(currentSession?.user || null);
@@ -29,6 +32,7 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
           showSuccess('Successfully signed in!');
           // Only navigate to dashboard if coming from login or root/try-now
           if (location.pathname === '/login' || location.pathname === '/' || location.pathname === '/try-now') {
+            console.log('Navigating to /dashboard after successful sign-in.');
             navigate('/dashboard');
           }
         }
@@ -36,18 +40,23 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
         setSession(null);
         setUser(null);
         showSuccess('Successfully signed out!');
+        console.log('Navigating to /login after sign-out.');
         navigate('/login');
       } else if (event === 'INITIAL_SESSION') {
         setSession(currentSession);
         setUser(currentSession?.user || null);
         if (currentSession) {
+          console.log('Initial session found. User is logged in.');
           // Only navigate to dashboard if coming from login or root/try-now
           if (location.pathname === '/login' || location.pathname === '/' || location.pathname === '/try-now') {
+            console.log('Navigating to /dashboard from initial session.');
             navigate('/dashboard');
           }
         } else {
+          console.log('No initial session found. User is not logged in.');
           // If no session and not on login or try-now, redirect to try-now
           if (location.pathname !== '/login' && location.pathname !== '/try-now') {
+            console.log('Navigating to /try-now as no session found and not on login/try-now page.');
             navigate('/try-now');
           }
         }
