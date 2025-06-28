@@ -14,6 +14,11 @@ import TryNow from "./pages/TryNow";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 
+// Import components for nested dashboard routes
+import NewNoteForm from "./components/NewNoteForm";
+import NoteList from "./components/NoteList";
+import NoteEditor from "./components/NoteEditor"; // Assuming this is for /dashboard/edit-note/:noteId
+
 // Import SessionContextProvider
 import { SessionContextProvider } from "./contexts/SessionContext";
 
@@ -24,14 +29,21 @@ const App = () => (
     <TooltipProvider>
       <Sonner />
       <BrowserRouter>
-        <SessionContextProvider> {/* Wrap Routes with SessionContextProvider */}
+        <SessionContextProvider>
           <Routes>
             <Route path="/" element={<TryNow />} />
             <Route path="/login" element={<Login />} />
             <Route path="/try-now" element={<TryNow />} />
             
             {/* Dashboard and its nested routes */}
-            <Route path="/dashboard/*" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />}>
+              {/* Nested routes for the dashboard */}
+              <Route path="new-note" element={<NewNoteForm onNoteCreated={() => {}} />} />
+              <Route path="all-notes" element={<NoteList />} />
+              <Route path="edit-note/:noteId" element={<NoteEditor />} />
+              {/* Add a default redirect or component for /dashboard if needed, 
+                  though Dashboard.tsx already handles redirecting to /dashboard/all-notes */}
+            </Route>
 
             <Route path="/settings" element={<SettingsDashboard />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
