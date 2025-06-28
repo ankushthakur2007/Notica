@@ -382,10 +382,16 @@ const NoteEditor = ({}: NoteEditorProps) => {
     const currentSize = parseInt(currentFontSize) || 16;
     const newSize = Math.min(currentSize + 2, 32);
     
-    // Apply font size using CSS style directly
-    editor.chain().focus().setMark('textStyle', { 
-      fontSize: `${newSize}px` 
-    }).run();
+    // Use updateAttributes to modify the textStyle mark
+    if (editor.isActive('textStyle')) {
+      editor.chain().focus().updateAttributes('textStyle', { 
+        fontSize: `${newSize}px` 
+      }).run();
+    } else {
+      editor.chain().focus().setMark('textStyle', { 
+        fontSize: `${newSize}px` 
+      }).run();
+    }
     
     setCurrentFontSize(newSize.toString());
   };
@@ -396,10 +402,16 @@ const NoteEditor = ({}: NoteEditorProps) => {
     const currentSize = parseInt(currentFontSize) || 16;
     const newSize = Math.max(currentSize - 2, 10);
     
-    // Apply font size using CSS style directly
-    editor.chain().focus().setMark('textStyle', { 
-      fontSize: `${newSize}px` 
-    }).run();
+    // Use updateAttributes to modify the textStyle mark
+    if (editor.isActive('textStyle')) {
+      editor.chain().focus().updateAttributes('textStyle', { 
+        fontSize: `${newSize}px` 
+      }).run();
+    } else {
+      editor.chain().focus().setMark('textStyle', { 
+        fontSize: `${newSize}px` 
+      }).run();
+    }
     
     setCurrentFontSize(newSize.toString());
   };
