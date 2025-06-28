@@ -5,14 +5,57 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Basic check to ensure variables are defined, useful for development
+// Enhanced debugging and validation
+console.log('Environment check:');
+console.log('VITE_SUPABASE_URL:', SUPABASE_URL ? 'Set' : 'Missing');
+console.log('VITE_SUPABASE_ANON_KEY:', SUPABASE_PUBLISHABLE_KEY ? 'Set' : 'Missing');
+
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  console.error("Supabase environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) are not set!");
-  // In a production app, you might want to throw an error or show a more prominent message
+  console.error("❌ Supabase environment variables are missing!");
+  console.error("Expected variables: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY");
+  console.error("Make sure .env.local file exists and contains the correct values");
+  throw new Error("Supabase configuration is incomplete");
 }
 
-// Add console logs to debug
-console.log('VITE_SUPABASE_URL:', SUPABASE_URL);
-console.log('VITE_SUPABASE_ANON_KEY:', SUPABASE_PUBLISHABLE_KEY);
+// Validate URL format
+try {
+  new URL(SUPABASE_URL);
+  console.log('✅ Supabase URL format is valid');
+} catch (error) {
+  console.error('❌ Invalid Supabase URL format:', SUPABASE_URL);
+  throw new Error("Invalid Supabase URL format");
+}
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Validate API key format (should be a JWT-like string)
+if (!SUPABASE_PUBLISHABLE_KEY.startsWith('eyJ')) {
+  console.error('❌ Supabase API key appears to be invalid (should start with "eyJ")');
+  throw new Error("Invalid Supabase API key format");
+}
+
+console.log('✅ Creating Supabase client...');
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
+});
+
+// Test connection
+supabase.from('notes').select('count', { count: 'exact', head: true })
+  .then(({ error }) => {
+    if (error) {
+      console.error('❌ Supabase connection test failed:', error.message);
+    } else {
+      console.log('✅ Supabase connection test successful');
+    }
+  })
+  .catch((error) => {
+    console.error('❌ Supabase connection test error:', error);
+  });

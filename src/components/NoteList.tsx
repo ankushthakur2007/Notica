@@ -16,24 +16,56 @@ const NoteList = () => {
   const { data: notes, isLoading, isError, error, refetch } = useQuery<Note[], Error>({
     queryKey: ['notes', user?.id],
     queryFn: async () => {
-      console.log('Attempting to fetch notes for user:', user?.id); // Debug log
+      console.log('🔍 Starting notes fetch...');
+      console.log('User ID:', user?.id);
+      
       if (!user) {
-        console.error('NoteList: User not logged in, cannot fetch notes.'); // Debug log
+        console.error('❌ User not logged in, cannot fetch notes.');
         throw new Error('User not logged in.');
       }
-      const { data, error } = await supabase
-        .from('notes')
-        .select('*')
-        .order('updated_at', { ascending: false });
 
-      if (error) {
-        console.error('NoteList: Error fetching notes from Supabase:', error.message, error); // Debug log
-        throw error;
+      try {
+        console.log('📡 Making Supabase query...');
+        const { data, error } = await supabase
+          .from('notes')
+          .select('*')
+          .order('updated_at', { ascending: false });
+
+        if (error) {
+          console.error('❌ Supabase query error:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
+          throw error;
+        }
+
+        console.log('✅ Notes fetched successfully:', data?.length || 0, 'notes');
+        return data || [];
+      } catch (fetchError: any) {
+        console.error('❌ Fetch operation failed:', {
+          name: fetchError.name,
+          message: fetchError.message,
+          stack: fetchError.stack
+        });
+        
+        // Provide more specific error messages
+        if (fetchError.message?.includes('Failed to fetch')) {
+          throw new Error('Network connection failed. Please check your internet connection and Supabase configuration.');
+        } else if (fetchError.message?.includes('CORS')) {
+          throw new Error('CORS error. Please check your Supabase project settings.');
+        } else {
+          throw fetchError;
+        }
       }
-      console.log('NoteList: Successfully fetched notes:', data); // Debug log
-      return data;
     },
     enabled: !!user,
+    retry: (failureCount, error) => {
+      console.log(`🔄 Query retry attempt ${failureCount + 1}:`, error.message);
+      return failureCount < 2; // Retry up to 2 times
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   if (isLoading) {
@@ -45,10 +77,17 @@ const NoteList = () => {
   }
 
   if (isError) {
+    console.error('❌ NoteList error state:', error?.message);
     showError('Failed to load notes: ' + error?.message);
     return (
-      <div className="flex items-center justify-center h-full text-destructive">
-        <p>Error loading notes. Please try again.</p>
+      <div className="flex flex-col items-center justify-center h-full text-destructive p-4">
+        <p className="mb-4">Error loading notes: {error?.message}</p>
+        <button 
+          onClick={() => refetch()} 
+          className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+        >
+          Retry
+        </button>
       </div>
     );
   }
