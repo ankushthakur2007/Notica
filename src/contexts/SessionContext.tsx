@@ -25,43 +25,40 @@ export const SessionContextProvider = ({ children }: { ReactNode }) => {
       console.log('Supabase Auth Event:', event);
       console.log('Current Session:', currentSession);
 
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        setSession(currentSession);
-        setUser(currentSession?.user || null);
-        if (currentSession) {
+      setSession(currentSession);
+      setUser(currentSession?.user || null);
+      setLoading(false); // Set loading to false after initial session check
+
+      const currentPath = location.pathname;
+      const isPublicPath = currentPath === '/' || currentPath === '/login' || currentPath === '/try-now' || currentPath === '/privacy-policy' || currentPath === '/terms-of-service';
+      const isProtectedPath = currentPath.startsWith('/dashboard') || currentPath.startsWith('/settings');
+
+      if (currentSession) {
+        // User is logged in
+        if (event === 'SIGNED_IN') { // Only show success toast on explicit sign-in, not initial session load
           showSuccess('Successfully signed in!');
-          // Only navigate to dashboard if coming from login or root/try-now
-          if (location.pathname === '/login' || location.pathname === '/' || location.pathname === '/try-now') {
-            console.log('Navigating to /dashboard after successful sign-in.');
-            navigate('/dashboard');
-          }
         }
-      } else if (event === 'SIGNED_OUT') {
-        setSession(null);
-        setUser(null);
-        showSuccess('Successfully signed out!');
-        console.log('Navigating to /login after sign-out.');
-        navigate('/login');
-      } else if (event === 'INITIAL_SESSION') {
-        setSession(currentSession);
-        setUser(currentSession?.user || null);
-        if (currentSession) {
-          console.log('Initial session found. User is logged in.');
-          // Only navigate to dashboard if coming from login or root/try-now
-          if (location.pathname === '/login' || location.pathname === '/' || location.pathname === '/try-now') {
-            console.log('Navigating to /dashboard from initial session.');
-            navigate('/dashboard');
-          }
-        } else {
-          console.log('No initial session found. User is not logged in.');
-          // If no session and not on login or try-now, redirect to try-now
-          if (location.pathname !== '/login' && location.pathname !== '/try-now') {
-            console.log('Navigating to /try-now as no session found and not on login/try-now page.');
-            navigate('/try-now');
-          }
+        if (isPublicPath) {
+          console.log('Navigating to /dashboard as user is logged in and on a public page.');
+          navigate('/dashboard');
         }
+        // If already on a protected path, do nothing (stay there)
+      } else {
+        // User is NOT logged in
+        if (event === 'SIGNED_OUT') {
+          showSuccess('Successfully signed out!');
+        }
+        if (isProtectedPath) {
+          console.log('Navigating to /login as user is logged out and on a protected page.');
+          navigate('/login'); // Redirect to login if trying to access protected route
+        } else if (!isPublicPath) {
+          // If not logged in and not on a public path, and not a protected path (e.g., 404 or other unknown),
+          // redirect to try-now as the default landing for unauthenticated users.
+          console.log('Navigating to /try-now as user is logged out and on an unrecognized/non-public page.');
+          navigate('/try-now');
+        }
+        // If already on a public path, do nothing (stay there)
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
