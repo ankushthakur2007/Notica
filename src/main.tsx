@@ -15,7 +15,13 @@ applyFontClass();
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider 
+      attribute="class" 
+      defaultTheme="system" 
+      enableSystem
+      disableTransitionOnChange={false}
+      storageKey="notica-theme"
+    >
       <App />
     </ThemeProvider>
   </React.StrictMode>
