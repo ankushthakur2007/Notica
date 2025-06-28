@@ -9,6 +9,7 @@ import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
+import FontFamily from '@tiptap/extension-font-family';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -144,6 +145,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
       Image.configure({
         inline: true,
         allowBase64: true,
+      }),
+      FontFamily.configure({
+        types: ['textStyle'],
       }),
     ],
     content: '',
