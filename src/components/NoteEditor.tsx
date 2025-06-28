@@ -371,17 +371,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const handleFontFamilyChange = (fontFamily: string) => {
     if (!editor || !canEdit) return;
     
-    // Check if there's a selection
-    const { from, to } = editor.state.selection;
-    const hasSelection = from !== to;
-    
-    if (hasSelection) {
-      // Apply to selected text
-      editor.chain().focus().setFontFamily(fontFamily).run();
-    } else {
-      // Set for new text at cursor position
-      editor.chain().focus().setFontFamily(fontFamily).run();
-    }
+    editor.chain().focus().setFontFamily(fontFamily).run();
     setCurrentFontFamily(fontFamily);
   };
 
@@ -389,65 +379,29 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const increaseFontSize = () => {
     if (!editor || !canEdit) return;
     
-    const { from, to } = editor.state.selection;
-    const hasSelection = from !== to;
+    const currentSize = parseInt(currentFontSize) || 16;
+    const newSize = Math.min(currentSize + 2, 32);
     
-    if (hasSelection) {
-      // Get current font size from selection
-      const attributes = editor.getAttributes('textStyle');
-      const currentSize = parseInt(attributes.fontSize?.replace('px', '') || '16');
-      const newSize = Math.min(currentSize + 2, 32);
-      
-      // Use updateAttributes to modify existing textStyle
-      editor.chain().focus().updateAttributes('textStyle', { 
-        fontSize: `${newSize}px` 
-      }).run();
-      
-      setCurrentFontSize(newSize.toString());
-    } else {
-      // Set for new text
-      const currentSize = parseInt(currentFontSize) || 16;
-      const newSize = Math.min(currentSize + 2, 32);
-      
-      // Use setMark for new text
-      editor.chain().focus().setMark('textStyle', { 
-        fontSize: `${newSize}px` 
-      }).run();
-      
-      setCurrentFontSize(newSize.toString());
-    }
+    // Apply font size using CSS style directly
+    editor.chain().focus().setMark('textStyle', { 
+      fontSize: `${newSize}px` 
+    }).run();
+    
+    setCurrentFontSize(newSize.toString());
   };
 
   const decreaseFontSize = () => {
     if (!editor || !canEdit) return;
     
-    const { from, to } = editor.state.selection;
-    const hasSelection = from !== to;
+    const currentSize = parseInt(currentFontSize) || 16;
+    const newSize = Math.max(currentSize - 2, 10);
     
-    if (hasSelection) {
-      // Get current font size from selection
-      const attributes = editor.getAttributes('textStyle');
-      const currentSize = parseInt(attributes.fontSize?.replace('px', '') || '16');
-      const newSize = Math.max(currentSize - 2, 10);
-      
-      // Use updateAttributes to modify existing textStyle
-      editor.chain().focus().updateAttributes('textStyle', { 
-        fontSize: `${newSize}px` 
-      }).run();
-      
-      setCurrentFontSize(newSize.toString());
-    } else {
-      // Set for new text
-      const currentSize = parseInt(currentFontSize) || 16;
-      const newSize = Math.max(currentSize - 2, 10);
-      
-      // Use setMark for new text
-      editor.chain().focus().setMark('textStyle', { 
-        fontSize: `${newSize}px` 
-      }).run();
-      
-      setCurrentFontSize(newSize.toString());
-    }
+    // Apply font size using CSS style directly
+    editor.chain().focus().setMark('textStyle', { 
+      fontSize: `${newSize}px` 
+    }).run();
+    
+    setCurrentFontSize(newSize.toString());
   };
 
   const getPlainTextContent = () => {
