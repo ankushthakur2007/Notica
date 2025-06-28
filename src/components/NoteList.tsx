@@ -26,9 +26,17 @@ const NoteList = () => {
 
       try {
         console.log('📡 Making Supabase query...');
+        // Fetch notes owned by the user OR notes where the user is a collaborator
         const { data, error } = await supabase
           .from('notes')
-          .select('*')
+          .select(`
+            *,
+            collaborators!inner(
+              user_id,
+              permission_level
+            )
+          `)
+          .or(`user_id.eq.${user.id},collaborators.user_id.eq.${user.id}`)
           .order('updated_at', { ascending: false });
 
         if (error) {
@@ -42,7 +50,9 @@ const NoteList = () => {
         }
 
         console.log('✅ Notes fetched successfully:', data?.length || 0, 'notes');
-        return data || [];
+        // Filter out duplicate notes if a note is both owned and collaborated on
+        const uniqueNotes = Array.from(new Map(data.map(item => [item.id, item])).values());
+        return uniqueNotes || [];
       } catch (fetchError: any) {
         console.error('❌ Fetch operation failed:', {
           name: fetchError.name,

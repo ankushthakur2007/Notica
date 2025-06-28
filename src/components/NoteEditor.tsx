@@ -45,7 +45,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import VoiceRecorder from '@/components/VoiceRecorder';
-import ShareNoteDialog from '@/components/ShareNoteDialog';
+import NoteCollaborationDialog from '@/components/NoteCollaborationDialog'; // Updated import
 import jsPDF from 'jspdf';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useDebounce } from '@/hooks/use-debounce'; 
@@ -648,6 +648,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
     );
   }
 
+  const isNoteOwner = user?.id === note.user_id;
+
   // Mobile-optimized toolbar components
   const BasicFormattingTools = () => (
     <div className="flex flex-wrap gap-1">
@@ -823,7 +825,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
           {isMobile ? (
             <>
               <div className="flex space-x-2">
-                {noteId && <ShareNoteDialog noteId={noteId} />}
+                {noteId && <NoteCollaborationDialog noteId={noteId} isNoteOwner={isNoteOwner} />}
                 {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>}
               </div>
               <div className="flex space-x-2">
@@ -837,7 +839,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                     <DropdownMenuItem onClick={() => navigate('/dashboard/all-notes')}>
                       Close
                     </DropdownMenuItem>
-                    {note.user_id === user?.id && (
+                    {isNoteOwner && (
                       <DropdownMenuItem onClick={handleDelete} disabled={isDeleting} className="text-destructive">
                         {isDeleting ? 'Deleting...' : 'Delete Note'}
                       </DropdownMenuItem>
@@ -849,10 +851,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
           ) : (
             <>
               {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>}
-              {noteId && <ShareNoteDialog noteId={noteId} />}
+              {noteId && <NoteCollaborationDialog noteId={noteId} isNoteOwner={isNoteOwner} />}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={isDeleting || note.user_id !== user?.id}>
+                  <Button variant="destructive" disabled={isDeleting || !isNoteOwner}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     {isDeleting ? 'Deleting...' : 'Delete Note'}
                   </Button>
