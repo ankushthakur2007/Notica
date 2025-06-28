@@ -45,7 +45,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import VoiceRecorder from '@/components/VoiceRecorder';
-import NoteCollaborationDialog from '@/components/NoteCollaborationDialog'; // Updated import
+import NoteCollaborationDialog from '@/components/NoteCollaborationDialog';
 import jsPDF from 'jspdf';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useDebounce } from '@/hooks/use-debounce'; 
@@ -189,32 +189,34 @@ const NoteEditor = ({}: NoteEditorProps) => {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Use useMemo to ensure isNoteOwner is only re-calculated when user or note changes
-  const isNoteOwner = React.useMemo(() => {
-    console.log('Inside useMemo for isNoteOwner:');
-    console.log('  Current user ID:', user?.id);
-    console.log('  Note object (from useMemo):', note); // Log the entire note object here too
-    console.log('  Note user_id (from useMemo):', note?.user_id); // Explicitly log note.user_id
-    const calculatedOwner = !!user && !!note && user.id === note.user_id;
-    console.log('  Resulting isNoteOwner:', calculatedOwner);
-    return calculatedOwner;
-  }, [user, note]);
+  // Removed the isNoteOwner useMemo as it's no longer needed for the simplified dialog
+  // const isNoteOwner = React.useMemo(() => {
+  //   console.log('Inside useMemo for isNoteOwner:');
+  //   console.log('  Current user ID:', user?.id);
+  //   console.log('  Note object (from useMemo):', note);
+  //   console.log('  Note user_id (from useMemo):', note?.user_id);
+  //   const calculatedOwner = !!user && !!note && user.id === note.user_id;
+  //   console.log('  Resulting isNoteOwner:', calculatedOwner);
+  //   return calculatedOwner;
+  // }, [user, note]);
 
   useEffect(() => {
     if (note && !isLoadingPermission) {
-      console.log('useEffect for canEdit: Current User ID:', user?.id, 'Note Owner ID:', note.user_id, 'isNoteOwner (from memo):', isNoteOwner);
+      // Simplified canEdit logic: if user is owner OR has write permission, they can edit.
+      // Public links are always read-only.
+      const isOwner = !!user && !!note && user.id === note.user_id;
+      const hasWritePermission = user && permissionData?.permission_level === 'write';
 
-      if (isNoteOwner) {
-        setCanEdit(true); // Owner always has write access
-      } else if (user && permissionData?.permission_level === 'write') {
-        setCanEdit(true); // Explicit collaborator with write access
+      if (isOwner || hasWritePermission) {
+        setCanEdit(true);
       } else if (note.is_sharable_link_enabled) {
         setCanEdit(false); // Public link access is read-only
       } else {
         setCanEdit(false); // No permission
       }
+      console.log('useEffect for canEdit: Current User ID:', user?.id, 'Note Owner ID:', note.user_id, 'isOwner:', isOwner, 'hasWritePermission:', hasWritePermission, 'canEdit:', canEdit);
     }
-  }, [note, user, permissionData, isLoadingPermission, isNoteOwner]); // Add isNoteOwner to dependencies
+  }, [note, user, permissionData, isLoadingPermission, canEdit]); // Removed isNoteOwner from dependencies
 
   const editor = useEditor({
     extensions: [
@@ -440,6 +442,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   const handleDelete = async () => {
     if (!note) return;
+    // The delete button should only be visible to the owner, so this check is a safeguard.
     if (note.user_id !== user?.id) {
       showError('You do not have permission to delete this note.');
       return;
@@ -646,8 +649,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   console.log('NoteEditor render. isLoading:', isLoading, 'note:', note ? note.id : 'null', 'note.user_id:', note?.user_id);
   console.log('NoteEditor render. user:', user ? user.id : 'null');
-  console.log('NoteEditor render. isNoteOwner (before dialog):', isNoteOwner);
-
+  // console.log('NoteEditor render. isNoteOwner (before dialog):', isNoteOwner); // Removed this log
 
   if (isLoading || isLoadingPermission) {
     return (
@@ -848,7 +850,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
           {isMobile ? (
             <>
               <div className="flex space-x-2">
-                {noteId && note && user && <NoteCollaborationDialog noteId={noteId} isNoteOwner={isNoteOwner} />}
+                {noteId && note && <NoteCollaborationDialog noteId={noteId} />}
                 {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>}
               </div>
               <div className="flex space-x-2">
@@ -862,7 +864,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
                     <DropdownMenuItem onClick={() => navigate('/dashboard/all-notes')}>
                       Close
                     </DropdownMenuItem>
-                    {isNoteOwner && (
+                    {/* Only show delete if user is the owner */}
+                    {user && note && user.id === note.user_id && (
                       <DropdownMenuItem onClick={handleDelete} disabled={isDeleting} className="text-destructive">
                         {isDeleting ? 'Deleting...' : 'Delete Note'}
                       </DropdownMenuItem>
@@ -874,10 +877,11 @@ const NoteEditor = ({}: NoteEditorProps) => {
           ) : (
             <>
               {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>}
-              {noteId && note && user && <NoteCollaborationDialog noteId={noteId} isNoteOwner={isNoteOwner} />}
+              {noteId && note && <NoteCollaborationDialog noteId={noteId} />}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={isDeleting || !isNoteOwner}>
+                  {/* Only show delete if user is the owner */}
+                  <Button variant="destructive" disabled={isDeleting || !(user && note && user.id === note.user_id)}>
                     <Trash2 className="h-4 w-4 mr-2" />
                     {isDeleting ? 'Deleting...' : 'Delete Note'}
                   </Button>
