@@ -270,6 +270,8 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner }: ShareNoteDialogProps) 
     }
   });
 
+  console.log('NoteCollaborationDialog received isNoteOwner prop:', isNoteOwner);
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>

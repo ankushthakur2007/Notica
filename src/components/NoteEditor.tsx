@@ -146,12 +146,18 @@ const NoteEditor = ({}: NoteEditorProps) => {
         console.error('❌ Supabase fetch error:', error);
         throw error;
       }
-      console.log('✅ Note fetched successfully:', data.title);
+      console.log('✅ Note fetched successfully. Data:', data ? data.id : 'null', 'Owner:', data?.user_id);
       return data;
     },
     enabled: !!noteId, // Note can be fetched even if user is not logged in (for public links)
     staleTime: 5 * 60 * 1000,
     cacheTime: 10 * 60 * 1000,
+    onSuccess: (data) => {
+      console.log('✅ Note query success callback. Data:', data ? data.id : 'null', 'Owner:', data?.user_id);
+    },
+    onError: (err) => {
+      console.error('❌ Note query error callback:', err);
+    },
   });
 
   const { data: permissionData, isLoading: isLoadingPermission } = useQuery<{ permission_level: 'read' | 'write' } | null, Error>({
@@ -182,13 +188,16 @@ const NoteEditor = ({}: NoteEditorProps) => {
     staleTime: 5 * 60 * 1000,
   });
 
-  const isNoteOwner = user?.id === note?.user_id; // Determine ownership here
+  // Use useMemo to ensure isNoteOwner is only re-calculated when user or note changes
+  const isNoteOwner = React.useMemo(() => {
+    const calculatedOwner = !!user && !!note && user.id === note.user_id;
+    console.log('Calculating isNoteOwner: User ID=', user?.id, 'Note Owner ID=', note?.user_id, 'Result=', calculatedOwner);
+    return calculatedOwner;
+  }, [user, note]);
 
   useEffect(() => {
     if (note && !isLoadingPermission) {
-      console.log('Current User ID:', user?.id);
-      console.log('Note Owner ID:', note.user_id);
-      console.log('Is Note Owner:', isNoteOwner);
+      console.log('useEffect for canEdit: Current User ID:', user?.id, 'Note Owner ID:', note.user_id, 'isNoteOwner (from memo):', isNoteOwner);
 
       if (isNoteOwner) {
         setCanEdit(true); // Owner always has write access
@@ -629,6 +638,11 @@ const NoteEditor = ({}: NoteEditorProps) => {
       showError('Failed to copy content to clipboard.');
     }
   };
+
+  console.log('NoteEditor render. isLoading:', isLoading, 'note:', note ? note.id : 'null', 'note.user_id:', note?.user_id);
+  console.log('NoteEditor render. user:', user ? user.id : 'null');
+  console.log('NoteEditor render. isNoteOwner (before dialog):', isNoteOwner);
+
 
   if (isLoading || isLoadingPermission) {
     return (
