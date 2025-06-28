@@ -84,10 +84,35 @@ const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
     }
   };
 
-  const handleCopyLink = () => {
-    if (shareLink) {
-      navigator.clipboard.writeText(shareLink);
+  const handleCopyLink = async () => {
+    if (!shareLink) {
+      showError('No link to copy.');
+      return;
+    }
+
+    try {
+      // Attempt to use the modern Clipboard API first
+      await navigator.clipboard.writeText(shareLink);
       showSuccess('Share link copied to clipboard!');
+    } catch (err: any) {
+      console.warn('Failed to copy using Clipboard API, falling back to execCommand:', err);
+      // Fallback for insecure contexts or older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = shareLink;
+      textarea.style.position = 'fixed'; // Prevent scrolling to bottom of page in iOS.
+      textarea.style.opacity = '0'; // Hide the textarea
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showSuccess('Share link copied to clipboard (fallback)!');
+      } catch (execErr) {
+        console.error('Fallback copy failed:', execErr);
+        showError('Failed to copy link to clipboard. Please copy it manually.');
+      } finally {
+        document.body.removeChild(textarea);
+      }
     }
   };
 
