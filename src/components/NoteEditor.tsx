@@ -291,17 +291,26 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
     setIsAutosaving(true);
     console.log('Attempting to autosave...'); // Log when save is attempted
+    console.log('Saving Title:', currentTitle);
+    console.log('Saving Content (first 100 chars):', currentContent.substring(0, 100));
+
     try {
       const { error } = await supabase
         .from('notes')
         .update({
           title: currentTitle,
           content: currentContent,
-          updated_at: new Date().toISOString(),
+          // Removed updated_at: new Date().toISOString(), as Supabase trigger handles this
         })
         .eq('id', note.id);
 
       if (error) {
+        console.error('Supabase update error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
       console.log('Autosave successful!'); // Log when save is successful
@@ -320,6 +329,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   // Effect to trigger save when debounced title or content changes
   useEffect(() => {
     if (note && editor) { // Ensure note and editor are loaded before attempting to save
+      console.log('Debounced title or content changed, triggering save...');
       saveNote(debouncedTitle, debouncedEditorContent);
     }
   }, [debouncedTitle, debouncedEditorContent, saveNote, note, editor]);
@@ -1093,7 +1103,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                 <DropdownMenuItem onClick={handleExportAsText} disabled={!editor || editor.isEmpty}>
                   Export as TXT
                 </DropdownMenuItem>
-                  <DropdownMenuSeparator />
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleCopyToClipboard} disabled={!editor || editor.isEmpty}>
                   Copy to Clipboard
                 </DropdownMenuItem>
