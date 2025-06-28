@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import VoiceRecorder from '@/components/VoiceRecorder';
 import ShareNoteDialog from '@/components/ShareNoteDialog'; // Import the new component
+import jsPDF from 'jspdf';
 
 // Custom FontSize extension
 import { Extension } from '@tiptap/core';
@@ -482,6 +483,60 @@ const NoteEditor = ({}: NoteEditorProps) => {
     showSuccess('Note exported as TXT!');
   };
 
+  const handleExportAsPDF = () => {
+    if (!editor || editor.isEmpty) {
+      showError('Note is empty, nothing to export.');
+      return;
+    }
+
+    try {
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxWidth = pageWidth - 2 * margin;
+      let yPosition = margin;
+
+      // Add title
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      const titleLines = pdf.splitTextToSize(title || 'Untitled Note', maxWidth);
+      pdf.text(titleLines, margin, yPosition);
+      yPosition += titleLines.length * 10 + 10;
+
+      // Add content
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      
+      // Get plain text content and split into lines
+      const content = getPlainTextContent();
+      const lines = pdf.splitTextToSize(content, maxWidth);
+      
+      // Add lines to PDF, handling page breaks
+      for (let i = 0; i < lines.length; i++) {
+        if (yPosition > pageHeight - margin) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+        pdf.text(lines[i], margin, yPosition);
+        yPosition += 7; // Line height
+      }
+
+      // Add footer with date
+      const currentDate = new Date().toLocaleDateString();
+      pdf.setFontSize(8);
+      pdf.setTextColor(128, 128, 128);
+      pdf.text(`Generated on ${currentDate}`, margin, pageHeight - 10);
+
+      // Save the PDF
+      pdf.save(`${title || 'untitled-note'}.pdf`);
+      showSuccess('Note exported as PDF!');
+    } catch (error: any) {
+      console.error('Error generating PDF:', error);
+      showError('Failed to generate PDF: ' + error.message);
+    }
+  };
+
   const handleCopyToClipboard = async () => {
     if (!editor || editor.isEmpty) {
       showError('Note is empty, nothing to copy.');
@@ -732,6 +787,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportAsPDF} disabled={!editor || editor.isEmpty}>
+                Export as PDF
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportAsText} disabled={!editor || editor.isEmpty}>
                 Export as TXT
               </DropdownMenuItem>
