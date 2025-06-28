@@ -55,6 +55,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefiningAI, setIsRefiningAI] = useState(false);
   const [canEdit, setCanEdit] = useState(false); // New state for edit permission
+  const [currentFontSize, setCurrentFontSize] = useState('16');
+  const [currentFontFamily, setCurrentFontFamily] = useState('Inter');
 
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
@@ -171,6 +173,12 @@ const NoteEditor = ({}: NoteEditorProps) => {
         }
         return false;
       },
+    },
+    onSelectionUpdate: ({ editor }) => {
+      // Update current formatting values when selection changes
+      const attributes = editor.getAttributes('textStyle');
+      setCurrentFontSize(attributes.fontSize ? attributes.fontSize.replace('px', '') : '16');
+      setCurrentFontFamily(attributes.fontFamily || 'Inter');
     },
   });
 
@@ -355,6 +363,41 @@ const NoteEditor = ({}: NoteEditorProps) => {
     }
   };
 
+  // Font family handler - applies to selected text or sets for new text
+  const handleFontFamilyChange = (fontFamily: string) => {
+    if (!editor || !canEdit) return;
+    
+    editor.chain().focus().setFontFamily(fontFamily).run();
+    setCurrentFontFamily(fontFamily);
+  };
+
+  // Font size handlers - applies to selected text or sets for new text
+  const increaseFontSize = () => {
+    if (!editor || !canEdit) return;
+    
+    const currentSize = parseInt(currentFontSize) || 16;
+    const newSize = Math.min(currentSize + 2, 32);
+    
+    editor.chain().focus().setMark('textStyle', { 
+      fontSize: `${newSize}px` 
+    }).run();
+    
+    setCurrentFontSize(newSize.toString());
+  };
+
+  const decreaseFontSize = () => {
+    if (!editor || !canEdit) return;
+    
+    const currentSize = parseInt(currentFontSize) || 16;
+    const newSize = Math.max(currentSize - 2, 10);
+    
+    editor.chain().focus().setMark('textStyle', { 
+      fontSize: `${newSize}px` 
+    }).run();
+    
+    setCurrentFontSize(newSize.toString());
+  };
+
   const getPlainTextContent = () => {
     if (!editor) return '';
     const tempDiv = document.createElement('div');
@@ -393,67 +436,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
       console.error('Failed to copy to clipboard:', err);
       showError('Failed to copy content to clipboard.');
     }
-  };
-
-  // Font family handler - applies to selected text or sets for new text
-  const handleFontFamilyChange = (fontFamily: string) => {
-    if (!editor || !canEdit) return;
-    
-    // Apply font family using CSS style
-    editor.chain().focus().setMark('textStyle', { 
-      fontFamily: fontFamily 
-    }).run();
-  };
-
-  // Font size handlers - applies to selected text or sets for new text
-  const increaseFontSize = () => {
-    if (!editor || !canEdit) return;
-    
-    const { from, to } = editor.state.selection;
-    const selectedText = editor.state.doc.textBetween(from, to);
-    
-    if (selectedText) {
-      // Get current font size from selection or default to 16
-      const currentStyle = editor.getAttributes('textStyle');
-      const currentSize = currentStyle.fontSize ? parseInt(currentStyle.fontSize.replace('px', '')) : 16;
-      const newSize = Math.min(currentSize + 2, 32);
-      
-      editor.chain().focus().setMark('textStyle', { 
-        fontSize: `${newSize}px` 
-      }).run();
-    }
-  };
-
-  const decreaseFontSize = () => {
-    if (!editor || !canEdit) return;
-    
-    const { from, to } = editor.state.selection;
-    const selectedText = editor.state.doc.textBetween(from, to);
-    
-    if (selectedText) {
-      // Get current font size from selection or default to 16
-      const currentStyle = editor.getAttributes('textStyle');
-      const currentSize = currentStyle.fontSize ? parseInt(currentStyle.fontSize.replace('px', '')) : 16;
-      const newSize = Math.max(currentSize - 2, 10);
-      
-      editor.chain().focus().setMark('textStyle', { 
-        fontSize: `${newSize}px` 
-      }).run();
-    }
-  };
-
-  // Get current font size from selection for display
-  const getCurrentFontSize = () => {
-    if (!editor) return '16';
-    const currentStyle = editor.getAttributes('textStyle');
-    return currentStyle.fontSize ? currentStyle.fontSize.replace('px', '') : '16';
-  };
-
-  // Get current font family from selection for display
-  const getCurrentFontFamily = () => {
-    if (!editor) return 'Inter';
-    const currentStyle = editor.getAttributes('textStyle');
-    return currentStyle.fontFamily || 'Inter';
   };
 
   if (isLoading || isLoadingPermission) {
@@ -618,7 +600,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         </Button>
         
         {/* Font Family Selector */}
-        <Select value={getCurrentFontFamily()} onValueChange={handleFontFamilyChange} disabled={!canEdit}>
+        <Select value={currentFontFamily} onValueChange={handleFontFamilyChange} disabled={!canEdit}>
           <SelectTrigger className="w-[120px] h-9">
             <SelectValue />
           </SelectTrigger>
@@ -648,7 +630,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
             <MinusIcon className="h-3 w-3" />
           </Button>
           <div className="flex items-center px-2 min-w-[40px] justify-center text-sm">
-            {getCurrentFontSize()}px
+            {currentFontSize}px
           </div>
           <Button 
             variant="ghost" 
