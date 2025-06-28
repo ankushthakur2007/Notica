@@ -182,9 +182,15 @@ const NoteEditor = ({}: NoteEditorProps) => {
     staleTime: 5 * 60 * 1000,
   });
 
+  const isNoteOwner = user?.id === note?.user_id; // Determine ownership here
+
   useEffect(() => {
     if (note && !isLoadingPermission) {
-      if (user && note.user_id === user.id) {
+      console.log('Current User ID:', user?.id);
+      console.log('Note Owner ID:', note.user_id);
+      console.log('Is Note Owner:', isNoteOwner);
+
+      if (isNoteOwner) {
         setCanEdit(true); // Owner always has write access
       } else if (user && permissionData?.permission_level === 'write') {
         setCanEdit(true); // Explicit collaborator with write access
@@ -194,7 +200,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         setCanEdit(false); // No permission
       }
     }
-  }, [note, user, permissionData, isLoadingPermission]);
+  }, [note, user, permissionData, isLoadingPermission, isNoteOwner]); // Add isNoteOwner to dependencies
 
   const editor = useEditor({
     extensions: [
@@ -647,8 +653,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
       </div>
     );
   }
-
-  const isNoteOwner = user?.id === note.user_id;
 
   // Mobile-optimized toolbar components
   const BasicFormattingTools = () => (
