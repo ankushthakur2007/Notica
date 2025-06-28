@@ -146,7 +146,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         console.error('❌ Supabase fetch error:', error);
         throw error;
       }
-      console.log('✅ Note fetched successfully. Raw data:', data); // Log the raw data object
+      console.log('✅ Note fetched successfully. Raw data:', JSON.stringify(data, null, 2)); // Changed this line
       console.log('✅ Note fetched successfully. Data ID:', data ? data.id : 'null', 'Owner ID from fetched data:', data?.user_id);
       return data;
     },
