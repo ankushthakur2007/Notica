@@ -973,7 +973,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleCopyToClipboard} disabled={!editor || editor.isEmpty}>
                     Copy to Clipboard
-                  </DropdownMenu>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
