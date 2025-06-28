@@ -14,20 +14,30 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { Share2, Copy, Loader2 } from 'lucide-react';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { Note } from '@/types';
+import { Share2, Copy, Loader2, UserPlus, XCircle, CheckCircle2 } from 'lucide-react';
+import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
+import { Note, Collaborator } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useDebounce } from '@/hooks/use-debounce';
 
 interface ShareNoteDialogProps {
   noteId: string;
+  isNoteOwner: boolean; // Prop to determine if the current user is the note owner
 }
 
-const NoteCollaborationDialog = ({ noteId }: ShareNoteDialogProps) => {
+const NoteCollaborationDialog = ({ noteId, isNoteOwner }: ShareNoteDialogProps) => {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [isSharableLinkEnabled, setIsSharableLinkEnabled] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [isUpdatingShareLink, setIsUpdatingShareLink] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const [selectedUser, setSelectedUser] = useState<Collaborator | null>(null);
+  const [newPermissionLevel, setNewPermissionLevel] = useState<'read' | 'write'>('read');
+  const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
 
   // Fetch the current note's sharable link status
   const { data: note, isLoading: isLoadingNote } = useQuery<Note, Error>({
@@ -42,6 +52,45 @@ const NoteCollaborationDialog = ({ noteId }: ShareNoteDialogProps) => {
       return data;
     },
     enabled: isOpen && !!noteId,
+  });
+
+  // Fetch collaborators for this note
+  const { data: collaborators, isLoading: isLoadingCollaborators, refetch: refetchCollaborators } = useQuery<Collaborator[], Error>({
+    queryKey: ['collaborators', noteId],
+    queryFn: async () => {
+      if (!noteId) return [];
+      const { data, error } = await supabase
+        .from('collaborators')
+        .select(`
+          *,
+          profiles(first_name, last_name, avatar_url)
+        `)
+        .eq('note_id', noteId);
+      if (error) throw error;
+      // Map to flatten the profile data
+      return data.map(collab => ({
+        ...collab,
+        first_name: collab.profiles?.first_name,
+        last_name: collab.profiles?.last_name,
+        avatar_url: collab.profiles?.avatar_url,
+      })) as Collaborator[];
+    },
+    enabled: isOpen && !!noteId && isNoteOwner, // Only fetch collaborators if the current user is the note owner
+  });
+
+  // Search users for collaboration
+  const { data: searchResults, isLoading: isLoadingSearchResults } = useQuery<Collaborator[], Error>({
+    queryKey: ['userSearch', debouncedSearchTerm],
+    queryFn: async () => {
+      if (!debouncedSearchTerm) return [];
+      const { data, error } = await supabase.functions.invoke('search-users', {
+        body: { searchTerm: debouncedSearchTerm },
+      });
+      if (error) throw error;
+      return data.profiles as Collaborator[];
+    },
+    enabled: !!debouncedSearchTerm && isNoteOwner,
+    staleTime: 60 * 1000,
   });
 
   useEffect(() => {
@@ -114,37 +163,111 @@ const NoteCollaborationDialog = ({ noteId }: ShareNoteDialogProps) => {
     }
   };
 
+  const addCollaboratorMutation = useMutation({
+    mutationFn: async ({ userId, permission }: { userId: string; permission: 'read' | 'write' }) => {
+      setIsAddingCollaborator(true);
+      const { data, error } = await supabase
+        .from('collaborators')
+        .insert({ note_id: noteId, user_id: userId, permission_level: permission })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      showSuccess('Collaborator added successfully!');
+      setSearchTerm('');
+      setSelectedUser(null);
+      refetchCollaborators(); // Refetch collaborators list
+      queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate notes list to update shared status
+    },
+    onError: (error: any) => {
+      console.error('Error adding collaborator:', error.message);
+      showError('Failed to add collaborator: ' + error.message);
+    },
+    onSettled: () => {
+      setIsAddingCollaborator(false);
+    },
+  });
+
+  const updateCollaboratorPermissionMutation = useMutation({
+    mutationFn: async ({ collaboratorId, permission }: { collaboratorId: string; permission: 'read' | 'write' }) => {
+      const { data, error } = await supabase
+        .from('collaborators')
+        .update({ permission_level: permission })
+        .eq('id', collaboratorId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      showSuccess('Permission updated successfully!');
+      refetchCollaborators();
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+    },
+    onError: (error: any) => {
+      console.error('Error updating permission:', error.message);
+      showError('Failed to update permission: ' + error.message);
+    },
+  });
+
+  const removeCollaboratorMutation = useMutation({
+    mutationFn: async (collaboratorId: string) => {
+      const { error } = await supabase
+        .from('collaborators')
+        .delete()
+        .eq('id', collaboratorId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess('Collaborator removed successfully!');
+      refetchCollaborators();
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+    },
+    onError: (error: any) => {
+      console.error('Error removing collaborator:', error.message);
+      showError('Failed to remove collaborator: ' + error.message);
+    },
+  });
+
+  const handleAddCollaborator = () => {
+    if (selectedUser) {
+      addCollaboratorMutation.mutate({ userId: selectedUser.id, permission: newPermissionLevel });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <Share2 className="h-4 w-4" />
-          <span className="sr-only">Share Note</span>
+          <Share2 className="h-4 w-4 mr-2" />
+          Share
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[475px]">
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>Share Note</DialogTitle>
           <DialogDescription>
-            Manage sharing for this note.
+            Manage sharing and collaboration for this note.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-6 py-4">
           {/* Public Shareable Link Section */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="share-link-toggle">Enable Shareable Link</Label>
+              <Label htmlFor="share-link-toggle">Enable Public Shareable Link</Label>
               <Switch
                 id="share-link-toggle"
                 checked={isSharableLinkEnabled}
                 onCheckedChange={handleToggleShareableLink}
-                disabled={isUpdatingShareLink || isLoadingNote}
+                disabled={isUpdatingShareLink || isLoadingNote || !isNoteOwner}
               />
             </div>
 
             {isSharableLinkEnabled && (
               <div className="space-y-2">
-                <Label htmlFor="share-link">Share Link</Label>
+                <Label htmlFor="share-link">Public Share Link (Read-Only)</Label>
                 <div className="flex space-x-2">
                   <Input
                     id="share-link"
@@ -158,11 +281,124 @@ const NoteCollaborationDialog = ({ noteId }: ShareNoteDialogProps) => {
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  This link provides read-only access to anyone.
+                  Anyone with this link can view the note.
                 </p>
               </div>
             )}
           </div>
+
+          {/* Collaborator Management Section (only for note owner) */}
+          {isNoteOwner && (
+            <div className="space-y-4 border-t pt-4 mt-4">
+              <h3 className="text-lg font-semibold">Collaborators</h3>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-grow">
+                  <Input
+                    placeholder="Search users by email..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setSelectedUser(null); // Clear selected user on new search
+                    }}
+                    disabled={isAddingCollaborator}
+                  />
+                  {isLoadingSearchResults && searchTerm && (
+                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                  {searchTerm && searchResults && searchResults.length > 0 && !selectedUser && (
+                    <div className="absolute z-10 w-full bg-popover border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
+                      {searchResults.map((user) => (
+                        <div
+                          key={user.id}
+                          className="flex items-center p-2 cursor-pointer hover:bg-accent"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setSearchTerm(`${user.first_name || ''} ${user.last_name || ''} (${user.email})`.trim());
+                          }}
+                        >
+                          <Avatar className="h-8 w-8 mr-2">
+                            <AvatarImage src={user.avatar_url || undefined} />
+                            <AvatarFallback>{(user.first_name?.[0] || user.email?.[0] || 'U').toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-medium">{user.first_name} {user.last_name}</p>
+                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {searchTerm && !isLoadingSearchResults && searchResults?.length === 0 && !selectedUser && (
+                    <div className="absolute z-10 w-full bg-popover border rounded-md shadow-lg mt-1 p-2 text-sm text-muted-foreground">
+                      No users found.
+                    </div>
+                  )}
+                </div>
+                <Select value={newPermissionLevel} onValueChange={(value: 'read' | 'write') => setNewPermissionLevel(value)} disabled={!selectedUser || isAddingCollaborator}>
+                  <SelectTrigger className="w-full sm:w-[120px]">
+                    <SelectValue placeholder="Permission" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="read">Read</SelectItem>
+                    <SelectItem value="write">Write</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleAddCollaborator} disabled={!selectedUser || isAddingCollaborator}>
+                  {isAddingCollaborator ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserPlus className="h-4 w-4 mr-2" />}
+                  Add
+                </Button>
+              </div>
+
+              {isLoadingCollaborators ? (
+                <p className="text-muted-foreground">Loading collaborators...</p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {collaborators && collaborators.length > 0 ? (
+                    collaborators.map((collab) => (
+                      <div key={collab.id} className="flex items-center justify-between p-2 border rounded-md">
+                        <div className="flex items-center">
+                          <Avatar className="h-8 w-8 mr-2">
+                            <AvatarImage src={collab.avatar_url || undefined} />
+                            <AvatarFallback>{(collab.first_name?.[0] || collab.email?.[0] || 'U').toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-medium">{collab.first_name} {collab.last_name}</p>
+                            <p className="text-xs text-muted-foreground">{collab.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Select
+                            value={collab.permission_level}
+                            onValueChange={(value: 'read' | 'write') => updateCollaboratorPermissionMutation.mutate({ collaboratorId: collab.id, permission: value })}
+                            disabled={updateCollaboratorPermissionMutation.isPending}
+                          >
+                            <SelectTrigger className="w-[100px] h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="read">Read</SelectItem>
+                              <SelectItem value="write">Write</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeCollaboratorMutation.mutate(collab.id)}
+                            disabled={removeCollaboratorMutation.isPending}
+                          >
+                            {removeCollaboratorMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 text-destructive" />}
+                            <span className="sr-only">Remove collaborator</span>
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No collaborators added yet.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)}>Close</Button>
