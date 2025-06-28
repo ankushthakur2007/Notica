@@ -146,14 +146,15 @@ const NoteEditor = ({}: NoteEditorProps) => {
         console.error('❌ Supabase fetch error:', error);
         throw error;
       }
-      console.log('✅ Note fetched successfully. Data:', data ? data.id : 'null', 'Owner:', data?.user_id);
+      console.log('✅ Note fetched successfully. Raw data:', data); // Log the raw data object
+      console.log('✅ Note fetched successfully. Data ID:', data ? data.id : 'null', 'Owner ID from fetched data:', data?.user_id);
       return data;
     },
     enabled: !!noteId, // Note can be fetched even if user is not logged in (for public links)
     staleTime: 5 * 60 * 1000,
     cacheTime: 10 * 60 * 1000,
     onSuccess: (data) => {
-      console.log('✅ Note query success callback. Data:', data ? data.id : 'null', 'Owner:', data?.user_id);
+      console.log('✅ Note query success callback. Data ID:', data ? data.id : 'null', 'Owner ID from success callback:', data?.user_id);
     },
     onError: (err) => {
       console.error('❌ Note query error callback:', err);
@@ -190,8 +191,12 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   // Use useMemo to ensure isNoteOwner is only re-calculated when user or note changes
   const isNoteOwner = React.useMemo(() => {
+    console.log('Inside useMemo for isNoteOwner:');
+    console.log('  Current user ID:', user?.id);
+    console.log('  Note object (from useMemo):', note); // Log the entire note object here too
+    console.log('  Note user_id (from useMemo):', note?.user_id); // Explicitly log note.user_id
     const calculatedOwner = !!user && !!note && user.id === note.user_id;
-    console.log('Calculating isNoteOwner: User ID=', user?.id, 'Note Owner ID=', note?.user_id, 'Result=', calculatedOwner);
+    console.log('  Resulting isNoteOwner:', calculatedOwner);
     return calculatedOwner;
   }, [user, note]);
 
@@ -843,7 +848,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
           {isMobile ? (
             <>
               <div className="flex space-x-2">
-                {noteId && <NoteCollaborationDialog noteId={noteId} isNoteOwner={isNoteOwner} />}
+                {noteId && note && user && <NoteCollaborationDialog noteId={noteId} isNoteOwner={isNoteOwner} />}
                 {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>}
               </div>
               <div className="flex space-x-2">
@@ -869,7 +874,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
           ) : (
             <>
               {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>}
-              {noteId && <NoteCollaborationDialog noteId={noteId} isNoteOwner={isNoteOwner} />}
+              {noteId && note && user && <NoteCollaborationDialog noteId={noteId} isNoteOwner={isNoteOwner} />}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" disabled={isDeleting || !isNoteOwner}>
