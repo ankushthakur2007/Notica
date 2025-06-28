@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -48,6 +48,7 @@ import VoiceRecorder from '@/components/VoiceRecorder';
 import ShareNoteDialog from '@/components/ShareNoteDialog';
 import jsPDF from 'jspdf';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useDebounce } from '@/hooks/use-debounce'; // Import useDebounce
 
 // Custom FontSize extension
 import { Extension } from '@tiptap/core';
@@ -110,7 +111,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const isMobile = useIsMobile();
 
   const [title, setTitle] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  const [editorContent, setEditorContent] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefiningAI, setIsRefiningAI] = useState(false);
@@ -118,6 +119,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [currentFontSize, setCurrentFontSize] = useState('16');
   const [currentFontFamily, setCurrentFontFamily] = useState('Inter');
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
+  const [isAutosaving, setIsAutosaving] = useState(false);
+
+  const debouncedTitle = useDebounce(title, 1000); // Debounce title changes
+  const debouncedEditorContent = useDebounce(editorContent, 2000); // Debounce content changes
 
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
@@ -236,6 +241,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
         return false;
       },
     },
+    onUpdate: ({ editor }) => {
+      setEditorContent(editor.getHTML());
+    },
     onSelectionUpdate: ({ editor }) => {
       const attributes = editor.getAttributes('textStyle');
       const fontSize = attributes.fontSize;
@@ -251,6 +259,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   useEffect(() => {
     if (editor && note) {
       setTitle(note.title);
+      setEditorContent(note.content || ''); // Set initial content for autosave
       editor.commands.setContent(note.content || '');
     }
   }, [editor, note]);
@@ -261,6 +270,74 @@ const NoteEditor = ({}: NoteEditorProps) => {
       navigate('/dashboard/all-notes');
     }
   }, [isError, error, navigate]);
+
+  const saveNote = useCallback(async (currentTitle: string, currentContent: string) => {
+    if (!note || !user || !canEdit) {
+      // console.log('Autosave skipped: No note, no user, or no edit permission.');
+      return;
+    }
+
+    // Only save if content or title has actually changed from the last saved version
+    // This check is important to prevent unnecessary saves on initial load or when content is identical
+    if (currentTitle === note.title && currentContent === note.content) {
+      // console.log('Autosave skipped: No changes detected.');
+      return;
+    }
+
+    setIsAutosaving(true);
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .update({
+          title: currentTitle,
+          content: currentContent,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', note.id);
+
+      if (error) {
+        throw error;
+      }
+      // console.log('Autosave successful!');
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      queryClient.invalidateQueries({ queryKey: ['note', noteId] });
+    } catch (error: any) {
+      console.error('Error during autosave:', error);
+      showError('Autosave failed: ' + error.message);
+    } finally {
+      setIsAutosaving(false);
+    }
+  }, [note, user, canEdit, queryClient, noteId]);
+
+  // Effect to trigger save when debounced title or content changes
+  useEffect(() => {
+    if (note && editor) { // Ensure note and editor are loaded before attempting to save
+      saveNote(debouncedTitle, debouncedEditorContent);
+    }
+  }, [debouncedTitle, debouncedEditorContent, saveNote, note, editor]);
+
+  // Effect to save on component unmount or before page unload
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (editor && note && (title !== note.title || editor.getHTML() !== note.content)) {
+        // Only prompt if there are unsaved changes
+        event.preventDefault();
+        event.returnValue = ''; // Required for Chrome
+        saveNote(title, editor.getHTML()); // Attempt to save
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Save on component unmount
+      if (editor && note && (title !== note.title || editor.getHTML() !== note.content)) {
+        saveNote(title, editor.getHTML());
+      }
+    };
+  }, [editor, note, title, saveNote]);
+
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!user) {
@@ -305,40 +382,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
       setIsUploadingImage(false);
     }
   }, [user, editor, canEdit]);
-
-  const handleSave = async () => {
-    if (!note || !editor) return;
-    if (!canEdit) {
-      showError('You do not have permission to save changes to this note.');
-      return;
-    }
-
-    setIsSaving(true);
-    const updatedContent = editor.getHTML();
-
-    try {
-      const { error } = await supabase
-        .from('notes')
-        .update({
-          title: title,
-          content: updatedContent,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', note.id);
-
-      if (error) {
-        throw error;
-      }
-      showSuccess('Note saved successfully!');
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-      queryClient.invalidateQueries({ queryKey: ['note', noteId] });
-    } catch (error: any) {
-      console.error('Error saving note:', error);
-      showError('Failed to save note: ' + error.message);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!note) return;
@@ -746,9 +789,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
             <>
               <div className="flex space-x-2">
                 {noteId && <ShareNoteDialog noteId={noteId} />}
-                <Button onClick={handleSave} disabled={isSaving || !canEdit} size="sm">
-                  {isSaving ? 'Saving...' : 'Save'}
-                </Button>
+                {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>}
               </div>
               <div className="flex space-x-2">
                 <DropdownMenu>
@@ -772,10 +813,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
             </>
           ) : (
             <>
+              {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>}
               {noteId && <ShareNoteDialog noteId={noteId} />}
-              <Button onClick={handleSave} disabled={isSaving || !canEdit}>
-                {isSaving ? 'Saving...' : 'Save Note'}
-              </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" disabled={isDeleting || note.user_id !== user?.id}>
