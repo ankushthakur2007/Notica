@@ -20,7 +20,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles, Share2, Download, Type, Plus, Minus as MinusIcon, MoreHorizontal, ChevronDown } from 'lucide-react';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { useNavigate, useParams } => {
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
