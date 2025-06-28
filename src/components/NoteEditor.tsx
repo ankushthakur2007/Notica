@@ -20,7 +20,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles, Share2, Download, Type, Plus, Minus as MinusIcon, MoreHorizontal, ChevronDown } from 'lucide-react';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } => {
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,7 +48,7 @@ import VoiceRecorder from '@/components/VoiceRecorder';
 import ShareNoteDialog from '@/components/ShareNoteDialog';
 import jsPDF from 'jspdf';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useDebounce } from '@/hooks/use-debounce'; // Import useDebounce
+import { useDebounce } from '@/hooks/use-debounce'; 
 
 // Custom FontSize extension
 import { Extension } from '@tiptap/core';
@@ -131,6 +131,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
     queryFn: async () => {
+      console.log('🔍 Fetching note from Supabase...');
       if (!user) {
         throw new Error('User not logged in.');
       }
@@ -144,8 +145,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
         .single();
 
       if (error) {
+        console.error('❌ Supabase fetch error:', error);
         throw error;
       }
+      console.log('✅ Note fetched successfully:', data.title);
       return data;
     },
     enabled: !!user && !!noteId,
@@ -260,15 +263,17 @@ const NoteEditor = ({}: NoteEditorProps) => {
     },
   });
 
+  // Effect to initialize editor content and last saved state when note data loads
   useEffect(() => {
     if (editor && note) {
+      console.log('🔄 Initializing editor with fetched note data.');
       setTitle(note.title);
       setEditorContent(note.content || ''); 
-      setLastSavedTitle(note.title); // Initialize last saved values
-      setLastSavedContent(note.content || ''); // Initialize last saved values
+      setLastSavedTitle(note.title); 
+      setLastSavedContent(note.content || ''); 
       editor.commands.setContent(note.content || '');
     }
-  }, [editor, note]);
+  }, [editor, note]); // Depend only on editor and note (the fetched object)
 
   useEffect(() => {
     if (isError) {
@@ -283,14 +288,14 @@ const NoteEditor = ({}: NoteEditorProps) => {
       return;
     }
 
-    // Compare with last successfully saved values
+    // Compare with last successfully saved values to avoid redundant saves
     if (currentTitle === lastSavedTitle && currentContent === lastSavedContent) {
       console.log('Autosave skipped: No changes detected since last successful save.');
       return;
     }
 
     setIsAutosaving(true);
-    console.log('Attempting to autosave...'); // Log when save is attempted
+    console.log('Attempting to autosave...'); 
     console.log('Saving Title:', currentTitle);
     console.log('Saving Content (first 100 chars):', currentContent.substring(0, 100));
 
@@ -313,22 +318,32 @@ const NoteEditor = ({}: NoteEditorProps) => {
         });
         throw error;
       }
-      console.log('Autosave successful!'); // Log when save is successful
+      console.log('Autosave successful!'); 
       setLastSavedTitle(currentTitle); // Update last saved values on success
       setLastSavedContent(currentContent); // Update last saved values on success
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-      queryClient.invalidateQueries({ queryKey: ['note', noteId] });
+      
+      // Manually update the cache instead of invalidating to prevent refetch and editor reset
+      queryClient.setQueryData(['note', noteId], (oldNote: Note | undefined) => {
+        if (!oldNote) return oldNote;
+        return {
+          ...oldNote,
+          title: currentTitle,
+          content: currentContent,
+          updated_at: new Date().toISOString(), // Update locally for immediate UI consistency
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate the list of notes to update title/timestamp
     } catch (error: any) {
       console.error('Error during autosave:', error);
       showError('Autosave failed: ' + error.message);
     } finally {
       setIsAutosaving(false);
     }
-  }, [note, user, canEdit, queryClient, noteId, lastSavedTitle, lastSavedContent]); // Add lastSavedTitle, lastSavedContent to dependencies
+  }, [note, user, canEdit, queryClient, noteId, lastSavedTitle, lastSavedContent]); 
 
   // Effect to trigger save when debounced title or content changes
   useEffect(() => {
-    if (note && editor) { // Ensure note and editor are loaded before attempting to save
+    if (note && editor) { 
       console.log('Debounced title or content changed, triggering save...');
       saveNote(debouncedTitle, debouncedEditorContent);
     }
