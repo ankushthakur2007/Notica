@@ -27,16 +27,16 @@ const NoteList = () => {
       try {
         console.log('📡 Making Supabase query...');
         // Fetch notes owned by the user OR notes where the user is a collaborator
+        // RLS policies on the 'notes' table will handle filtering based on ownership and collaboration.
         const { data, error } = await supabase
           .from('notes')
           .select(`
             *,
-            collaborators!inner(
+            collaborators!left(
               user_id,
               permission_level
             )
           `)
-          .or(`user_id.eq.${user.id},collaborators.user_id.eq.${user.id}`)
           .order('updated_at', { ascending: false });
 
         if (error) {
@@ -51,6 +51,7 @@ const NoteList = () => {
 
         console.log('✅ Notes fetched successfully:', data?.length || 0, 'notes');
         // Filter out duplicate notes if a note is both owned and collaborated on
+        // The RLS should already handle this, but a client-side unique filter is a safe fallback
         const uniqueNotes = Array.from(new Map(data.map(item => [item.id, item])).values());
         return uniqueNotes || [];
       } catch (fetchError: any) {
