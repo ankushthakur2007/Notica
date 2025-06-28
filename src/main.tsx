@@ -1,8 +1,8 @@
 import { createRoot } from "react-dom/client";
+import { StrictMode } from "react";
 import App from "./App.tsx";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
-import React from "react"; // Import React for useEffect
 
 // Function to apply font class from localStorage
 const applyFontClass = () => {
@@ -14,7 +14,7 @@ const applyFontClass = () => {
 applyFontClass();
 
 createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
+  <StrictMode>
     <ThemeProvider 
       attribute="class" 
       defaultTheme="system" 
@@ -24,5 +24,5 @@ createRoot(document.getElementById("root")!).render(
     >
       <App />
     </ThemeProvider>
-  </React.StrictMode>
+  </StrictMode>
 );
