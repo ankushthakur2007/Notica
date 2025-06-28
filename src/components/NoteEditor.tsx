@@ -121,6 +121,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
   const [isAutosaving, setIsAutosaving] = useState(false);
 
+  // New states to track the last successfully saved values
+  const [lastSavedTitle, setLastSavedTitle] = useState('');
+  const [lastSavedContent, setLastSavedContent] = useState('');
+
   const debouncedTitle = useDebounce(title, 1000); // Debounce title changes
   const debouncedEditorContent = useDebounce(editorContent, 2000); // Debounce content changes
 
@@ -259,7 +263,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
   useEffect(() => {
     if (editor && note) {
       setTitle(note.title);
-      setEditorContent(note.content || ''); // Set initial content for autosave
+      setEditorContent(note.content || ''); 
+      setLastSavedTitle(note.title); // Initialize last saved values
+      setLastSavedContent(note.content || ''); // Initialize last saved values
       editor.commands.setContent(note.content || '');
     }
   }, [editor, note]);
@@ -273,18 +279,18 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   const saveNote = useCallback(async (currentTitle: string, currentContent: string) => {
     if (!note || !user || !canEdit) {
-      // console.log('Autosave skipped: No note, no user, or no edit permission.');
+      console.log('Autosave skipped: No note, no user, or no edit permission.');
       return;
     }
 
-    // Only save if content or title has actually changed from the last saved version
-    // This check is important to prevent unnecessary saves on initial load or when content is identical
-    if (currentTitle === note.title && currentContent === note.content) {
-      // console.log('Autosave skipped: No changes detected.');
+    // Compare with last successfully saved values
+    if (currentTitle === lastSavedTitle && currentContent === lastSavedContent) {
+      console.log('Autosave skipped: No changes detected since last successful save.');
       return;
     }
 
     setIsAutosaving(true);
+    console.log('Attempting to autosave...'); // Log when save is attempted
     try {
       const { error } = await supabase
         .from('notes')
@@ -298,7 +304,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
       if (error) {
         throw error;
       }
-      // console.log('Autosave successful!');
+      console.log('Autosave successful!'); // Log when save is successful
+      setLastSavedTitle(currentTitle); // Update last saved values on success
+      setLastSavedContent(currentContent); // Update last saved values on success
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       queryClient.invalidateQueries({ queryKey: ['note', noteId] });
     } catch (error: any) {
@@ -307,7 +315,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
     } finally {
       setIsAutosaving(false);
     }
-  }, [note, user, canEdit, queryClient, noteId]);
+  }, [note, user, canEdit, queryClient, noteId, lastSavedTitle, lastSavedContent]); // Add lastSavedTitle, lastSavedContent to dependencies
 
   // Effect to trigger save when debounced title or content changes
   useEffect(() => {
@@ -319,8 +327,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
   // Effect to save on component unmount or before page unload
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (editor && note && (title !== note.title || editor.getHTML() !== note.content)) {
-        // Only prompt if there are unsaved changes
+      if (editor && note && (title !== lastSavedTitle || editor.getHTML() !== lastSavedContent)) {
+        console.log('BeforeUnload event detected with unsaved changes. Attempting to save...');
+        // Prevent default to prompt user, but also attempt save
         event.preventDefault();
         event.returnValue = ''; // Required for Chrome
         saveNote(title, editor.getHTML()); // Attempt to save
@@ -331,12 +340,13 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      // Save on component unmount
-      if (editor && note && (title !== note.title || editor.getHTML() !== note.content)) {
+      // This runs on component unmount (e.g., internal navigation)
+      if (editor && note && (title !== lastSavedTitle || editor.getHTML() !== lastSavedContent)) {
+        console.log('NoteEditor unmounting with unsaved changes. Attempting to save...');
         saveNote(title, editor.getHTML());
       }
     };
-  }, [editor, note, title, saveNote]);
+  }, [editor, note, title, saveNote, lastSavedTitle, lastSavedContent]);
 
 
   const handleImageUpload = useCallback(async (file: File) => {
@@ -1083,7 +1093,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                 <DropdownMenuItem onClick={handleExportAsText} disabled={!editor || editor.isEmpty}>
                   Export as TXT
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                  <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleCopyToClipboard} disabled={!editor || editor.isEmpty}>
                   Copy to Clipboard
                 </DropdownMenuItem>
