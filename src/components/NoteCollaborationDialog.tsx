@@ -14,22 +14,23 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { Share2, Copy, Loader2, UserPlus, XCircle, CheckCircle2 } from 'lucide-react';
+import { Share2, Copy, Loader2, UserPlus, XCircle } from 'lucide-react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
-import { Note, Collaborator } from '@/types';
+import { Collaborator } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useDebounce } from '@/hooks/use-debounce';
 
 interface ShareNoteDialogProps {
   noteId: string;
-  isNoteOwner: boolean; // Prop to determine if the current user is the note owner
+  isNoteOwner: boolean;
+  isSharableLinkEnabled: boolean; // New prop for current status
+  onToggleShareableLink: (checked: boolean) => Promise<void>; // New prop for update function
 }
 
-const NoteCollaborationDialog = ({ noteId, isNoteOwner }: ShareNoteDialogProps) => {
+const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, onToggleShareableLink }: ShareNoteDialogProps) => {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
-  const [isSharableLinkEnabled, setIsSharableLinkEnabled] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [isUpdatingShareLink, setIsUpdatingShareLink] = useState(false);
 
@@ -38,21 +39,6 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner }: ShareNoteDialogProps) 
   const [selectedUser, setSelectedUser] = useState<Collaborator | null>(null);
   const [newPermissionLevel, setNewPermissionLevel] = useState<'read' | 'write'>('read');
   const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
-
-  // Fetch the current note's sharable link status
-  const { data: note, isLoading: isLoadingNote } = useQuery<Note, Error>({
-    queryKey: ['note', noteId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('notes')
-        .select('id, is_sharable_link_enabled')
-        .eq('id', noteId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: isOpen && !!noteId,
-  });
 
   // Fetch collaborators for this note
   const { data: collaborators, isLoading: isLoadingCollaborators, refetch: refetchCollaborators } = useQuery<Collaborator[], Error>({
@@ -93,38 +79,20 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner }: ShareNoteDialogProps) 
     staleTime: 60 * 1000,
   });
 
+  // Update shareLink when isSharableLinkEnabled prop changes
   useEffect(() => {
-    if (note) {
-      setIsSharableLinkEnabled(note.is_sharable_link_enabled);
-      if (note.is_sharable_link_enabled) {
-        setShareLink(`${window.location.origin}/dashboard/edit-note/${noteId}`);
-      } else {
-        setShareLink('');
-      }
+    if (isSharableLinkEnabled) {
+      setShareLink(`${window.location.origin}/dashboard/edit-note/${noteId}`);
+    } else {
+      setShareLink('');
     }
-  }, [note, noteId]);
+  }, [isSharableLinkEnabled, noteId]);
 
-  const handleToggleShareableLink = async (checked: boolean) => {
+  const handleInternalToggleShareableLink = async (checked: boolean) => {
     setIsUpdatingShareLink(true);
     try {
-      const { error } = await supabase
-        .from('notes')
-        .update({ is_sharable_link_enabled: checked })
-        .eq('id', noteId);
-
-      if (error) {
-        throw error;
-      }
-      setIsSharableLinkEnabled(checked);
-      if (checked) {
-        setShareLink(`${window.location.origin}/dashboard/edit-note/${noteId}`);
-        showSuccess('Shareable link enabled!');
-      } else {
-        setShareLink('');
-        showSuccess('Shareable link disabled!');
-      }
-      queryClient.invalidateQueries({ queryKey: ['note', noteId] });
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      await onToggleShareableLink(checked); // Call the prop function
+      showSuccess(`Shareable link ${checked ? 'enabled' : 'disabled'}!`);
     } catch (error: any) {
       console.error('Error updating shareable link status:', error.message);
       showError('Failed to update shareable link status: ' + error.message);
@@ -260,8 +228,8 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner }: ShareNoteDialogProps) 
               <Switch
                 id="share-link-toggle"
                 checked={isSharableLinkEnabled}
-                onCheckedChange={handleToggleShareableLink}
-                disabled={isUpdatingShareLink || isLoadingNote || !isNoteOwner}
+                onCheckedChange={handleInternalToggleShareableLink}
+                disabled={isUpdatingShareLink || !isNoteOwner}
               />
             </div>
 

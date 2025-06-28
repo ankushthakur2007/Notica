@@ -632,6 +632,28 @@ const NoteEditor = ({}: NoteEditorProps) => {
     }
   };
 
+  // New function to handle toggling shareable link from NoteCollaborationDialog
+  const handleToggleShareableLinkFromDialog = useCallback(async (checked: boolean) => {
+    if (!note) return;
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .update({ is_sharable_link_enabled: checked })
+        .eq('id', note.id);
+
+      if (error) {
+        throw error;
+      }
+      // Invalidate the note query to refetch the updated status and ensure cache consistency
+      queryClient.invalidateQueries({ queryKey: ['note', noteId] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] }); // Also invalidate the list
+    } catch (error: any) {
+      console.error('Error updating shareable link status from dialog:', error.message);
+      throw error; // Re-throw to be caught by the dialog's mutation/state
+    }
+  }, [note, noteId, queryClient]);
+
+
   console.log('NoteEditor render. isLoading:', isLoading, 'note:', note ? note.id : 'null', 'note.user_id:', note?.user_id);
   console.log('NoteEditor render. user:', user ? user.id : 'null');
   console.log('NoteEditor render. isNoteOwner:', isNoteOwner);
@@ -836,7 +858,14 @@ const NoteEditor = ({}: NoteEditorProps) => {
           {isMobile ? (
             <>
               <div className="flex space-x-2">
-                {noteId && note && user && <NoteCollaborationDialog noteId={noteId} isNoteOwner={isNoteOwner} />}
+                {noteId && note && user && (
+                  <NoteCollaborationDialog 
+                    noteId={noteId} 
+                    isNoteOwner={isNoteOwner} 
+                    isSharableLinkEnabled={note.is_sharable_link_enabled}
+                    onToggleShareableLink={handleToggleShareableLinkFromDialog}
+                  />
+                )}
                 {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>}
               </div>
               <div className="flex space-x-2">
@@ -862,7 +891,14 @@ const NoteEditor = ({}: NoteEditorProps) => {
           ) : (
             <>
               {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>}
-              {noteId && note && user && <NoteCollaborationDialog noteId={noteId} isNoteOwner={isNoteOwner} />}
+              {noteId && note && user && (
+                <NoteCollaborationDialog 
+                  noteId={noteId} 
+                  isNoteOwner={isNoteOwner} 
+                  isSharableLinkEnabled={note.is_sharable_link_enabled}
+                  onToggleShareableLink={handleToggleShareableLinkFromDialog}
+                />
+              )}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" disabled={isDeleting || !isNoteOwner}>
@@ -937,7 +973,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleCopyToClipboard} disabled={!editor || editor.isEmpty}>
                     Copy to Clipboard
-                  </DropdownMenuItem>
+                  </DropdownMenu>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
