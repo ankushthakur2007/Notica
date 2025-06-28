@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,97 +9,85 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch'; // Import Switch component
+import { Input } from '@/components/ui/input'; // Import Input for displaying the link
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { User, XCircle, Share2, Loader2 } from 'lucide-react';
-import { useSessionContext } from '@/contexts/SessionContext';
-import { useQueryClient } from '@tanstack/react-query';
+import { Share2, Copy, Loader2 } from 'lucide-react';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { Note } from '@/types'; // Import Note type
 
 interface ShareNoteDialogProps {
   noteId: string;
 }
 
 const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
-  const { user: currentUser, session } = useSessionContext();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
-  const [searchEmail, setSearchEmail] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
-  const [permissionLevel, setPermissionLevel] = useState<'read' | 'write'>('read');
-  const [isSearching, setIsSearching] = useState(false);
-  const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
+  const [isSharableLinkEnabled, setIsSharableLinkEnabled] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleSearchUsers = async () => {
-    if (!searchEmail) {
-      setSearchResults([]);
-      return;
-    }
-    setIsSearching(true);
-    try {
-      if (!session?.access_token) {
-        showError('You must be logged in to search users.');
-        setIsSearching(false);
-        return;
+  // Fetch the current note's sharable link status
+  const { data: note, isLoading: isLoadingNote } = useQuery<Note, Error>({
+    queryKey: ['note', noteId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('notes')
+        .select('id, is_sharable_link_enabled')
+        .eq('id', noteId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: isOpen && !!noteId, // Only fetch when dialog is open and noteId is available
+  });
+
+  useEffect(() => {
+    if (note) {
+      setIsSharableLinkEnabled(note.is_sharable_link_enabled);
+      if (note.is_sharable_link_enabled) {
+        setShareLink(`${window.location.origin}/dashboard/edit-note/${noteId}`);
+      } else {
+        setShareLink('');
       }
-
-      const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/search-users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ searchTerm: searchEmail }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to search users.');
-      }
-
-      const data = await response.json();
-      
-      // Filter out current user from search results
-      const filteredResults = data.profiles.filter(
-        (profile: any) => profile.id !== currentUser?.id
-      );
-      setSearchResults(filteredResults);
-    } catch (error: any) {
-      console.error('Error searching users:', error.message);
-      showError('Failed to search users: ' + error.message);
-    } finally {
-      setIsSearching(false);
     }
-  };
+  }, [note, noteId]);
 
-  const handleAddCollaborator = async () => {
-    if (!selectedUser || !noteId) return;
-
-    setIsAddingCollaborator(true);
+  const handleToggleShareableLink = async (checked: boolean) => {
+    setIsUpdating(true);
     try {
-      const { error } = await supabase.from('collaborators').insert({
-        note_id: noteId,
-        user_id: selectedUser.id,
-        permission_level: permissionLevel,
-      });
+      const { error } = await supabase
+        .from('notes')
+        .update({ is_sharable_link_enabled: checked })
+        .eq('id', noteId);
 
       if (error) {
         throw error;
       }
-      showSuccess(`${selectedUser.first_name || 'User'} added as collaborator!`);
-      setSearchEmail('');
-      setSearchResults([]);
-      setSelectedUser(null);
-      setPermissionLevel('read');
+      setIsSharableLinkEnabled(checked);
+      if (checked) {
+        setShareLink(`${window.location.origin}/dashboard/edit-note/${noteId}`);
+        showSuccess('Shareable link enabled!');
+      } else {
+        setShareLink('');
+        showSuccess('Shareable link disabled!');
+      }
+      queryClient.invalidateQueries({ queryKey: ['note', noteId] }); // Invalidate specific note query
       queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate notes list to reflect changes
     } catch (error: any) {
-      console.error('Error adding collaborator:', error.message);
-      showError('Failed to add collaborator: ' + error.message);
+      console.error('Error updating shareable link status:', error.message);
+      showError('Failed to update shareable link status: ' + error.message);
     } finally {
-      setIsAddingCollaborator(false);
+      setIsUpdating(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (shareLink) {
+      navigator.clipboard.writeText(shareLink);
+      showSuccess('Share link copied to clipboard!');
     }
   };
 
@@ -115,66 +103,38 @@ const ShareNoteDialog = ({ noteId }: ShareNoteDialogProps) => {
         <DialogHeader>
           <DialogTitle>Share Note</DialogTitle>
           <DialogDescription>
-            Add new collaborators for this note.
+            Manage public sharing for this note. Anyone with the link will have read-only access.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="search-email" className="text-right">
-              Search
-            </Label>
-            <Input
-              id="search-email"
-              placeholder="Search by email..."
-              className="col-span-3"
-              value={searchEmail}
-              onChange={(e) => setSearchEmail(e.target.value)}
+          <div className="flex items-center justify-between">
+            <Label htmlFor="share-link-toggle">Enable Shareable Link</Label>
+            <Switch
+              id="share-link-toggle"
+              checked={isSharableLinkEnabled}
+              onCheckedChange={handleToggleShareableLink}
+              disabled={isUpdating || isLoadingNote}
             />
           </div>
-          <Button onClick={handleSearchUsers} disabled={isSearching || !searchEmail}>
-            {isSearching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Search Users
-          </Button>
 
-          {searchResults.length > 0 && (
+          {isSharableLinkEnabled && (
             <div className="space-y-2">
-              <Label>Search Results</Label>
-              {searchResults.map((result) => (
-                <div key={result.id} className="flex items-center justify-between p-2 border rounded-md">
-                  <div className="flex items-center space-x-2">
-                    <User className="h-4 w-4" />
-                    <span>{result.first_name} {result.last_name}</span>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => setSelectedUser(result)}>
-                    Select
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {selectedUser && (
-            <div className="space-y-2 p-2 border rounded-md bg-muted">
-              <Label>Add Collaborator</Label>
-              <div className="flex items-center justify-between">
-                <span>{selectedUser.first_name} {selectedUser.last_name}</span>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedUser(null)}>
-                  <XCircle className="h-4 w-4" />
+              <Label htmlFor="share-link">Share Link</Label>
+              <div className="flex space-x-2">
+                <Input
+                  id="share-link"
+                  value={shareLink}
+                  readOnly
+                  className="flex-grow"
+                />
+                <Button onClick={handleCopyLink} disabled={!shareLink}>
+                  <Copy className="h-4 w-4" />
+                  <span className="sr-only">Copy Link</span>
                 </Button>
               </div>
-              <Select value={permissionLevel} onValueChange={(value: 'read' | 'write') => setPermissionLevel(value)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Permission Level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="read">Read</SelectItem>
-                  <SelectItem value="write">Write</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={handleAddCollaborator} className="w-full" disabled={isAddingCollaborator}>
-                {isAddingCollaborator ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Add Collaborator
-              </Button>
+              <p className="text-sm text-muted-foreground">
+                This link provides read-only access to anyone.
+              </p>
             </div>
           )}
         </div>

@@ -133,15 +133,12 @@ const NoteEditor = ({}: NoteEditorProps) => {
     queryKey: ['note', noteId],
     queryFn: async () => {
       console.log('🔍 Fetching note from Supabase...');
-      if (!user) {
-        throw new Error('User not logged in.');
-      }
       if (!noteId) {
         throw new Error('Note ID is missing.');
       }
       const { data, error } = await supabase
         .from('notes')
-        .select('*')
+        .select('*') // Select all columns, including is_sharable_link_enabled
         .eq('id', noteId)
         .single();
 
@@ -152,7 +149,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       console.log('✅ Note fetched successfully:', data.title);
       return data;
     },
-    enabled: !!user && !!noteId,
+    enabled: !!noteId, // Note can be fetched even if user is not logged in (for public links)
     staleTime: 5 * 60 * 1000,
     cacheTime: 10 * 60 * 1000,
   });
@@ -173,9 +170,11 @@ const NoteEditor = ({}: NoteEditorProps) => {
         .eq('user_id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching collaboration permission:', error.message);
+      if (error && error.code === 'PGRST116') { // No rows found
         return null;
+      } else if (error) {
+        console.error('Error fetching collaboration permission:', error.message);
+        throw error;
       }
       return data;
     },
@@ -184,13 +183,15 @@ const NoteEditor = ({}: NoteEditorProps) => {
   });
 
   useEffect(() => {
-    if (note && user && !isLoadingPermission) {
-      if (note.user_id === user.id) {
-        setCanEdit(true);
-      } else if (permissionData?.permission_level === 'write') {
-        setCanEdit(true);
+    if (note && !isLoadingPermission) {
+      if (user && note.user_id === user.id) {
+        setCanEdit(true); // Owner always has write access
+      } else if (user && permissionData?.permission_level === 'write') {
+        setCanEdit(true); // Explicit collaborator with write access
+      } else if (note.is_sharable_link_enabled) {
+        setCanEdit(false); // Public link access is read-only
       } else {
-        setCanEdit(false);
+        setCanEdit(false); // No permission
       }
     }
   }, [note, user, permissionData, isLoadingPermission]);
@@ -279,9 +280,13 @@ const NoteEditor = ({}: NoteEditorProps) => {
   useEffect(() => {
     if (isError) {
       showError('Failed to load note: ' + error?.message);
-      navigate('/dashboard/all-notes');
+      // If the error is due to RLS and it's a public link, don't redirect.
+      // Otherwise, redirect to all notes.
+      if (!(note?.is_sharable_link_enabled && !user)) { // If it's NOT a public link being accessed by a non-logged-in user
+        navigate('/dashboard/all-notes');
+      }
     }
-  }, [isError, error, navigate]);
+  }, [isError, error, navigate, note, user]);
 
   const saveNote = useCallback(async (currentTitle: string, currentContent: string) => {
     if (!note || !user || !canEdit) {
