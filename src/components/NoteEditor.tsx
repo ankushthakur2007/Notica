@@ -398,7 +398,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
       const currentSize = parseInt(attributes.fontSize?.replace('px', '') || '16');
       const newSize = Math.min(currentSize + 2, 32);
       
-      editor.chain().focus().setMark('textStyle', { 
+      // Use updateAttributes to modify existing textStyle
+      editor.chain().focus().updateAttributes('textStyle', { 
         fontSize: `${newSize}px` 
       }).run();
       
@@ -408,6 +409,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       const currentSize = parseInt(currentFontSize) || 16;
       const newSize = Math.min(currentSize + 2, 32);
       
+      // Use setMark for new text
       editor.chain().focus().setMark('textStyle', { 
         fontSize: `${newSize}px` 
       }).run();
@@ -428,7 +430,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
       const currentSize = parseInt(attributes.fontSize?.replace('px', '') || '16');
       const newSize = Math.max(currentSize - 2, 10);
       
-      editor.chain().focus().setMark('textStyle', { 
+      // Use updateAttributes to modify existing textStyle
+      editor.chain().focus().updateAttributes('textStyle', { 
         fontSize: `${newSize}px` 
       }).run();
       
@@ -438,6 +441,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       const currentSize = parseInt(currentFontSize) || 16;
       const newSize = Math.max(currentSize - 2, 10);
       
+      // Use setMark for new text
       editor.chain().focus().setMark('textStyle', { 
         fontSize: `${newSize}px` 
       }).run();
