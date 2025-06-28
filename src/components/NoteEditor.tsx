@@ -42,6 +42,57 @@ import {
 import VoiceRecorder from '@/components/VoiceRecorder';
 import ShareNoteDialog from '@/components/ShareNoteDialog'; // Import the new component
 
+// Custom FontSize extension
+import { Extension } from '@tiptap/core';
+
+const FontSize = Extension.create({
+  name: 'fontSize',
+
+  addOptions() {
+    return {
+      types: ['textStyle'],
+    }
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: element => element.style.fontSize.replace(/['"]+/g, ''),
+            renderHTML: attributes => {
+              if (!attributes.fontSize) {
+                return {}
+              }
+              return {
+                style: `font-size: ${attributes.fontSize}`,
+              }
+            },
+          },
+        },
+      },
+    ]
+  },
+
+  addCommands() {
+    return {
+      setFontSize: fontSize => ({ chain }) => {
+        return chain()
+          .setMark('textStyle', { fontSize })
+          .run()
+      },
+      unsetFontSize: () => ({ chain }) => {
+        return chain()
+          .setMark('textStyle', { fontSize: null })
+          .removeEmptyTextStyle()
+          .run()
+      },
+    }
+  },
+})
+
 interface NoteEditorProps {} 
 
 const NoteEditor = ({}: NoteEditorProps) => {
@@ -140,6 +191,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       }),
       Underline,
       TextStyle,
+      FontSize, // Add our custom FontSize extension
       Color,
       Highlight.configure({ multicolor: true }),
       Image.configure({
@@ -181,7 +233,12 @@ const NoteEditor = ({}: NoteEditorProps) => {
     onSelectionUpdate: ({ editor }) => {
       // Update current formatting values when selection changes
       const attributes = editor.getAttributes('textStyle');
-      setCurrentFontSize(attributes.fontSize ? attributes.fontSize.replace('px', '') : '16');
+      const fontSize = attributes.fontSize;
+      if (fontSize) {
+        setCurrentFontSize(fontSize.replace('px', ''));
+      } else {
+        setCurrentFontSize('16');
+      }
       setCurrentFontFamily(attributes.fontFamily || 'Inter');
     },
   });
@@ -382,16 +439,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
     const currentSize = parseInt(currentFontSize) || 16;
     const newSize = Math.min(currentSize + 2, 32);
     
-    // Use updateAttributes to modify the textStyle mark
-    if (editor.isActive('textStyle')) {
-      editor.chain().focus().updateAttributes('textStyle', { 
-        fontSize: `${newSize}px` 
-      }).run();
-    } else {
-      editor.chain().focus().setMark('textStyle', { 
-        fontSize: `${newSize}px` 
-      }).run();
-    }
+    // Use our custom setFontSize command
+    editor.chain().focus().setFontSize(`${newSize}px`).run();
     
     setCurrentFontSize(newSize.toString());
   };
@@ -402,16 +451,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
     const currentSize = parseInt(currentFontSize) || 16;
     const newSize = Math.max(currentSize - 2, 10);
     
-    // Use updateAttributes to modify the textStyle mark
-    if (editor.isActive('textStyle')) {
-      editor.chain().focus().updateAttributes('textStyle', { 
-        fontSize: `${newSize}px` 
-      }).run();
-    } else {
-      editor.chain().focus().setMark('textStyle', { 
-        fontSize: `${newSize}px` 
-      }).run();
-    }
+    // Use our custom setFontSize command
+    editor.chain().focus().setFontSize(`${newSize}px`).run();
     
     setCurrentFontSize(newSize.toString());
   };
