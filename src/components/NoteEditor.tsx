@@ -11,12 +11,13 @@ import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Note } from '@/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles, Share2, Download } from 'lucide-react';
+import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles, Share2, Download, Type, Plus, Minus as MinusIcon } from 'lucide-react';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -54,6 +55,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefiningAI, setIsRefiningAI] = useState(false);
   const [canEdit, setCanEdit] = useState(false); // New state for edit permission
+  const [fontSize, setFontSize] = useState('16'); // New state for font size
+  const [fontFamily, setFontFamily] = useState('Inter'); // New state for font family
 
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
@@ -147,6 +150,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
     editorProps: {
       attributes: {
         class: 'prose dark:prose-invert max-w-none focus:outline-none p-4 min-h-[300px] border rounded-md bg-background text-foreground',
+        style: `font-size: ${fontSize}px; font-family: ${fontFamily}, sans-serif;`,
       },
       handleDrop: (view, event, slice, moved) => {
         if (!canEdit) return false; // Prevent drop if not editable
@@ -186,6 +190,15 @@ const NoteEditor = ({}: NoteEditorProps) => {
       navigate('/dashboard/all-notes');
     }
   }, [isError, error, navigate]);
+
+  // Update editor styles when font size or family changes
+  useEffect(() => {
+    if (editor) {
+      const editorElement = editor.view.dom as HTMLElement;
+      editorElement.style.fontSize = `${fontSize}px`;
+      editorElement.style.fontFamily = `${fontFamily}, sans-serif`;
+    }
+  }, [fontSize, fontFamily, editor]);
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!user) {
@@ -394,6 +407,20 @@ const NoteEditor = ({}: NoteEditorProps) => {
     }
   };
 
+  const increaseFontSize = () => {
+    const currentSize = parseInt(fontSize);
+    if (currentSize < 32) {
+      setFontSize((currentSize + 2).toString());
+    }
+  };
+
+  const decreaseFontSize = () => {
+    const currentSize = parseInt(fontSize);
+    if (currentSize > 10) {
+      setFontSize((currentSize - 2).toString());
+    }
+  };
+
   if (isLoading || isLoadingPermission) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -554,6 +581,51 @@ const NoteEditor = ({}: NoteEditorProps) => {
         <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHighlight({ color: '#fae0e0' }).run()} disabled={!editor.can().toggleHighlight({ color: '#fae0e0' }) || !canEdit}>
           <Highlighter className="h-4 w-4" />
         </Button>
+        
+        {/* Font Family Selector */}
+        <Select value={fontFamily} onValueChange={setFontFamily} disabled={!canEdit}>
+          <SelectTrigger className="w-[120px] h-9">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Inter">Inter</SelectItem>
+            <SelectItem value="Arial">Arial</SelectItem>
+            <SelectItem value="Helvetica">Helvetica</SelectItem>
+            <SelectItem value="Times New Roman">Times</SelectItem>
+            <SelectItem value="Georgia">Georgia</SelectItem>
+            <SelectItem value="Courier New">Courier</SelectItem>
+            <SelectItem value="Verdana">Verdana</SelectItem>
+            <SelectItem value="Roboto">Roboto</SelectItem>
+            <SelectItem value="Open Sans">Open Sans</SelectItem>
+            <SelectItem value="Lato">Lato</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Font Size Controls */}
+        <div className="flex items-center border rounded-md">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={decreaseFontSize}
+            disabled={!canEdit || parseInt(fontSize) <= 10}
+            className="h-9 px-2 rounded-r-none border-r"
+          >
+            <MinusIcon className="h-3 w-3" />
+          </Button>
+          <div className="flex items-center px-2 min-w-[40px] justify-center text-sm">
+            {fontSize}px
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={increaseFontSize}
+            disabled={!canEdit || parseInt(fontSize) >= 32}
+            className="h-9 px-2 rounded-l-none border-l"
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
+        </div>
+
         <label htmlFor="image-upload" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 cursor-pointer">
           <ImageIcon className="h-4 w-4 mr-2" />
           {isUploadingImage ? 'Uploading...' : 'Upload Image'}
