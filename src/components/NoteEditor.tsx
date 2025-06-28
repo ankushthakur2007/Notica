@@ -125,8 +125,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [lastSavedTitle, setLastSavedTitle] = useState('');
   const [lastSavedContent, setLastSavedContent] = useState('');
 
-  const debouncedTitle = useDebounce(title, 1000); // Debounce title changes
-  const debouncedEditorContent = useDebounce(editorContent, 2000); // Debounce content changes
+  // Debounce is no longer used to trigger saves, but can be kept if needed for other UI updates
+  const debouncedTitle = useDebounce(title, 1000); 
+  const debouncedEditorContent = useDebounce(editorContent, 2000); 
 
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
@@ -284,18 +285,18 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   const saveNote = useCallback(async (currentTitle: string, currentContent: string) => {
     if (!note || !user || !canEdit) {
-      console.log('Autosave skipped: No note, no user, or no edit permission.');
+      console.log('Save skipped: No note, no user, or no edit permission.');
       return;
     }
 
     // Compare with last successfully saved values to avoid redundant saves
     if (currentTitle === lastSavedTitle && currentContent === lastSavedContent) {
-      console.log('Autosave skipped: No changes detected since last successful save.');
+      console.log('Save skipped: No changes detected since last successful save.');
       return;
     }
 
     setIsAutosaving(true);
-    console.log('Attempting to autosave...'); 
+    console.log('Attempting to save on disconnect...'); 
     console.log('Saving Title:', currentTitle);
     console.log('Saving Content (first 100 chars):', currentContent.substring(0, 100));
 
@@ -305,7 +306,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
         .update({
           title: currentTitle,
           content: currentContent,
-          // Removed updated_at: new Date().toISOString(), as Supabase trigger handles this
         })
         .eq('id', note.id);
 
@@ -318,7 +318,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         });
         throw error;
       }
-      console.log('Autosave successful!'); 
+      console.log('Save successful!'); 
       setLastSavedTitle(currentTitle); // Update last saved values on success
       setLastSavedContent(currentContent); // Update last saved values on success
       
@@ -334,20 +334,15 @@ const NoteEditor = ({}: NoteEditorProps) => {
       });
       queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate the list of notes to update title/timestamp
     } catch (error: any) {
-      console.error('Error during autosave:', error);
-      showError('Autosave failed: ' + error.message);
+      console.error('Error during save:', error);
+      showError('Failed to save note: ' + error.message);
     } finally {
       setIsAutosaving(false);
     }
   }, [note, user, canEdit, queryClient, noteId, lastSavedTitle, lastSavedContent]); 
 
-  // Effect to trigger save when debounced title or content changes
-  useEffect(() => {
-    if (note && editor) { 
-      console.log('Debounced title or content changed, triggering save...');
-      saveNote(debouncedTitle, debouncedEditorContent);
-    }
-  }, [debouncedTitle, debouncedEditorContent, saveNote, note, editor]);
+  // Removed the useEffect that triggered save on debouncedTitle/Content changes
+  // This ensures saving only happens on disconnect events.
 
   // Effect to save on component unmount or before page unload
   useEffect(() => {
@@ -1118,7 +1113,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                 <DropdownMenuItem onClick={handleExportAsText} disabled={!editor || editor.isEmpty}>
                   Export as TXT
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                  <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleCopyToClipboard} disabled={!editor || editor.isEmpty}>
                   Copy to Clipboard
                 </DropdownMenuItem>
