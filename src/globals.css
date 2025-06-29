@@ -119,4 +119,41 @@
   .font-lato {
     font-family: var(--font-lato);
   }
+
+  /* TipTap Image Resizing Styles */
+  /* Styles for when an image is selected */
+  .ProseMirror-selectednode {
+    outline: 2px solid hsl(var(--primary)); /* Highlight selected image */
+    outline-offset: 2px;
+  }
+
+  /* Styles for the resize handles */
+  .ProseMirror-resizable-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: hsl(var(--primary));
+    border: 1px solid hsl(var(--primary-foreground));
+    border-radius: 50%;
+    z-index: 10;
+    cursor: nwse-resize; /* Diagonal resize cursor */
+  }
+
+  /* Position the handles */
+  .ProseMirror-resizable-handle.top-left {
+    top: -5px;
+    left: -5px;
+  }
+  .ProseMirror-resizable-handle.top-right {
+    top: -5px;
+    right: -5px;
+  }
+  .ProseMirror-resizable-handle.bottom-left {
+    bottom: -5px;
+    left: -5px;
+  }
+  .ProseMirror-resizable-handle.bottom-right {
+    bottom: -5px;
+    right: -5px;
+  }
 }
