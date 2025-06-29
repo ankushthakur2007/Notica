@@ -225,6 +225,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       Image.configure({
         inline: true,
         allowBase64: true,
+        resizable: true, // <--- ADDED THIS LINE FOR IMAGE RESIZING
       }),
       FontFamily.configure({
         types: ['textStyle'],
