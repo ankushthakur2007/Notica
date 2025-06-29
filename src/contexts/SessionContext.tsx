@@ -13,7 +13,7 @@ interface SessionContextType {
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
-export const SessionContextProvider = ({ children }: { ReactNode }) => {
+export const SessionContextProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,9 +35,23 @@ export const SessionContextProvider = ({ children }: { ReactNode }) => {
 
       if (currentSession) {
         // User is logged in
-        if (event === 'SIGNED_IN') { // Only show success toast on explicit sign-in, not initial session load
+        const lastSignInDate = new Date(currentSession.user.last_sign_in_at || currentSession.user.created_at); // Fallback to created_at if last_sign_in_at is null
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+        if (lastSignInDate < oneMonthAgo) {
+          console.log('User session too old, forcing sign out.');
+          await supabase.auth.signOut(); // Force sign out
+          showError('Your session has expired. Please sign in again.');
+          navigate('/login'); // Redirect to login after forced sign out
+          return; // Stop further processing
+        }
+
+        if (event === 'SIGNED_IN') {
           showSuccess('Successfully signed in!');
         }
+
+        // If user is logged in and on a public path, redirect to dashboard
         if (isPublicPath) {
           console.log('Navigating to /dashboard as user is logged in and on a public page.');
           navigate('/dashboard');
@@ -48,16 +62,17 @@ export const SessionContextProvider = ({ children }: { ReactNode }) => {
         if (event === 'SIGNED_OUT') {
           showSuccess('Successfully signed out!');
         }
+        // If trying to access a protected path while logged out, redirect to login
         if (isProtectedPath) {
           console.log('Navigating to /login as user is logged out and on a protected page.');
-          navigate('/login'); // Redirect to login if trying to access protected route
-        } else if (!isPublicPath) {
-          // If not logged in and not on a public path, and not a protected path (e.g., 404 or other unknown),
-          // redirect to try-now as the default landing for unauthenticated users.
-          console.log('Navigating to /try-now as user is logged out and on an unrecognized/non-public page.');
+          navigate('/login');
+        } else if (currentPath === '/') {
+          // If on the root path and logged out, redirect to try-now
+          console.log('Navigating to /try-now as user is logged out and on root.');
           navigate('/try-now');
         }
-        // If already on a public path, do nothing (stay there)
+        // For other public paths (e.g., /try-now, /privacy-policy, /terms-of-service), stay there.
+        // For 404s, NotFound component handles it.
       }
     });
 
