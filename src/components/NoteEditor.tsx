@@ -138,7 +138,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       }
       const { data, error } = await supabase
         .from('notes')
-        .select('*') // Select all columns, including is_sharable_link_enabled
+        .select('*') // Select all columns, including is_sharable_link_enabled and sharable_link_permission_level
         .eq('id', noteId)
         .single();
 
@@ -199,7 +199,13 @@ const NoteEditor = ({}: NoteEditorProps) => {
   useEffect(() => {
     if (note && !isLoadingPermission) {
       const hasWritePermission = isNoteOwner || (user && permissionData?.permission_level === 'write');
-      setCanEdit(hasWritePermission);
+      // If public link is enabled and set to 'write', and user is not logged in, grant edit.
+      // This is a client-side check, actual write permission is enforced by RLS.
+      if (!user && note.is_sharable_link_enabled && note.sharable_link_permission_level === 'write') {
+        setCanEdit(true);
+      } else {
+        setCanEdit(hasWritePermission);
+      }
       console.log('useEffect for canEdit: isNoteOwner:', isNoteOwner, 'permissionData:', permissionData, 'canEdit:', hasWritePermission);
     }
   }, [note, user, permissionData, isLoadingPermission, isNoteOwner]);
@@ -350,8 +356,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
   }, [isError, error, navigate, note, user]);
 
   const saveNote = useCallback(async (currentTitle: string, currentContent: string) => {
-    if (!note || !user || !canEdit) {
-      console.log('Save skipped: No note, no user, or no edit permission.');
+    if (!note || !canEdit) { // Removed user check here, as public editable links don't require login
+      console.log('Save skipped: No note or no edit permission.');
       return;
     }
 
@@ -406,7 +412,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
     } finally {
       // setIsAutosaving(false); // No longer needed
     }
-  }, [note, user, canEdit, queryClient, noteId, lastSavedTitle, lastSavedContent]); 
+  }, [note, canEdit, queryClient, noteId, lastSavedTitle, lastSavedContent]); // Removed user from dependency array
 
   // Effect to save on component unmount or before page unload
   useEffect(() => {
@@ -434,7 +440,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
 
   const handleImageUpload = useCallback(async (file: File) => {
-    if (!user) {
+    if (!user) { // Image upload still requires a logged-in user for bucket permissions
       showError('You must be logged in to upload images.');
       return;
     }
@@ -520,7 +526,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       return;
     }
 
-    if (!session?.access_token) {
+    if (!session?.access_token) { // AI refinement requires a logged-in user for token
       showError('You must be logged in to use AI refinement.');
       return;
     }
@@ -686,12 +692,15 @@ const NoteEditor = ({}: NoteEditorProps) => {
   };
 
   // New function to handle toggling shareable link from NoteCollaborationDialog
-  const handleToggleShareableLinkFromDialog = useCallback(async (checked: boolean) => {
+  const handleToggleShareableLinkFromDialog = useCallback(async (checked: boolean, permissionLevel: 'read' | 'write') => {
     if (!note) return;
     try {
       const { error } = await supabase
         .from('notes')
-        .update({ is_sharable_link_enabled: checked })
+        .update({ 
+          is_sharable_link_enabled: checked,
+          sharable_link_permission_level: permissionLevel // Update the new column
+        })
         .eq('id', note.id);
 
       if (error) {
@@ -928,6 +937,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                     noteId={noteId} 
                     isNoteOwner={isNoteOwner} 
                     isSharableLinkEnabled={note.is_sharable_link_enabled}
+                    sharableLinkPermissionLevel={note.sharable_link_permission_level || 'read'} // Pass the new prop
                     onToggleShareableLink={handleToggleShareableLinkFromDialog}
                   />
                 )}
@@ -966,6 +976,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                   noteId={noteId} 
                   isNoteOwner={isNoteOwner} 
                   isSharableLinkEnabled={note.is_sharable_link_enabled}
+                  sharableLinkPermissionLevel={note.sharable_link_permission_level || 'read'} // Pass the new prop
                   onToggleShareableLink={handleToggleShareableLinkFromDialog}
                 />
               )}

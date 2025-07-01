@@ -24,21 +24,28 @@ import { useDebounce } from '@/hooks/use-debounce';
 interface ShareNoteDialogProps {
   noteId: string;
   isNoteOwner: boolean;
-  isSharableLinkEnabled: boolean; // New prop for current status
-  onToggleShareableLink: (checked: boolean) => Promise<void>; // New prop for update function
+  isSharableLinkEnabled: boolean; // Current status of shareable link
+  sharableLinkPermissionLevel: 'read' | 'write'; // Current permission level for shareable link
+  onToggleShareableLink: (checked: boolean, permissionLevel: 'read' | 'write') => Promise<void>; // Updated prop for update function
 }
 
-const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, onToggleShareableLink }: ShareNoteDialogProps) => {
+const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, sharableLinkPermissionLevel, onToggleShareableLink }: ShareNoteDialogProps) => {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [isUpdatingShareLink, setIsUpdatingShareLink] = useState(false);
+  const [publicLinkPermission, setPublicLinkPermission] = useState<'read' | 'write'>(sharableLinkPermissionLevel);
 
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [selectedUser, setSelectedUser] = useState<Collaborator | null>(null);
   const [newPermissionLevel, setNewPermissionLevel] = useState<'read' | 'write'>('read');
   const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
+
+  // Update internal state when props change
+  useEffect(() => {
+    setPublicLinkPermission(sharableLinkPermissionLevel);
+  }, [sharableLinkPermissionLevel]);
 
   // Debugging: Log the props received when the dialog opens
   useEffect(() => {
@@ -47,8 +54,9 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
       console.log('  noteId:', noteId);
       console.log('  isNoteOwner:', isNoteOwner);
       console.log('  isSharableLinkEnabled:', isSharableLinkEnabled);
+      console.log('  sharableLinkPermissionLevel:', sharableLinkPermissionLevel);
     }
-  }, [isOpen, noteId, isNoteOwner, isSharableLinkEnabled]);
+  }, [isOpen, noteId, isNoteOwner, isSharableLinkEnabled, sharableLinkPermissionLevel]);
 
   // Query to search users by email using the Edge Function
   const { data: searchResults, isLoading: isLoadingSearchResults } = useQuery<Collaborator[], Error>({
@@ -192,13 +200,29 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
   const handleInternalToggleShareableLink = async (checked: boolean) => {
     setIsUpdatingShareLink(true);
     try {
-      await onToggleShareableLink(checked); // Call the prop function
-      // Removed: showSuccess(`Shareable link ${checked ? 'enabled' : 'disabled'}!`);
+      // Pass both checked status and the current publicLinkPermission
+      await onToggleShareableLink(checked, publicLinkPermission); 
     } catch (error: any) {
       console.error('Error updating shareable link status:', error.message);
       showError('Failed to update shareable link status: ' + error.message);
     } finally {
       setIsUpdatingShareLink(false);
+    }
+  };
+
+  const handlePublicLinkPermissionChange = async (value: 'read' | 'write') => {
+    setPublicLinkPermission(value);
+    // If the shareable link is already enabled, update its permission level immediately
+    if (isSharableLinkEnabled) {
+      setIsUpdatingShareLink(true);
+      try {
+        await onToggleShareableLink(true, value); // Keep enabled, just change permission
+      } catch (error: any) {
+        console.error('Error updating public link permission:', error.message);
+        showError('Failed to update public link permission: ' + error.message);
+      } finally {
+        setIsUpdatingShareLink(false);
+      }
     }
   };
 
@@ -345,8 +369,24 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
             </div>
 
             {isSharableLinkEnabled && (
-              <div className="space-y-2">
-                <Label htmlFor="share-link">Public Share Link (Read-Only)</Label>
+              <div className="space-y-2 mt-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="public-link-permission">Public Link Permission</Label>
+                  <Select
+                    value={publicLinkPermission}
+                    onValueChange={handlePublicLinkPermissionChange}
+                    disabled={isUpdatingShareLink || !isNoteOwner}
+                  >
+                    <SelectTrigger className="w-[120px] h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="read">Read-Only</SelectItem>
+                      <SelectItem value="write">Editable</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Label htmlFor="share-link">Public Share Link</Label>
                 <div className="flex space-x-2">
                   <Input
                     id="share-link"
@@ -360,7 +400,7 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Anyone with this link can view the note.
+                  Anyone with this link can {publicLinkPermission === 'write' ? 'view and edit' : 'view'} the note.
                 </p>
               </div>
             )}
