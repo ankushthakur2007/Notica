@@ -27,8 +27,8 @@ serve(async (req) => {
     );
 
     // Search auth.users by email
-    const { data: users, error: authError } = await supabaseAdmin.auth.admin.listUsers({
-      perPage: 5,
+    const { data: authUsersData, error: authError } = await supabaseAdmin.auth.admin.listUsers({
+      perPage: 100, // Fetch a reasonable number of users to search through
       page: 1,
     });
 
@@ -38,12 +38,12 @@ serve(async (req) => {
     }
 
     // Filter users by email containing the search term (case-insensitive)
-    const filteredUsers = users.users.filter(user =>
+    const filteredAuthUsers = authUsersData.users.filter(user =>
       user.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Get the IDs of the filtered users
-    const userIds = filteredUsers.map(user => user.id);
+    const userIds = filteredAuthUsers.map(user => user.id);
 
     if (userIds.length === 0) {
       return new Response(JSON.stringify({ profiles: [] }), {
@@ -63,7 +63,22 @@ serve(async (req) => {
       throw new Error('Failed to retrieve user profiles.');
     }
 
-    return new Response(JSON.stringify({ profiles }), {
+    // Create a map for quick lookup of profile data by user ID
+    const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+    // Combine auth user data (for email) with profile data (for name/avatar)
+    const combinedUsers = filteredAuthUsers.map(authUser => {
+      const profile = profileMap.get(authUser.id);
+      return {
+        id: authUser.id,
+        first_name: profile?.first_name || null,
+        last_name: profile?.last_name || null,
+        avatar_url: profile?.avatar_url || null,
+        email: authUser.email, // Get email directly from auth.users
+      };
+    });
+
+    return new Response(JSON.stringify({ profiles: combinedUsers }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
