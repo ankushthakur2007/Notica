@@ -78,7 +78,7 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
         })) as Collaborator[];
       } catch (error: any) {
         console.error('Error searching users:', error);
-        showError('Failed to search users: ' + error.message);
+        // Removed: showError('Failed to search users: ' + error.message);
         return [];
       }
     },
@@ -156,7 +156,7 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
 
       } catch (fetchDetailsError: any) {
         console.error('Error fetching user details via Edge Function:', fetchDetailsError);
-        showError('Failed to load collaborator details: ' + fetchDetailsError.message);
+        // Removed: showError('Failed to load collaborator details: ' + fetchDetailsError.message);
         // Return basic collaborators if details fetch fails, so at least something shows
         return basicCollaborators.map(collab => ({
           ...collab,
@@ -400,16 +400,8 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
                             <AvatarFallback>{(user.first_name?.[0] || user.email?.[0] || 'U').toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="text-sm font-medium">
-                              {/* Display full name if both parts exist, otherwise just the available part, or fallback to email */}
-                              {(collab.first_name || collab.last_name)
-                                ? `${collab.first_name || ''} ${collab.last_name || ''}`.trim()
-                                : collab.email || 'Unknown User'}
-                            </p>
-                            {/* Display email as a secondary line only if a name is also present and email is available */}
-                            {(collab.first_name || collab.last_name) && collab.email && (
-                              <p className="text-xs text-muted-foreground">{collab.email}</p>
-                            )}
+                            <p className="text-sm font-medium">{user.first_name} {user.last_name}</p>
+                            <p className="text-xs text-muted-foreground">{user.email}</p>
                           </div>
                         </div>
                       ))}
