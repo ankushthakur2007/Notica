@@ -190,7 +190,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   });
 
   const isNoteOwner = React.useMemo(() => {
-    const calculatedOwner = !!user && !!note && user.id === note.user.id;
+    const calculatedOwner = !!user && !!note && user.id === note.user_id;
     console.log('Inside useMemo for isNoteOwner: Current user ID:', user?.id, 'Note user_id:', note?.user_id, 'Result:', calculatedOwner);
     return calculatedOwner;
   }, [user, note]);
@@ -974,7 +974,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
-                  </AlertDialogAction>
+                  </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
               <Button variant="outline" onClick={() => navigate('/dashboard/all-notes')}>
