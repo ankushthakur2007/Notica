@@ -2,23 +2,19 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, NotebookText, Settings } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { usePlatform } from '@/hooks/use-platform'; // Import the new hook
+import { usePlatform } from '@/hooks/use-platform'; // Keep the hook, as NoteEditor will use it
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const platform = usePlatform(); // Get the current platform
+  // const platform = usePlatform(); // No longer needed directly here, but kept for context
 
   const isActive = (path: string) => location.pathname === path;
 
   const handleNewNoteClick = () => {
-    if (platform === 'android') {
-      // On Android, navigate to a special ID for local-first note creation
-      navigate('/dashboard/edit-note/local-new');
-    } else {
-      // On other platforms (web, iOS), use the NewNoteForm for direct DB creation
-      navigate('/dashboard/new-note');
-    }
+    // Always navigate to a generic 'new' note ID.
+    // The NoteEditor component will handle platform-specific logic for saving.
+    navigate('/dashboard/edit-note/new');
   };
 
   return (
@@ -29,7 +25,7 @@ const Sidebar = () => {
       <nav className="flex flex-col space-y-2 flex-grow">
         <Button
           variant="ghost"
-          className={`justify-start ${isActive('/dashboard/edit-note/local-new') || isActive('/dashboard/new-note') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`}
+          className={`justify-start ${isActive('/dashboard/edit-note/new') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`}
           onClick={handleNewNoteClick}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
