@@ -67,7 +67,7 @@ const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderP
 
             const data = await response.json();
             onTranscription(data.transcription);
-            showSuccess('Transcription complete!');
+            // Removed: showSuccess('Transcription complete!');
           } catch (error: any) {
             console.error('Error during transcription:', error);
             showError('Failed to transcribe audio: ' + error.message);
@@ -78,7 +78,7 @@ const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderP
 
         mediaRecorderRef.current.start();
         setIsRecording(true);
-        showSuccess('Recording started (Deepgram)...');
+        showSuccess('Recording started (Deepgram)...'); // Keep this one as it's an action confirmation
       } catch (err) {
         console.error('Error accessing microphone for MediaRecorder:', err);
         showError('Failed to start recording. Please check microphone permissions.');
@@ -91,7 +91,7 @@ const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderP
 
       recognitionRef.current.onstart = () => {
         setIsRecording(true);
-        showSuccess('Recording started (Web Speech API)...');
+        showSuccess('Recording started (Web Speech API)...'); // Keep this one as it's an action confirmation
       };
 
       recognitionRef.current.onresult = (event) => {
@@ -100,7 +100,7 @@ const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderP
           .map(alternative => alternative.transcript)
           .join('');
         onTranscription(transcript);
-        showSuccess('Web Speech API transcription complete!');
+        // Removed: showSuccess('Web Speech API transcription complete!');
       };
 
       recognitionRef.current.onerror = (event) => {

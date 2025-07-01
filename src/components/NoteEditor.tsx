@@ -465,7 +465,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
       if (publicUrlData?.publicUrl) {
         editor?.chain().focus().setImage({ src: publicUrlData.publicUrl }).run();
-        showSuccess('Image uploaded successfully!');
+        // Removed: showSuccess('Image uploaded successfully!');
       } else {
         throw new Error('Failed to get public URL for image.');
       }
@@ -494,7 +494,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       if (error) {
         throw error;
       }
-      showSuccess('Note deleted successfully!');
+      // Removed: showSuccess('Note deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       localStorage.removeItem(`${NOTE_CACHE_PREFIX}${note.id}`); // Clear local cache after deletion
       console.log('📝 Cleared local cache for deleted note:', note.id);
@@ -543,7 +543,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
       const data = await response.json();
       editor.commands.setContent(data.generatedContent);
-      showSuccess('Note refined with AI successfully!');
+      // Removed: showSuccess('Note refined with AI successfully!');
     } catch (error: any) {
       console.error('Error refining note with AI:', error);
       showError('Failed to refine note with AI: ' + error.message);
@@ -645,7 +645,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       pdf.text(`Generated on ${currentDate}`, margin, pageHeight - 10);
 
       pdf.save(`${title || 'untitled-note'}.pdf`);
-      showSuccess('Note exported as PDF!');
+      // Removed: showSuccess('Note exported as PDF!');
     } catch (error: any) {
       console.error('Error generating PDF:', error);
       showError('Failed to generate PDF: ' + error.message);
@@ -667,7 +667,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showSuccess('Note exported as TXT!');
+    // Removed: showSuccess('Note exported as TXT!');
   };
 
   const handleCopyToClipboard = async () => {
@@ -678,7 +678,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
     const plainText = getPlainTextContent();
     try {
       await navigator.clipboard.writeText(plainText);
-      showSuccess('Note content copied to clipboard!');
+      // Removed: showSuccess('Note content copied to clipboard!');
     } catch (err) {
       console.error('Failed to copy to clipboard:', err);
       showError('Failed to copy content to clipboard.');

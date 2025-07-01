@@ -57,9 +57,7 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
             return;
           }
 
-          if (event === 'SIGNED_IN') {
-            showSuccess('Successfully signed in!');
-          }
+          // Removed: if (event === 'SIGNED_IN') { showSuccess('Successfully signed in!'); }
 
           if (isPublicPath) {
             console.log('Navigating to /dashboard as user is logged in and on a public page.');
@@ -67,9 +65,7 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
           }
         } else {
           // User is NOT logged in
-          if (event === 'SIGNED_OUT') {
-            showSuccess('Successfully signed out!');
-          }
+          // Removed: if (event === 'SIGNED_OUT') { showSuccess('Successfully signed out!'); }
           if (isProtectedPath) {
             console.log('Navigating to /login as user is logged out and on a protected page.');
             navigate('/login');

@@ -78,7 +78,7 @@ const SettingsDashboard = () => {
       if (error) {
         throw error;
       }
-      showSuccess('Profile updated successfully!');
+      // Removed: showSuccess('Profile updated successfully!');
     } catch (error: any) {
       console.error('Error updating profile:', error.message);
       showError('Failed to update profile: ' + error.message);
@@ -121,7 +121,7 @@ const SettingsDashboard = () => {
           throw updateError;
         }
         setAvatarUrl(publicUrlData.publicUrl);
-        showSuccess('Profile picture updated!');
+        // Removed: showSuccess('Profile picture updated!');
       } else {
         throw new Error('Failed to get public URL for avatar.');
       }

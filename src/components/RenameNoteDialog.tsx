@@ -34,12 +34,12 @@ const RenameNoteDialog = ({ currentTitle, onRename, children }: RenameNoteDialog
       return;
     }
     if (newTitle === currentTitle) {
-      showSuccess('No changes made to the title.');
+      // Removed: showSuccess('No changes made to the title.');
       setIsOpen(false);
       return;
     }
     onRename(newTitle);
-    showSuccess('Note title updated locally!');
+    // Removed: showSuccess('Note title updated locally!');
     setIsOpen(false);
   };
 

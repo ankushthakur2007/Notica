@@ -45,7 +45,7 @@ const NewNoteForm = ({ onNoteCreated }: { onNoteCreated: () => void }) => {
         throw error;
       }
 
-      showSuccess('Note created successfully! Redirecting to editor...');
+      // Removed: showSuccess('Note created successfully! Redirecting to editor...');
       form.reset();
       onNoteCreated(); // Callback to notify parent component (e.g., to invalidate queries)
       navigate(`/dashboard/edit-note/${data.id}`); // Navigate to the new note's editor

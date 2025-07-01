@@ -193,7 +193,7 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
     setIsUpdatingShareLink(true);
     try {
       await onToggleShareableLink(checked); // Call the prop function
-      showSuccess(`Shareable link ${checked ? 'enabled' : 'disabled'}!`);
+      // Removed: showSuccess(`Shareable link ${checked ? 'enabled' : 'disabled'}!`);
     } catch (error: any) {
       console.error('Error updating shareable link status:', error.message);
       showError('Failed to update shareable link status: ' + error.message);
@@ -210,7 +210,7 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
 
     try {
       await navigator.clipboard.writeText(shareLink);
-      showSuccess('Share link copied to clipboard!');
+      // Removed: showSuccess('Share link copied to clipboard!');
     } catch (err: any) {
       console.warn('Failed to copy using Clipboard API, falling back to execCommand:', err);
       const textarea = document.createElement('textarea');
@@ -222,7 +222,7 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
       textarea.select();
       try {
         document.execCommand('copy');
-        showSuccess('Share link copied to clipboard (fallback)!');
+        // Removed: showSuccess('Share link copied to clipboard (fallback)!');
       } catch (execErr) {
         console.error('Fallback copy failed:', execErr);
         showError('Failed to copy link to clipboard. Please copy it manually.');
@@ -244,7 +244,7 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
       return data;
     },
     onSuccess: () => {
-      showSuccess('Collaborator added successfully!');
+      // Removed: showSuccess('Collaborator added successfully!');
       setSearchTerm('');
       setSelectedUser(null);
       refetchCollaborators(); // Refetch collaborators list
@@ -271,7 +271,7 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
       return data;
     },
     onSuccess: () => {
-      showSuccess('Permission updated successfully!');
+      // Removed: showSuccess('Permission updated successfully!');
       refetchCollaborators();
       queryClient.invalidateQueries({ queryKey: ['notes'] });
     },
@@ -290,7 +290,7 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
       if (error) throw error;
     },
     onSuccess: () => {
-      showSuccess('Collaborator removed successfully!');
+      // Removed: showSuccess('Collaborator removed successfully!');
       refetchCollaborators();
       queryClient.invalidateQueries({ queryKey: ['notes'] });
     },
@@ -400,8 +400,16 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
                             <AvatarFallback>{(user.first_name?.[0] || user.email?.[0] || 'U').toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="text-sm font-medium">{user.first_name} {user.last_name}</p>
-                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                            <p className="text-sm font-medium">
+                              {/* Display full name if both parts exist, otherwise just the available part, or fallback to email */}
+                              {(collab.first_name || collab.last_name)
+                                ? `${collab.first_name || ''} ${collab.last_name || ''}`.trim()
+                                : collab.email || 'Unknown User'}
+                            </p>
+                            {/* Display email as a secondary line only if a name is also present and email is available */}
+                            {(collab.first_name || collab.last_name) && collab.email && (
+                              <p className="text-xs text-muted-foreground">{collab.email}</p>
+                            )}
                           </div>
                         </div>
                       ))}
