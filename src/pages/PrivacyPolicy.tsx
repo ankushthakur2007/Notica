@@ -71,7 +71,7 @@ const PrivacyPolicy = () => {
 
         <h2 className="text-2xl font-semibold text-foreground">7. Contact Us</h2>
         <p className="text-muted-foreground">
-          If you have any questions about this Privacy Policy, please contact us at [Your Contact Email Here].
+          If you have any questions about this Privacy Policy, please contact us at k41946688@gmail.com .
         </p>
 
         <div className="flex justify-center mt-8">
