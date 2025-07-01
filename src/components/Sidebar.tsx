@@ -17,8 +17,8 @@ const Sidebar = () => {
       <nav className="flex flex-col space-y-2 flex-grow">
         <Button
           variant="ghost"
-          className={`justify-start ${isActive('/dashboard/new-note') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`}
-          onClick={() => navigate('/dashboard/new-note')}
+          className={`justify-start ${isActive('/dashboard/edit-note/new') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`}
+          onClick={() => navigate('/dashboard/edit-note/new')}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           New Note
