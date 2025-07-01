@@ -113,6 +113,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const isMobile = useIsMobile();
 
   const [title, setTitle] = useState('');
+  const [currentTitleInput, setCurrentTitleInput] = useState(''); // New state for input field
   const [editorContent, setEditorContent] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -126,10 +127,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
   // New states to track the last successfully saved values to Supabase
   const [lastSavedTitle, setLastSavedTitle] = useState('');
   const [lastSavedContent, setLastSavedContent] = useState('');
-
-  // Debounced values for triggering Supabase save - REMOVED
-  // const debouncedTitle = useDebounce(title, 1000); 
-  // const debouncedEditorContent = useDebounce(editorContent, 2000); 
 
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
@@ -193,7 +190,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   });
 
   const isNoteOwner = React.useMemo(() => {
-    const calculatedOwner = !!user && !!note && user.id === note.user_id;
+    const calculatedOwner = !!user && !!note && user.id === note.user.id;
     console.log('Inside useMemo for isNoteOwner: Current user ID:', user?.id, 'Note user_id:', note?.user_id, 'Result:', calculatedOwner);
     return calculatedOwner;
   }, [user, note]);
@@ -301,6 +298,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       // Prioritize Supabase data if available
       console.log('🔄 Initializing editor with fetched note data.');
       setTitle(note.title);
+      setCurrentTitleInput(note.title); // Initialize input state
       setEditorContent(note.content || ''); 
       setLastSavedTitle(note.title); 
       setLastSavedContent(note.content || ''); 
@@ -317,6 +315,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       // If note is not yet loaded from Supabase, use cached data if available
       if (cachedTitle || cachedContent) {
         setTitle(cachedTitle);
+        setCurrentTitleInput(cachedTitle); // Initialize input state
         setEditorContent(cachedContent);
         editor.commands.setContent(cachedContent);
         console.log('Initializing editor with cached data (Supabase not yet loaded).');
@@ -329,14 +328,14 @@ const NoteEditor = ({}: NoteEditorProps) => {
     if (noteId && canEdit && editor) {
       const cacheKey = `${NOTE_CACHE_PREFIX}${noteId}`;
       const cachedData = {
-        title: title,
+        title: title, // Use the main title state for cache
         content: editor.getHTML() || '',
         timestamp: Date.now(),
       };
       localStorage.setItem(cacheKey, JSON.stringify(cachedData));
       console.log('📝 Saved to local cache:', cacheKey);
     }
-  }, [title, editorContent, noteId, canEdit, editor]);
+  }, [title, editorContent, noteId, canEdit, editor]); // Now 'title' here refers to the main state
 
   useEffect(() => {
     if (isError) {
@@ -361,7 +360,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
       return;
     }
 
-    // setIsAutosaving(true); // No longer needed
     console.log('Attempting to save to Supabase...'); 
     console.log('Saving Title:', currentTitle);
     console.log('Saving Content (first 100 chars):', currentContent.substring(0, 100));
@@ -408,25 +406,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
       // setIsAutosaving(false); // No longer needed
     }
   }, [note, user, canEdit, queryClient, noteId, lastSavedTitle, lastSavedContent]); 
-
-  // This useEffect will trigger a save to Supabase after a delay if content or title changes - REMOVED
-  // useEffect(() => {
-  //   if (!editor || !note || !canEdit) {
-  //     return;
-  //   }
-
-  //   // Only save if there are actual changes compared to the last successfully saved state
-  //   // Use the debounced values here to trigger the save after the user stops typing
-  //   if (debouncedTitle === lastSavedTitle && debouncedEditorContent === lastSavedContent) {
-  //     console.log('Debounced save skipped: No changes detected.');
-  //     return;
-  //   }
-
-  //   console.log('Debounced save triggered for Supabase.');
-  //   saveNote(debouncedTitle, debouncedEditorContent);
-
-  // }, [debouncedTitle, debouncedEditorContent, editor, note, canEdit, saveNote, lastSavedTitle, lastSavedContent]);
-
 
   // Effect to save on component unmount or before page unload
   useEffect(() => {
@@ -920,14 +899,21 @@ const NoteEditor = ({}: NoteEditorProps) => {
       <div className={`flex ${isMobile ? 'flex-col space-y-3' : 'justify-between items-center'} mb-4`}>
         <Input
           className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold border-none focus-visible:ring-0 focus-visible:ring-offset-0`}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          value={currentTitleInput} // Use local state for input value
+          onChange={(e) => setCurrentTitleInput(e.target.value)} // Update local state
+          onBlur={() => setTitle(currentTitleInput)} // Update main state on blur
+          onKeyDown={(e) => { // Update main state on Enter key press
+            if (e.key === 'Enter') {
+              setTitle(currentTitleInput);
+              e.currentTarget.blur(); // Remove focus from input
+            }
+          }}
           placeholder="Note Title"
           disabled={!canEdit}
         />
         
         {/* Action buttons */}
-        <div className={`flex ${isMobile ? 'justify-between' : 'space-x-2'}`}>
+        <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'space-x-2'}`}>
           {isMobile ? (
             <>
               <div className="flex space-x-2">
@@ -939,7 +925,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
                     onToggleShareableLink={handleToggleShareableLinkFromDialog}
                   />
                 )}
-                {/* {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>} */}
               </div>
               <div className="flex space-x-2">
                 <DropdownMenu>
@@ -963,7 +948,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
             </>
           ) : (
             <>
-              {/* {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>} */}
               {noteId && note && user && (
                 <NoteCollaborationDialog 
                   noteId={noteId} 
@@ -990,7 +974,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
-                  </AlertDialogFooter>
+                  </AlertDialogAction>
                 </AlertDialogContent>
               </AlertDialog>
               <Button variant="outline" onClick={() => navigate('/dashboard/all-notes')}>
