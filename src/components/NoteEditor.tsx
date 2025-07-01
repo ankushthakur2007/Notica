@@ -48,7 +48,7 @@ import VoiceRecorder from '@/components/VoiceRecorder';
 import NoteCollaborationDialog from '@/components/NoteCollaborationDialog';
 import jsPDF from 'jspdf';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useDebounce } from '@/hooks/use-debounce'; 
+// import { useDebounce } from '@/hooks/use-debounce'; // No longer needed for autosave
 
 // Custom FontSize extension
 import { Extension } from '@tiptap/core';
@@ -121,15 +121,15 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [currentFontSize, setCurrentFontSize] = useState('16');
   const [currentFontFamily, setCurrentFontFamily] = useState('Inter');
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
-  const [isAutosaving, setIsAutosaving] = useState(false);
+  // const [isAutosaving, setIsAutosaving] = useState(false); // No longer needed
 
-  // New states to track the last successfully saved values
+  // New states to track the last successfully saved values to Supabase
   const [lastSavedTitle, setLastSavedTitle] = useState('');
   const [lastSavedContent, setLastSavedContent] = useState('');
 
-  // Debounced values for triggering Supabase save
-  const debouncedTitle = useDebounce(title, 1000); 
-  const debouncedEditorContent = useDebounce(editorContent, 2000); 
+  // Debounced values for triggering Supabase save - REMOVED
+  // const debouncedTitle = useDebounce(title, 1000); 
+  // const debouncedEditorContent = useDebounce(editorContent, 2000); 
 
   const { data: note, isLoading, isError, error } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
@@ -227,7 +227,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       Image.configure({
         inline: true,
         allowBase64: true,
-        resizable: true, // <--- ADDED THIS LINE FOR IMAGE RESIZING
+        resizable: true,
       }),
       FontFamily.configure({
         types: ['textStyle'],
@@ -361,7 +361,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       return;
     }
 
-    setIsAutosaving(true);
+    // setIsAutosaving(true); // No longer needed
     console.log('Attempting to save to Supabase...'); 
     console.log('Saving Title:', currentTitle);
     console.log('Saving Content (first 100 chars):', currentContent.substring(0, 100));
@@ -405,27 +405,27 @@ const NoteEditor = ({}: NoteEditorProps) => {
       console.error('Error during save:', error);
       showError('Failed to save note: ' + error.message);
     } finally {
-      setIsAutosaving(false);
+      // setIsAutosaving(false); // No longer needed
     }
   }, [note, user, canEdit, queryClient, noteId, lastSavedTitle, lastSavedContent]); 
 
-  // This useEffect will trigger a save to Supabase after a delay if content or title changes
-  useEffect(() => {
-    if (!editor || !note || !canEdit) {
-      return;
-    }
+  // This useEffect will trigger a save to Supabase after a delay if content or title changes - REMOVED
+  // useEffect(() => {
+  //   if (!editor || !note || !canEdit) {
+  //     return;
+  //   }
 
-    // Only save if there are actual changes compared to the last successfully saved state
-    // Use the debounced values here to trigger the save after the user stops typing
-    if (debouncedTitle === lastSavedTitle && debouncedEditorContent === lastSavedContent) {
-      console.log('Debounced save skipped: No changes detected.');
-      return;
-    }
+  //   // Only save if there are actual changes compared to the last successfully saved state
+  //   // Use the debounced values here to trigger the save after the user stops typing
+  //   if (debouncedTitle === lastSavedTitle && debouncedEditorContent === lastSavedContent) {
+  //     console.log('Debounced save skipped: No changes detected.');
+  //     return;
+  //   }
 
-    console.log('Debounced save triggered for Supabase.');
-    saveNote(debouncedTitle, debouncedEditorContent);
+  //   console.log('Debounced save triggered for Supabase.');
+  //   saveNote(debouncedTitle, debouncedEditorContent);
 
-  }, [debouncedTitle, debouncedEditorContent, editor, note, canEdit, saveNote, lastSavedTitle, lastSavedContent]);
+  // }, [debouncedTitle, debouncedEditorContent, editor, note, canEdit, saveNote, lastSavedTitle, lastSavedContent]);
 
 
   // Effect to save on component unmount or before page unload
@@ -939,7 +939,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                     onToggleShareableLink={handleToggleShareableLinkFromDialog}
                   />
                 )}
-                {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>}
+                {/* {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>} */}
               </div>
               <div className="flex space-x-2">
                 <DropdownMenu>
@@ -963,7 +963,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
             </>
           ) : (
             <>
-              {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>}
+              {/* {isAutosaving && <span className="text-sm text-muted-foreground flex items-center">Saving...</span>} */}
               {noteId && note && user && (
                 <NoteCollaborationDialog 
                   noteId={noteId} 
