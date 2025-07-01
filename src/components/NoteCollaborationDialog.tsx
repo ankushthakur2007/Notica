@@ -229,12 +229,16 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, s
   const handleCopyLink = async () => {
     if (!shareLink) {
       showError('No link to copy.');
+      console.error('Attempted to copy empty shareLink.');
       return;
     }
 
+    console.log('Attempting to copy link:', shareLink);
+
     try {
       await navigator.clipboard.writeText(shareLink);
-      // Removed: showSuccess('Share link copied to clipboard!');
+      showSuccess('Share link copied to clipboard!'); // Re-enabled success toast
+      console.log('Successfully copied using Clipboard API.');
     } catch (err: any) {
       console.warn('Failed to copy using Clipboard API, falling back to execCommand:', err);
       const textarea = document.createElement('textarea');
@@ -246,7 +250,8 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, s
       textarea.select();
       try {
         document.execCommand('copy');
-        // Removed: showSuccess('Share link copied to clipboard (fallback)!');
+        showSuccess('Share link copied to clipboard (fallback)!'); // Re-enabled success toast
+        console.log('Successfully copied using execCommand fallback.');
       } catch (execErr) {
         console.error('Fallback copy failed:', execErr);
         showError('Failed to copy link to clipboard. Please copy it manually.');
