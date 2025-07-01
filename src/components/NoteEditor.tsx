@@ -155,6 +155,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
     cacheTime: 10 * 60 * 1000,
     onSuccess: (data) => {
       console.log('✅ Note query success callback. Data ID:', data ? data.id : 'null', 'Owner ID from success callback:', data?.user_id);
+      console.log('Shareable Link Status from Supabase:', {
+        is_sharable_link_enabled: data?.is_sharable_link_enabled,
+        sharable_link_permission_level: data?.sharable_link_permission_level
+      });
     },
     onError: (err) => {
       console.error('❌ Note query error callback:', err);
@@ -1235,7 +1239,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
               variant="outline" 
               size="sm" 
               onClick={handleRefineAI} 
-              disabled={isRefiningAI || !editor.getHTML() || editor.getHTML() === '<p></p>' || !canEdit}
+              disabled={isRefiningAI || !editor?.getHTML() || editor.getHTML() === '<p></p>' || !canEdit}
             >
               <Sparkles className="mr-2 h-4 w-4" /> 
               {isRefiningAI ? 'Refining...' : 'Refine with AI'}

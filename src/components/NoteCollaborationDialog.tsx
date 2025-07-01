@@ -198,10 +198,12 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, s
   }, [isSharableLinkEnabled, noteId]);
 
   const handleInternalToggleShareableLink = async (checked: boolean) => {
+    console.log(`Attempting to toggle shareable link: checked=${checked}, permissionLevel=${publicLinkPermission}`);
     setIsUpdatingShareLink(true);
     try {
       // Pass both checked status and the current publicLinkPermission
       await onToggleShareableLink(checked, publicLinkPermission); 
+      showSuccess(`Shareable link ${checked ? 'enabled' : 'disabled'} with ${publicLinkPermission} permission.`);
     } catch (error: any) {
       console.error('Error updating shareable link status:', error.message);
       showError('Failed to update shareable link status: ' + error.message);
@@ -211,12 +213,14 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, s
   };
 
   const handlePublicLinkPermissionChange = async (value: 'read' | 'write') => {
+    console.log(`Attempting to change public link permission to: ${value}. Current shareable link enabled: ${isSharableLinkEnabled}`);
     setPublicLinkPermission(value);
     // If the shareable link is already enabled, update its permission level immediately
     if (isSharableLinkEnabled) {
       setIsUpdatingShareLink(true);
       try {
         await onToggleShareableLink(true, value); // Keep enabled, just change permission
+        showSuccess(`Public link permission set to ${value}.`);
       } catch (error: any) {
         console.error('Error updating public link permission:', error.message);
         showError('Failed to update public link permission: ' + error.message);
