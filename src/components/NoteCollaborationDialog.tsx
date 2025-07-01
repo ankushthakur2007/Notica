@@ -50,6 +50,41 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
     }
   }, [isOpen, noteId, isNoteOwner, isSharableLinkEnabled]);
 
+  // Query to search users by email using the Edge Function
+  const { data: searchResults, isLoading: isLoadingSearchResults } = useQuery<Collaborator[], Error>({
+    queryKey: ['searchUsers', debouncedSearchTerm],
+    queryFn: async () => {
+      if (!debouncedSearchTerm) return [];
+      try {
+        const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/search-users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ searchTerm: debouncedSearchTerm }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to search users.');
+        }
+        const data = await response.json();
+        return data.profiles.map((profile: any) => ({
+          id: profile.id,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          avatar_url: profile.avatar_url,
+          email: profile.email, // Email is now included from the edge function
+        })) as Collaborator[];
+      } catch (error: any) {
+        console.error('Error searching users:', error);
+        showError('Failed to search users: ' + error.message);
+        return [];
+      }
+    },
+    enabled: !!debouncedSearchTerm,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Fetch collaborators for this note
   const { data: collaborators, isLoading: isLoadingCollaborators, refetch: refetchCollaborators, isError: isCollaboratorsError, error: collaboratorsError } = useQuery<Collaborator[], Error>({
@@ -65,31 +100,69 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
         return []; // Only owner can see and manage collaborators
       }
 
-      console.log('Collaborators query: Fetching for noteId:', noteId);
-      const { data, error } = await supabase
+      console.log('Collaborators query: Fetching basic collaborator entries for noteId:', noteId);
+      const { data: basicCollaborators, error } = await supabase
         .from('collaborators')
-        .select(`
-          *,
-          profiles(first_name, last_name, avatar_url)
-        `)
+        .select(`id, note_id, user_id, permission_level, created_at`)
         .eq('note_id', noteId);
+      
       if (error) {
-        console.error('Error fetching collaborators from Supabase:', error);
+        console.error('Error fetching basic collaborators from Supabase:', error);
         throw error;
       }
-      console.log('Raw collaborators data from Supabase:', data);
-      // Map to flatten the profile data and include email from search results if available
-      const mappedData = data.map(collab => ({
-        ...collab,
-        first_name: collab.profiles?.first_name,
-        last_name: collab.profiles?.last_name,
-        avatar_url: collab.profiles?.avatar_url,
-        // Email is not stored in public.profiles, so it won't be available here directly.
-        // It would need to be fetched from auth.users via a service role function or stored in profiles.
-        // For now, we'll just ensure the display handles its absence.
-      })) as Collaborator[];
-      console.log('Mapped collaborators data:', mappedData);
-      return mappedData;
+      console.log('Raw basic collaborators data from Supabase:', basicCollaborators);
+
+      if (!basicCollaborators || basicCollaborators.length === 0) {
+        return [];
+      }
+
+      // Extract user IDs to fetch their full profiles
+      const userIdsToFetch = basicCollaborators.map(collab => collab.user_id);
+      console.log('Fetching full user details for IDs:', userIdsToFetch);
+
+      try {
+        const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/get-user-details-by-ids', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userIds: userIdsToFetch }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch user details for collaborators.');
+        }
+        const { users: userDetails } = await response.json();
+        console.log('Fetched user details from Edge Function:', userDetails);
+
+        // Map user details to a lookup object
+        const userDetailsMap = new Map(userDetails.map((user: any) => [user.id, user]));
+
+        // Combine basic collaborator data with full user details
+        const combinedCollaborators = basicCollaborators.map(collab => {
+          const details = userDetailsMap.get(collab.user_id);
+          return {
+            ...collab,
+            first_name: details?.first_name || null,
+            last_name: details?.last_name || null,
+            avatar_url: details?.avatar_url || null,
+            email: details?.email || null, // Now includes email
+          };
+        }) as Collaborator[];
+
+        console.log('Combined collaborators data:', combinedCollaborators);
+        return combinedCollaborators;
+
+      } catch (fetchDetailsError: any) {
+        console.error('Error fetching user details via Edge Function:', fetchDetailsError);
+        showError('Failed to load collaborator details: ' + fetchDetailsError.message);
+        // Return basic collaborators if details fetch fails, so at least something shows
+        return basicCollaborators.map(collab => ({
+          ...collab,
+          first_name: null, last_name: null, avatar_url: null, email: null
+        })) as Collaborator[];
+      }
     },
     enabled: isOpen && !!noteId && isNoteOwner, // Only fetch collaborators if the current user is the note owner AND dialog is open
     staleTime: 60 * 1000,
@@ -368,9 +441,14 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
                             <AvatarFallback>{(collab.first_name?.[0] || collab.email?.[0] || 'U').toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="text-sm font-medium">{collab.first_name} {collab.last_name}</p>
-                            {/* Display email if available, otherwise a placeholder */}
-                            <p className="text-xs text-muted-foreground">{collab.email || 'Email not available'}</p>
+                            <p className="text-sm font-medium">
+                              {collab.first_name && collab.last_name
+                                ? `${collab.first_name} ${collab.last_name}`
+                                : collab.email || 'Unknown User'}
+                            </p>
+                            {collab.first_name && collab.last_name && collab.email && (
+                              <p className="text-xs text-muted-foreground">{collab.email}</p>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
