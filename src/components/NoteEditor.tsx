@@ -104,14 +104,14 @@ const FontSize = Extension.create({
 
 interface NoteEditorProps {} 
 
-const NOTE_CACHE_PREFIX = 'notica-note-cache-';
+const NOTE_CACHE_PREFIX = 'notica-note-cache-'; // Keep for potential future use or if old local notes exist
 
 const NoteEditor = ({}: NoteEditorProps) => {
   const queryClient = useQueryClient();
   const { user, session } = useSessionContext();
   const navigate = useNavigate();
   const { noteId } = useParams<{ noteId: string }>();
-  const isMobileView = useIsMobile(); // Renamed to avoid conflict with platform
+  const isMobileView = useIsMobile();
   const platform = usePlatform(); // Get the current platform
 
   const [title, setTitle] = useState('');
@@ -125,10 +125,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [currentFontFamily, setCurrentFontFamily] = useState('Inter');
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
   const [isNewNote, setIsNewNote] = useState(false); // Tracks if it's a new note (not yet in DB)
-  const [isLocalOnly, setIsLocalOnly] = useState(false); // Tracks if it's a new note AND on Android (local-first)
   const [isSavingToCloud, setIsSavingToCloud] = useState(false); // State for "Save to Cloud" button
 
-  // New states to track the last successfully saved values to Supabase
+  // States to track the last successfully saved values to Supabase
   const [lastSavedTitle, setLastSavedTitle] = useState('');
   const [lastSavedContent, setLastSavedContent] = useState('');
 
@@ -276,22 +275,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
     },
   });
 
-  // Effect to determine if it's a new note and its local-only status
+  // Effect to determine if it's a new note
   useEffect(() => {
-    if (noteId === 'new') {
-      setIsNewNote(true);
-      if (platform === 'android') {
-        setIsLocalOnly(true);
-        console.log('New note on Android: Initializing as local-only.');
-      } else {
-        setIsLocalOnly(false);
-        console.log('New note on Web/iOS: Will save to cloud immediately.');
-      }
-    } else {
-      setIsNewNote(false);
-      setIsLocalOnly(false); // Existing notes are always cloud-based
-    }
-  }, [noteId, platform]);
+    setIsNewNote(noteId === 'new');
+  }, [noteId]);
 
   // Effect to initialize editor content and last saved state when note data loads or for new notes
   useEffect(() => {
@@ -306,13 +293,13 @@ const NoteEditor = ({}: NoteEditorProps) => {
       setLastSavedTitle('Untitled Note');
       setLastSavedContent('');
 
-      // If it's a new note on web/iOS, save it to Supabase immediately
-      if (!isLocalOnly && user && !isSavingToCloud) { // Ensure user is logged in for immediate cloud save
-        console.log('New note on Web/iOS: Attempting immediate save to Supabase.');
+      // Immediately save new note to Supabase for all platforms
+      if (user && !isSavingToCloud) {
+        console.log('New note: Attempting immediate save to Supabase.');
         handleSaveNewNoteToCloud('Untitled Note', ''); // Pass initial title and content
-      } else if (!user && !isLocalOnly) {
-        // If not logged in and not Android, new notes cannot be created. Redirect.
-        showError('You must be logged in to create new notes on this platform.');
+      } else if (!user) {
+        // If not logged in, new notes cannot be created. Redirect.
+        showError('You must be logged in to create new notes.');
         navigate('/dashboard/all-notes');
       }
     } else if (note) {
@@ -325,56 +312,13 @@ const NoteEditor = ({}: NoteEditorProps) => {
       setLastSavedContent(note.content || ''); 
       editor.commands.setContent(note.content || '');
     }
-  }, [editor, note, isNewNote, isLocalOnly, user, navigate]); // Added isSavingToCloud to dependencies
-
-  // Effect to load/save from/to local storage for Android local-only notes
-  useEffect(() => {
-    if (!editor || !noteId) return;
-
-    const cacheKey = `${NOTE_CACHE_PREFIX}${noteId}`;
-
-    if (isLocalOnly) {
-      const cachedDataString = localStorage.getItem(cacheKey);
-      if (cachedDataString) {
-        try {
-          const cached = JSON.parse(cachedDataString);
-          setTitle(cached.title || 'Untitled Note');
-          setCurrentTitleInput(cached.title || 'Untitled Note');
-          setEditorContent(cached.content || '');
-          editor.commands.setContent(cached.content || '');
-          console.log('📝 Loaded local-only note from cache:', cacheKey);
-        } catch (e) {
-          console.error('Error parsing cached data for local-only note:', e);
-          localStorage.removeItem(cacheKey);
-        }
-      }
-    }
-
-    // Save to local storage immediately on title or editor content change for local-only notes
-    const handleLocalSave = () => {
-      if (isLocalOnly && noteId === 'new') { // Only save to local cache if it's a new local-only note
-        const cachedData = {
-          title: title,
-          content: editor.getHTML() || '',
-          timestamp: Date.now(),
-        };
-        localStorage.setItem(cacheKey, JSON.stringify(cachedData));
-        console.log('📝 Saved to local cache:', cacheKey);
-      }
-    };
-
-    // Debounce local saves if needed, or save directly on change
-    const timeoutId = setTimeout(handleLocalSave, 500); // Small debounce for local saves
-    return () => clearTimeout(timeoutId);
-
-  }, [title, editorContent, noteId, isLocalOnly, editor]);
+  }, [editor, note, isNewNote, user, navigate]); // Removed isLocalOnly from dependencies
 
   // Effect to update canEdit status
   useEffect(() => {
     if (isNewNote) {
-      // New notes are always editable, regardless of login status on Android
-      // On web/iOS, they are editable if user is logged in (as they are immediately saved to cloud)
-      setCanEdit(true); 
+      // New notes are always editable if user is logged in (as they are immediately saved to cloud)
+      setCanEdit(!!user); 
     } else if (note && !isLoadingPermission) {
       const hasWritePermission = isNoteOwner || (user && permissionData?.permission_level === 'write');
       // If public link is enabled and set to 'write', and user is not logged in, grant edit.
@@ -389,10 +333,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
   }, [note, user, permissionData, isLoadingPermission, isNoteOwner, isNewNote]);
 
 
-  // Function to save an existing note to Supabase
+  // Function to save an existing note to Supabase (or update a newly created one)
   const saveNote = useCallback(async (currentTitle: string, currentContent: string) => {
-    if (!note || isNewNote || !canEdit) { // Don't save if it's a new note (handled by handleSaveNewNoteToCloud) or no edit permission
-      console.log('Save skipped: Not an existing note, or no edit permission.');
+    if (!noteId || !user || !canEdit) { // Need noteId and user to save
+      console.log('Save skipped: Missing noteId, user, or no edit permission.');
       return;
     }
 
@@ -402,7 +346,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       return;
     }
 
-    console.log('Attempting to save existing note to Supabase...'); 
+    console.log('Attempting to save note to Supabase...'); 
     console.log('Saving Title:', currentTitle);
     console.log('Saving Content (first 100 chars):', currentContent.substring(0, 100));
 
@@ -413,7 +357,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
           title: currentTitle,
           content: currentContent,
         })
-        .eq('id', note.id);
+        .eq('id', noteId); // Use noteId from params
 
       if (error) {
         console.error('Supabase update error:', {
@@ -443,12 +387,12 @@ const NoteEditor = ({}: NoteEditorProps) => {
       console.error('Error during save:', error);
       showError('Failed to save note: ' + error.message);
     }
-  }, [note, isNewNote, canEdit, queryClient, noteId, lastSavedTitle, lastSavedContent]);
+  }, [noteId, user, canEdit, queryClient, lastSavedTitle, lastSavedContent]);
 
-  // Function to handle initial save of a NEW note to Supabase (from local-only or immediate cloud save)
+  // Function to handle initial save of a NEW note to Supabase
   const handleSaveNewNoteToCloud = useCallback(async (initialTitle: string, initialContent: string) => {
     if (!user) {
-      showError('You must be logged in to save notes to the cloud.');
+      showError('You must be logged in to create notes.');
       return;
     }
     if (!isNewNote) {
@@ -468,18 +412,12 @@ const NoteEditor = ({}: NoteEditorProps) => {
         throw error;
       }
 
-      showSuccess('Note saved to cloud successfully!');
+      showSuccess('Note created successfully!');
       // Update URL to the new Supabase ID
       navigate(`/dashboard/edit-note/${data.id}`, { replace: true });
       
-      // Clear local cache if it was a local-only note
-      if (isLocalOnly) {
-        localStorage.removeItem(`${NOTE_CACHE_PREFIX}${noteId}`);
-        console.log('📝 Cleared local cache for note:', noteId);
-      }
-
       // Invalidate queries to refetch the note with its new ID and update note list
-      queryClient.invalidateQueries({ queryKey: ['note', noteId] }); // Invalidate old 'new' or 'local-new' key
+      queryClient.invalidateQueries({ queryKey: ['note', noteId] }); // Invalidate old 'new' key
       queryClient.invalidateQueries({ queryKey: ['note', data.id] }); // Invalidate new cloud key
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       
@@ -490,31 +428,24 @@ const NoteEditor = ({}: NoteEditorProps) => {
       // The `note` query will now refetch with the new `noteId` from the URL
     } catch (error: any) {
       console.error('Error saving new note to cloud:', error);
-      showError('Failed to save note to cloud: ' + error.message);
+      showError('Failed to create note: ' + error.message);
     } finally {
       setIsSavingToCloud(false);
     }
-  }, [user, isNewNote, isLocalOnly, noteId, navigate, queryClient]);
+  }, [user, isNewNote, noteId, navigate, queryClient]);
 
 
   // Effect to save on component unmount or before page unload
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      // Only prompt/save if it's an existing note or a local-only new note with changes
-      if (editor && (note || (isNewNote && isLocalOnly))) {
+      // Only prompt/save if it's an existing note with changes
+      if (editor && noteId !== 'new' && note) { // Only for existing cloud notes
         const currentContent = editor.getHTML();
         if (title !== lastSavedTitle || currentContent !== lastSavedContent) {
           console.log('BeforeUnload event detected with unsaved changes. Attempting to save...');
           event.preventDefault();
           event.returnValue = ''; // Required for Chrome
-          if (isLocalOnly && isNewNote) {
-            // For local-only new notes, just save to local storage
-            localStorage.setItem(`${NOTE_CACHE_PREFIX}${noteId}`, JSON.stringify({ title, content: currentContent, timestamp: Date.now() }));
-            console.log('📝 Saved unsaved local-only note to cache on unload.');
-          } else if (note) {
-            // For existing cloud notes, attempt to save to Supabase
-            saveNote(title, currentContent);
-          }
+          saveNote(title, currentContent);
         }
       }
     };
@@ -524,20 +455,15 @@ const NoteEditor = ({}: NoteEditorProps) => {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       // This runs on component unmount (e.g., internal navigation)
-      if (editor && (note || (isNewNote && isLocalOnly))) {
+      if (editor && noteId !== 'new' && note) { // Only for existing cloud notes
         const currentContent = editor.getHTML();
         if (title !== lastSavedTitle || currentContent !== lastSavedContent) {
           console.log('NoteEditor unmounting with unsaved changes. Attempting to save...');
-          if (isLocalOnly && isNewNote) {
-            localStorage.setItem(`${NOTE_CACHE_PREFIX}${noteId}`, JSON.stringify({ title, content: currentContent, timestamp: Date.now() }));
-            console.log('📝 Saved unsaved local-only note to cache on unmount.');
-          } else if (note) {
-            saveNote(title, currentContent);
-          }
+          saveNote(title, currentContent);
         }
       }
     };
-  }, [editor, note, title, saveNote, lastSavedTitle, lastSavedContent, isNewNote, isLocalOnly, noteId]);
+  }, [editor, note, title, saveNote, lastSavedTitle, lastSavedContent, noteId]);
 
 
   const handleImageUpload = useCallback(async (file: File) => {
@@ -585,15 +511,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   }, [user, editor, canEdit]);
 
   const handleDelete = async () => {
-    if (isNewNote && isLocalOnly) {
-      // If it's a new local-only note, just remove from local storage and navigate away
-      localStorage.removeItem(`${NOTE_CACHE_PREFIX}${noteId}`);
-      showSuccess('Local note discarded.');
-      navigate('/dashboard/all-notes');
-      return;
-    }
-
-    if (!note) return;
+    if (!note) return; // Ensure there's a note to delete
     if (!isNoteOwner) { // Use isNoteOwner directly
       showError('You do not have permission to delete this note.');
       return;
@@ -611,8 +529,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       }
       // Removed: showSuccess('Note deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['notes'] });
-      localStorage.removeItem(`${NOTE_CACHE_PREFIX}${note.id}`); // Clear local cache after deletion
-      console.log('📝 Cleared local cache for deleted note:', note.id);
+      // No need to clear local storage for local-only notes anymore
       navigate('/dashboard/all-notes');
     } catch (error: any) {
       console.error('Error deleting note:', error);
@@ -833,7 +750,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   console.log('NoteEditor render. isLoading:', isLoading, 'note:', note ? note.id : 'null', 'note.user_id:', note?.user_id);
   console.log('NoteEditor render. user:', user ? user.id : 'null');
   console.log('NoteEditor render. isNoteOwner:', isNoteOwner);
-  console.log('NoteEditor render. isNewNote:', isNewNote, 'isLocalOnly:', isLocalOnly);
+  console.log('NoteEditor render. isNewNote:', isNewNote);
 
 
   if (isLoading || isLoadingPermission) {
@@ -844,8 +761,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
     );
   }
 
-  // If it's a new note on web/iOS and we're waiting for it to be saved to cloud
-  if (isNewNote && !isLocalOnly && isSavingToCloud) {
+  // If it's a new note and we're waiting for it to be saved to cloud
+  if (isNewNote && isSavingToCloud) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">Creating note in cloud...</p>
@@ -1050,10 +967,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
         
         {/* Action buttons */}
         <div className={`flex ${isMobileView ? 'flex-col space-y-2' : 'space-x-2'}`}>
-          {isLocalOnly && isNewNote && user && ( // Show "Save to Cloud" only for new local-only notes
+          {platform === 'android' && user && ( // Show "Save to Cloud" only for Android
             <Button 
-              onClick={() => handleSaveNewNoteToCloud(title, editor?.getHTML() || '')} 
-              disabled={isSavingToCloud || !user}
+              onClick={() => saveNote(title, editor?.getHTML() || '')} 
+              disabled={isSavingToCloud || !user || !canEdit} // Disable if already saving or no edit permission
             >
               {isSavingToCloud ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cloud className="mr-2 h-4 w-4" />}
               {isSavingToCloud ? 'Saving...' : 'Save to Cloud'}
@@ -1091,9 +1008,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
                     <DropdownMenuItem onClick={() => navigate('/dashboard/all-notes')}>
                       Close
                     </DropdownMenuItem>
-                    {(isNoteOwner || (isNewNote && isLocalOnly)) && ( // Allow delete for owner or local-only new notes
+                    {isNoteOwner && ( // Allow delete only for owner
                       <DropdownMenuItem onClick={handleDelete} disabled={isDeleting} className="text-destructive">
-                        {isDeleting ? 'Deleting...' : (isNewNote && isLocalOnly ? 'Discard Local Note' : 'Delete Note')}
+                        {isDeleting ? 'Deleting...' : 'Delete Note'}
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
@@ -1120,9 +1037,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
               )}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={isDeleting || (!isNoteOwner && !isLocalOnly)}>
+                  <Button variant="destructive" disabled={isDeleting || !isNoteOwner}>
                     <Trash2 className="h-4 w-4 mr-2" />
-                    {isDeleting ? 'Deleting...' : (isNewNote && isLocalOnly ? 'Discard Local Note' : 'Delete Note')}
+                    {isDeleting ? 'Deleting...' : 'Delete Note'}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
