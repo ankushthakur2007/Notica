@@ -442,11 +442,13 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
                           </Avatar>
                           <div>
                             <p className="text-sm font-medium">
-                              {collab.first_name && collab.last_name
-                                ? `${collab.first_name} ${collab.last_name}`
+                              {/* Display full name if both parts exist, otherwise just the available part, or fallback to email */}
+                              {(collab.first_name || collab.last_name)
+                                ? `${collab.first_name || ''} ${collab.last_name || ''}`.trim()
                                 : collab.email || 'Unknown User'}
                             </p>
-                            {collab.first_name && collab.last_name && collab.email && (
+                            {/* Display email as a secondary line only if a name is also present and email is available */}
+                            {(collab.first_name || collab.last_name) && collab.email && (
                               <p className="text-xs text-muted-foreground">{collab.email}</p>
                             )}
                           </div>
