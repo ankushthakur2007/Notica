@@ -40,11 +40,32 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
   const [newPermissionLevel, setNewPermissionLevel] = useState<'read' | 'write'>('read');
   const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
 
+  // Debugging: Log the props received when the dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      console.log('NoteCollaborationDialog opened. Props:');
+      console.log('  noteId:', noteId);
+      console.log('  isNoteOwner:', isNoteOwner);
+      console.log('  isSharableLinkEnabled:', isSharableLinkEnabled);
+    }
+  }, [isOpen, noteId, isNoteOwner, isSharableLinkEnabled]);
+
+
   // Fetch collaborators for this note
-  const { data: collaborators, isLoading: isLoadingCollaborators, refetch: refetchCollaborators } = useQuery<Collaborator[], Error>({
+  const { data: collaborators, isLoading: isLoadingCollaborators, refetch: refetchCollaborators, isError: isCollaboratorsError, error: collaboratorsError } = useQuery<Collaborator[], Error>({
     queryKey: ['collaborators', noteId],
     queryFn: async () => {
-      if (!noteId) return [];
+      console.log('Collaborators query function called.');
+      if (!noteId) {
+        console.log('Collaborators query: No noteId, returning empty array.');
+        return [];
+      }
+      if (!isNoteOwner) {
+        console.log('Collaborators query: Not note owner, skipping fetch for existing collaborators.');
+        return []; // Only owner can see and manage collaborators
+      }
+
+      console.log('Collaborators query: Fetching for noteId:', noteId);
       const { data, error } = await supabase
         .from('collaborators')
         .select(`
@@ -52,32 +73,39 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
           profiles(first_name, last_name, avatar_url)
         `)
         .eq('note_id', noteId);
-      if (error) throw error;
-      // Map to flatten the profile data
-      return data.map(collab => ({
+      if (error) {
+        console.error('Error fetching collaborators from Supabase:', error);
+        throw error;
+      }
+      console.log('Raw collaborators data from Supabase:', data);
+      // Map to flatten the profile data and include email from search results if available
+      const mappedData = data.map(collab => ({
         ...collab,
         first_name: collab.profiles?.first_name,
         last_name: collab.profiles?.last_name,
         avatar_url: collab.profiles?.avatar_url,
+        // Email is not stored in public.profiles, so it won't be available here directly.
+        // It would need to be fetched from auth.users via a service role function or stored in profiles.
+        // For now, we'll just ensure the display handles its absence.
       })) as Collaborator[];
+      console.log('Mapped collaborators data:', mappedData);
+      return mappedData;
     },
-    enabled: isOpen && !!noteId && isNoteOwner, // Only fetch collaborators if the current user is the note owner
-  });
-
-  // Search users for collaboration
-  const { data: searchResults, isLoading: isLoadingSearchResults } = useQuery<Collaborator[], Error>({
-    queryKey: ['userSearch', debouncedSearchTerm],
-    queryFn: async () => {
-      if (!debouncedSearchTerm) return [];
-      const { data, error } = await supabase.functions.invoke('search-users', {
-        body: { searchTerm: debouncedSearchTerm },
-      });
-      if (error) throw error;
-      return data.profiles as Collaborator[];
-    },
-    enabled: !!debouncedSearchTerm && isNoteOwner,
+    enabled: isOpen && !!noteId && isNoteOwner, // Only fetch collaborators if the current user is the note owner AND dialog is open
     staleTime: 60 * 1000,
   });
+
+  // Debugging: Log collaborators query state
+  useEffect(() => {
+    console.log('Collaborators Query State:');
+    console.log('  isLoadingCollaborators:', isLoadingCollaborators);
+    console.log('  isCollaboratorsError:', isCollaboratorsError);
+    if (isCollaboratorsError) {
+      console.error('  Collaborators Error:', collaboratorsError);
+    }
+    console.log('  Collaborators data:', collaborators);
+  }, [isLoadingCollaborators, isCollaboratorsError, collaboratorsError, collaborators]);
+
 
   // Update shareLink when isSharableLinkEnabled prop changes
   useEffect(() => {
@@ -201,6 +229,16 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
 
   const handleAddCollaborator = () => {
     if (selectedUser) {
+      // Check if the user is already a collaborator
+      const isAlreadyCollaborator = collaborators?.some(
+        (collab) => collab.user_id === selectedUser.id
+      );
+
+      if (isAlreadyCollaborator) {
+        showError('This user is already a collaborator on this note.');
+        return;
+      }
+
       addCollaboratorMutation.mutate({ userId: selectedUser.id, permission: newPermissionLevel });
     }
   };
@@ -331,7 +369,8 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, o
                           </Avatar>
                           <div>
                             <p className="text-sm font-medium">{collab.first_name} {collab.last_name}</p>
-                            <p className="text-xs text-muted-foreground">{collab.email}</p>
+                            {/* Display email if available, otherwise a placeholder */}
+                            <p className="text-xs text-muted-foreground">{collab.email || 'Email not available'}</p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
