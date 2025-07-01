@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Notica</string>
-    <string name="title_activity_main">Notica</string>
-    <string name="package_name">com.example.notica</string>
-    <string name="custom_url_scheme">com.example.notica</string>
-</resources>
