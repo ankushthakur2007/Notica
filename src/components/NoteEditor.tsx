@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/collapsible";
 import VoiceRecorder from '@/components/VoiceRecorder';
 import NoteCollaborationDialog from '@/components/NoteCollaborationDialog';
+import RenameNoteDialog from '@/components/RenameNoteDialog'; // Import the new component
 import jsPDF from 'jspdf';
 import { useIsMobile } from '@/hooks/use-mobile';
 // import { useDebounce } from '@/hooks/use-debounce'; // No longer needed for autosave
@@ -705,6 +706,11 @@ const NoteEditor = ({}: NoteEditorProps) => {
     }
   }, [note, noteId, queryClient]);
 
+  const handleRenameNote = useCallback((newTitle: string) => {
+    setTitle(newTitle); // Update the main title state
+    setCurrentTitleInput(newTitle); // Also update the input's local state
+  }, []);
+
 
   console.log('NoteEditor render. isLoading:', isLoading, 'note:', note ? note.id : 'null', 'note.user_id:', note?.user_id);
   console.log('NoteEditor render. user:', user ? user.id : 'null');
@@ -934,6 +940,13 @@ const NoteEditor = ({}: NoteEditorProps) => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    {canEdit && (
+                      <RenameNoteDialog currentTitle={title} onRename={handleRenameNote}>
+                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}> {/* Prevent dropdown from closing */}
+                          Rename
+                        </DropdownMenuItem>
+                      </RenameNoteDialog>
+                    )}
                     <DropdownMenuItem onClick={() => navigate('/dashboard/all-notes')}>
                       Close
                     </DropdownMenuItem>
@@ -955,6 +968,13 @@ const NoteEditor = ({}: NoteEditorProps) => {
                   isSharableLinkEnabled={note.is_sharable_link_enabled}
                   onToggleShareableLink={handleToggleShareableLinkFromDialog}
                 />
+              )}
+              {canEdit && (
+                <RenameNoteDialog currentTitle={title} onRename={handleRenameNote}>
+                  <Button variant="outline">
+                    Rename
+                  </Button>
+                </RenameNoteDialog>
               )}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
