@@ -103,6 +103,8 @@ const FontSize = Extension.create({
 
 interface NoteEditorProps {} 
 
+const NOTE_CACHE_PREFIX = 'notica-note-cache-';
+
 const NoteEditor = ({}: NoteEditorProps) => {
   const queryClient = useQueryClient();
   const { user, session } = useSessionContext();
@@ -125,7 +127,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [lastSavedTitle, setLastSavedTitle] = useState('');
   const [lastSavedContent, setLastSavedContent] = useState('');
 
-  // Debounce is no longer used to trigger saves, but can be kept if needed for other UI updates
+  // Debounced values for triggering Supabase save
   const debouncedTitle = useDebounce(title, 1000); 
   const debouncedEditorContent = useDebounce(editorContent, 2000); 
 
@@ -276,15 +278,65 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   // Effect to initialize editor content and last saved state when note data loads
   useEffect(() => {
-    if (editor && note) {
+    if (!editor || !noteId) return;
+
+    const cacheKey = `${NOTE_CACHE_PREFIX}${noteId}`;
+    const cachedDataString = localStorage.getItem(cacheKey);
+    let cachedTitle = '';
+    let cachedContent = '';
+
+    if (cachedDataString) {
+      try {
+        const cached = JSON.parse(cachedDataString);
+        cachedTitle = cached.title || '';
+        cachedContent = cached.content || '';
+        console.log('📝 Loaded from local cache on mount:', cacheKey);
+      } catch (e) {
+        console.error('Error parsing cached data:', e);
+        localStorage.removeItem(cacheKey); // Clear corrupted cache
+      }
+    }
+
+    if (note) {
+      // Prioritize Supabase data if available
       console.log('🔄 Initializing editor with fetched note data.');
       setTitle(note.title);
       setEditorContent(note.content || ''); 
       setLastSavedTitle(note.title); 
       setLastSavedContent(note.content || ''); 
       editor.commands.setContent(note.content || '');
+
+      // If there was cached data and it's different from Supabase,
+      // it means there were unsaved changes. We might want to notify the user.
+      // For now, Supabase data overwrites.
+      if (cachedDataString && (cachedTitle !== note.title || cachedContent !== (note.content || ''))) {
+        console.warn('Cached data was different from Supabase data. Supabase data took precedence.');
+        // Optionally, show a toast: showError('Local changes were overwritten by server version.');
+      }
+    } else {
+      // If note is not yet loaded from Supabase, use cached data if available
+      if (cachedTitle || cachedContent) {
+        setTitle(cachedTitle);
+        setEditorContent(cachedContent);
+        editor.commands.setContent(cachedContent);
+        console.log('Initializing editor with cached data (Supabase not yet loaded).');
+      }
     }
-  }, [editor, note]); // Depend only on editor and note (the fetched object)
+  }, [editor, note, noteId]); // Depend only on editor and note (the fetched object)
+
+  // Effect to save to local storage immediately on title or editor content change
+  useEffect(() => {
+    if (noteId && canEdit && editor) {
+      const cacheKey = `${NOTE_CACHE_PREFIX}${noteId}`;
+      const cachedData = {
+        title: title,
+        content: editor.getHTML() || '',
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(cacheKey, JSON.stringify(cachedData));
+      console.log('📝 Saved to local cache:', cacheKey);
+    }
+  }, [title, editorContent, noteId, canEdit, editor]);
 
   useEffect(() => {
     if (isError) {
@@ -310,7 +362,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
     }
 
     setIsAutosaving(true);
-    console.log('Attempting to save on disconnect...'); 
+    console.log('Attempting to save to Supabase...'); 
     console.log('Saving Title:', currentTitle);
     console.log('Saving Content (first 100 chars):', currentContent.substring(0, 100));
 
@@ -335,6 +387,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
       console.log('Save successful!'); 
       setLastSavedTitle(currentTitle); // Update last saved values on success
       setLastSavedContent(currentContent); // Update last saved values on success
+      localStorage.removeItem(`${NOTE_CACHE_PREFIX}${note.id}`); // Clear local cache after successful Supabase save
+      console.log('📝 Cleared local cache for note:', note.id);
       
       // Manually update the cache instead of invalidating to prevent refetch and editor reset
       queryClient.setQueryData(['note', noteId], (oldNote: Note | undefined) => {
@@ -355,8 +409,24 @@ const NoteEditor = ({}: NoteEditorProps) => {
     }
   }, [note, user, canEdit, queryClient, noteId, lastSavedTitle, lastSavedContent]); 
 
-  // Removed the useEffect that triggered save on debouncedTitle/Content changes
-  // This ensures saving only happens on disconnect events.
+  // This useEffect will trigger a save to Supabase after a delay if content or title changes
+  useEffect(() => {
+    if (!editor || !note || !canEdit) {
+      return;
+    }
+
+    // Only save if there are actual changes compared to the last successfully saved state
+    // Use the debounced values here to trigger the save after the user stops typing
+    if (debouncedTitle === lastSavedTitle && debouncedEditorContent === lastSavedContent) {
+      console.log('Debounced save skipped: No changes detected.');
+      return;
+    }
+
+    console.log('Debounced save triggered for Supabase.');
+    saveNote(debouncedTitle, debouncedEditorContent);
+
+  }, [debouncedTitle, debouncedEditorContent, editor, note, canEdit, saveNote, lastSavedTitle, lastSavedContent]);
+
 
   // Effect to save on component unmount or before page unload
   useEffect(() => {
@@ -446,6 +516,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
       }
       showSuccess('Note deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['notes'] });
+      localStorage.removeItem(`${NOTE_CACHE_PREFIX}${note.id}`); // Clear local cache after deletion
+      console.log('📝 Cleared local cache for deleted note:', note.id);
       navigate('/dashboard/all-notes');
     } catch (error: any) {
       console.error('Error deleting note:', error);
