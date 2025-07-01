@@ -91,6 +91,7 @@
     "vite": "^6.3.4"
   },
   "scripts": {
+    "build": "tsc && vite build",
     "postinstall": "npx cap add android && npx cap add ios"
   }
 }
