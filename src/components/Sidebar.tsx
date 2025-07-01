@@ -12,7 +12,7 @@ const Sidebar = () => {
   return (
     <div className="flex flex-col h-full p-4 bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
       <div className="flex items-center justify-between mb-6">
-        <img src="/logo.svg" alt="Notica Logo" className="h-8 w-auto" />
+        <img src="/logo.png" alt="Notica Logo" className="h-8 w-auto" />
       </div>
       <nav className="flex flex-col space-y-2 flex-grow">
         <Button
