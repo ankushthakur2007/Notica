@@ -5,18 +5,20 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { showSuccess, showError } from '@/utils/toast';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { showError } from '@/utils/toast';
+import { useNavigate } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid'; // Import uuid for local IDs
 
 const formSchema = z.object({
   title: z.string().min(1, { message: 'Title is required.' }),
 });
 
+const NOTE_CACHE_PREFIX = 'notica-note-cache-'; // Ensure this matches NoteEditor
+
 const NewNoteForm = ({ onNoteCreated }: { onNoteCreated: () => void }) => {
   const { user } = useSessionContext();
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -25,33 +27,30 @@ const NewNoteForm = ({ onNoteCreated }: { onNoteCreated: () => void }) => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!user) {
-      showError('You must be logged in to create a note.');
-      return;
-    }
-
+    // For now, new notes are always created locally first.
+    // The user will explicitly save to Supabase from the editor.
     try {
-      const { data, error } = await supabase
-        .from('notes')
-        .insert({
-          user_id: user.id,
-          title: values.title,
-          content: '', // Initialize with empty content
-        })
-        .select('id') // Select the ID of the newly created note
-        .single();
+      const localNoteId = `local-${uuidv4()}`; // Create a unique ID for local notes
+      const newLocalNote = {
+        id: localNoteId,
+        user_id: user?.id || 'anonymous', // Assign 'anonymous' if user is not logged in
+        title: values.title,
+        content: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_sharable_link_enabled: false,
+        sharable_link_permission_level: 'read',
+      };
 
-      if (error) {
-        throw error;
-      }
+      localStorage.setItem(`${NOTE_CACHE_PREFIX}${localNoteId}`, JSON.stringify(newLocalNote));
+      console.log('📝 New note created locally:', newLocalNote);
 
-      // Removed: showSuccess('Note created successfully! Redirecting to editor...');
       form.reset();
       onNoteCreated(); // Callback to notify parent component (e.g., to invalidate queries)
-      navigate(`/dashboard/edit-note/${data.id}`); // Navigate to the new note's editor
+      navigate(`/dashboard/edit-note/${localNoteId}`); // Navigate to the new local note's editor
     } catch (error: any) {
-      console.error('Error creating note:', error);
-      showError('Failed to create note: ' + error.message);
+      console.error('Error creating local note:', error);
+      showError('Failed to create note locally: ' + error.message);
     }
   };
 
