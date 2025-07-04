@@ -19,8 +19,8 @@ import { useSessionContext } from '@/contexts/SessionContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePlatform } from '@/hooks/use-platform';
-import { useOnlineStatus } from '@/hooks/use-online-status';
-import { db, getNoteFromOfflineDb, saveNoteToOfflineDb, deleteNoteFromOfflineDb, OfflineNote } from '@/lib/offlineDb';
+// Removed useOnlineStatus import
+// Removed offlineDb imports
 
 // Import new modular components
 import NoteEditorToolbar from './NoteEditorToolbar';
@@ -85,8 +85,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const navigate = useNavigate();
   const { noteId } = useParams<{ noteId: string }>();
   const isMobileView = useIsMobile();
-  const platform = usePlatform(); // Not directly used in this file after refactor, but kept for consistency if needed elsewhere
-  const isOnline = useOnlineStatus();
+  const platform = usePlatform();
+  // Removed isOnline state
 
   const [title, setTitle] = useState('');
   const [currentTitleInput, setCurrentTitleInput] = useState('');
@@ -111,15 +111,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
         throw new Error('Note ID is missing.');
       }
 
-      const offlineNote = await getNoteFromOfflineDb(noteId);
-      if (offlineNote) {
-        console.log('✅ Note found in IndexedDB:', offlineNote.id);
-        setIsNewNote(offlineNote.sync_status === 'pending_create');
-        return offlineNote;
-      }
-
-      if (isOnline) {
-        console.log('📡 Online: Fetching note from Supabase...');
+      try {
+        console.log('📡 Fetching note from Supabase...');
         const { data, error } = await supabase
           .from('notes')
           .select('*')
@@ -133,13 +126,13 @@ const NoteEditor = ({}: NoteEditorProps) => {
         console.log('✅ Note fetched successfully from Supabase. Raw data:', JSON.stringify(data, null, 2));
         
         if (data) {
-          await saveNoteToOfflineDb(data, 'synced');
-          setIsNewNote(false);
+          setIsNewNote(false); // A fetched note is never 'new' in the offline sense
         }
         return data;
-      } else {
-        console.log('📴 Offline and note not found in IndexedDB. Cannot fetch from Supabase.');
-        throw new Error('Note not found locally and offline. Cannot fetch from cloud.');
+      } catch (fetchError: any) {
+        console.error('❌ Failed to load note from Supabase:', fetchError);
+        showError('Failed to load note: ' + fetchError.message);
+        throw fetchError; // Re-throw to let react-query handle retry/error state
       }
     },
     enabled: !!noteId,
@@ -166,11 +159,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         return { permission_level: 'write' };
       }
 
-      if (!isOnline) {
-        console.log('Offline: Cannot verify collaboration permissions from Supabase.');
-        return { permission_level: 'read' }; 
-      }
-
+      // Always check Supabase for permissions now
       const { data, error } = await supabase
         .from('collaborators')
         .select('permission_level')
@@ -276,7 +265,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
     setLastSavedTitle(note.title); 
     setLastSavedContent(note.content || ''); 
     editor.commands.setContent(note.content || '');
-    setIsNewNote(note.sync_status === 'pending_create');
+    // Removed setIsNewNote(note.sync_status === 'pending_create');
   }, [editor, note]);
 
   useEffect(() => {
@@ -285,10 +274,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       return;
     }
 
-    if (note.sync_status === 'pending_create') {
-      setCanEdit(true);
-      return;
-    }
+    // Removed note.sync_status === 'pending_create' check
 
     const hasWritePermission = isNoteOwner || (user && permissionData?.permission_level === 'write');
     if (!user && note.is_sharable_link_enabled && note.sharable_link_permission_level === 'write') {
@@ -307,7 +293,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
     }
 
     if (currentTitle === lastSavedTitle && currentContent === lastSavedContent) {
-      console.log('Save skipped: No changes detected since last successful local save.');
+      console.log('Save skipped: No changes detected since last successful save.');
       return;
     }
 
@@ -316,45 +302,31 @@ const NoteEditor = ({}: NoteEditorProps) => {
     console.log('Saving Content (first 100 chars):', currentContent.substring(0, 100));
 
     const now = new Date().toISOString();
-    const updatedNote: OfflineNote = {
-      ...note,
-      title: currentTitle,
-      content: currentContent,
-      updated_at: now,
-      sync_status: note.sync_status === 'pending_create' ? 'pending_create' : 'pending_update',
-    };
-
+    
     try {
-      await saveNoteToOfflineDb(updatedNote, updatedNote.sync_status);
-      console.log('Note saved to IndexedDB!');
+      console.log('Attempting to save to Supabase...');
+      const { error } = await supabase
+        .from('notes')
+        .update({
+          title: currentTitle,
+          content: currentContent,
+          updated_at: now,
+        })
+        .eq('id', noteId);
+
+      if (error) {
+        console.error('Supabase update error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
+      console.log('Save successful to Supabase!');
+      showSuccess('Note saved successfully!');
       setLastSavedTitle(currentTitle);
       setLastSavedContent(currentContent);
-
-      if (isOnline && updatedNote.sync_status !== 'pending_create') {
-        console.log('Online: Attempting to save to Supabase...');
-        const { error } = await supabase
-          .from('notes')
-          .update({
-            title: currentTitle,
-            content: currentContent,
-            updated_at: now,
-          })
-          .eq('id', noteId);
-
-        if (error) {
-          console.error('Supabase update error:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
-          throw error;
-        }
-        console.log('Save successful to Supabase!');
-        await saveNoteToOfflineDb({ ...updatedNote, sync_status: 'synced' }, 'synced');
-      } else if (!isOnline) {
-        showSuccess('Note saved locally (offline). Will sync when online.');
-      }
 
       queryClient.setQueryData(['note', noteId], (oldNote: Note | undefined) => {
         if (!oldNote) return oldNote;
@@ -363,7 +335,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
           title: currentTitle,
           content: currentContent,
           updated_at: now,
-          sync_status: updatedNote.sync_status,
         };
       });
       queryClient.invalidateQueries({ queryKey: ['notes'] });
@@ -371,7 +342,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       console.error('Error during save:', error);
       showError('Failed to save note: ' + error.message);
     }
-  }, [noteId, user, canEdit, note, isOnline, queryClient, lastSavedTitle, lastSavedContent]);
+  }, [noteId, user, canEdit, note, queryClient, lastSavedTitle, lastSavedContent]);
 
 
   useEffect(() => {
@@ -403,10 +374,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
 
   const handleImageUpload = useCallback(async (file: File) => {
-    if (!isOnline) {
-      showError('Cannot upload images while offline.');
-      return;
-    }
+    // Removed isOnline check
     if (!user) {
       showError('You must be logged in to upload images.');
       return;
@@ -447,7 +415,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
     } finally {
       setIsUploadingImage(false);
     }
-  }, [user, editor, canEdit, isOnline]);
+  }, [user, editor, canEdit]); // Removed isOnline from dependencies
 
   const handleDelete = async () => {
     if (!note) return;
@@ -458,29 +426,19 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
     setIsDeleting(true);
     try {
-      if (note.sync_status === 'pending_create') {
-        await deleteNoteFromOfflineDb(note.id);
-        showSuccess('Note deleted locally.');
-      } else {
-        await saveNoteToOfflineDb({ ...note, sync_status: 'pending_delete' }, 'pending_delete');
-        showSuccess('Note marked for deletion. Will sync when online.');
+      console.log('Attempting to delete from Supabase...');
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', note.id);
 
-        if (isOnline) {
-          console.log('Online: Attempting to delete from Supabase...');
-          const { error } = await supabase
-            .from('notes')
-            .delete()
-            .eq('id', note.id);
-
-          if (error) {
-            console.error('Supabase delete error:', error);
-            throw error;
-          }
-          console.log('Note deleted from Supabase!');
-          await deleteNoteFromOfflineDb(note.id);
-          showSuccess('Note deleted successfully!');
-        }
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw error;
       }
+      console.log('Note deleted from Supabase!');
+      showSuccess('Note deleted successfully!');
+      
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       navigate('/dashboard/your-notes');
     } catch (error: any) {
@@ -493,10 +451,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   const handleRefineAI = async () => {
     if (!editor) return;
-    if (!isOnline) {
-      showError('AI refinement requires an internet connection.');
-      return;
-    }
+    // Removed isOnline check
     if (!canEdit) {
       showError('You do not have permission to refine this note with AI.');
       return;
@@ -540,10 +495,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   };
 
   const handleTranscription = (text: string) => {
-    if (!isOnline) {
-      showError('Voice transcription requires an internet connection.');
-      return;
-    }
+    // Removed isOnline check
     if (!canEdit) {
       showError('You do not have permission to add voice transcription to this note.');
       return;
@@ -583,8 +535,8 @@ const NoteEditor = ({}: NoteEditorProps) => {
   }, [editor, canEdit, currentFontSize]);
 
   const handleToggleShareableLinkFromDialog = useCallback(async (checked: boolean, permissionLevel: 'read' | 'write') => {
-    if (!note || !isOnline) {
-      showError('Cannot update shareable link status while offline.');
+    if (!note) { // Removed isOnline check
+      showError('Cannot update shareable link status.');
       return;
     }
     try {
@@ -605,7 +557,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       console.error('Error updating shareable link status from dialog:', error.message);
       throw error;
     }
-  }, [note, noteId, queryClient, isOnline]);
+  }, [note, noteId, queryClient]); // Removed isOnline from dependencies
 
   const handleRenameNote = useCallback((newTitle: string) => {
     setTitle(newTitle);
@@ -620,7 +572,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   console.log('NoteEditor render. user:', user ? user.id : 'null');
   console.log('NoteEditor render. isNoteOwner:', isNoteOwner);
   console.log('NoteEditor render. isNewNote (from state):', isNewNote);
-  console.log('NoteEditor render. isOnline:', isOnline);
+  // Removed isOnline log
 
 
   if (isLoading || isLoadingPermission) {
@@ -666,7 +618,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         isUploadingImage={isUploadingImage}
         isRefiningAI={isRefiningAI}
         session={session}
-        isOnline={isOnline}
+        // Removed isOnline prop
         onImageUpload={handleImageUpload}
         onRefineAI={handleRefineAI}
         onTranscription={handleTranscription}

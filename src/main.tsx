@@ -13,18 +13,7 @@ const applyFontClass = () => {
 // Apply font class on initial load
 applyFontClass();
 
-// Register Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(registration => {
-        console.log('Service Worker registered with scope:', registration.scope);
-      })
-      .catch(error => {
-        console.error('Service Worker registration failed:', error);
-      });
-  });
-}
+// Service Worker registration removed as offline capabilities are being removed.
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

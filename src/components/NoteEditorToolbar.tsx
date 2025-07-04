@@ -27,7 +27,7 @@ interface NoteEditorToolbarProps {
   isUploadingImage: boolean;
   isRefiningAI: boolean;
   session: Session | null;
-  isOnline: boolean;
+  // Removed isOnline prop
   onImageUpload: (file: File) => Promise<void>;
   onRefineAI: () => Promise<void>;
   onTranscription: (text: string) => void;
@@ -45,7 +45,7 @@ const NoteEditorToolbar = ({
   isUploadingImage,
   isRefiningAI,
   session,
-  isOnline,
+  // Removed isOnline prop
   onImageUpload,
   onRefineAI,
   onTranscription,
@@ -308,7 +308,7 @@ const NoteEditorToolbar = ({
               variant="outline" 
               size="sm" 
               onClick={onRefineAI} 
-              disabled={isRefiningAI || !editor?.getHTML() || editor.getHTML() === '<p></p>' || !canEdit || !isOnline || !session}
+              disabled={isRefiningAI || !editor?.getHTML() || editor.getHTML() === '<p></p>' || !canEdit || !session} // Removed isOnline check
             >
               <Sparkles className="h-4 w-4" />
             </Button>
@@ -320,7 +320,7 @@ const NoteEditorToolbar = ({
                 accept="image/*"
                 onChange={handleFileSelect}
                 className="hidden"
-                disabled={isUploadingImage || !canEdit || !isOnline}
+                disabled={isUploadingImage || !canEdit} // Removed isOnline check
               />
             </label>
             <DropdownMenu>
@@ -504,14 +504,14 @@ const NoteEditorToolbar = ({
               accept="image/*"
               onChange={handleFileSelect}
               className="hidden"
-              disabled={isUploadingImage || !canEdit || !isOnline}
+              disabled={isUploadingImage || !canEdit} // Removed isOnline check
             />
           </label>
           <Button 
             variant="outline" 
             size="sm" 
             onClick={onRefineAI} 
-            disabled={isRefiningAI || !editor?.getHTML() || editor.getHTML() === '<p></p>' || !canEdit || !isOnline || !session}
+            disabled={isRefiningAI || !editor?.getHTML() || editor.getHTML() === '<p></p>' || !canEdit || !session} // Removed isOnline check
           >
             <Sparkles className="mr-2 h-4 w-4" /> 
             {isRefiningAI ? 'Refining...' : 'Refine with AI'}

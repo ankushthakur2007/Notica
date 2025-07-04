@@ -21,8 +21,7 @@ import NoteEditor from "./components/NoteEditor";
 
 // Import SessionContextProvider and useSessionContext
 import { SessionContextProvider, useSessionContext } from "./contexts/SessionContext";
-// Import SyncProvider
-import { SyncProvider } from "./contexts/SyncContext";
+// SyncProvider import removed
 
 const queryClient = new QueryClient();
 
@@ -66,9 +65,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <SessionContextProvider>
-          <SyncProvider> {/* Wrap AppContent with SyncProvider */}
-            <AppContent /> 
-          </SyncProvider>
+          {/* SyncProvider removed */}
+          <AppContent /> 
         </SessionContextProvider>
       </BrowserRouter>
     </TooltipProvider>
