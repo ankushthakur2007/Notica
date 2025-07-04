@@ -15,7 +15,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 
 // Import components for nested dashboard routes
-import NoteList from "./components/NoteList";
+import NoteList from "./components/NoteList"; // Now "Your Notes"
+import SharedNoteList from "./components/SharedNoteList"; // New component for shared notes
 import NoteEditor from "./components/NoteEditor";
 
 // Import SessionContextProvider and useSessionContext
@@ -43,7 +44,8 @@ const AppContent = () => {
       
       {/* Dashboard and its nested routes */}
       <Route path="/dashboard" element={<Dashboard />}>
-        <Route path="all-notes" element={<NoteList />} />
+        <Route path="your-notes" element={<NoteList />} /> {/* Renamed route */}
+        <Route path="shared-notes" element={<SharedNoteList />} /> {/* New route */}
         <Route path="edit-note/:noteId" element={<NoteEditor />} />
       </Route>
 

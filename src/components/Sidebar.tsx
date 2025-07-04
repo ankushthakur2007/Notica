@@ -1,8 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, NotebookText, Settings } from 'lucide-react';
+import { PlusCircle, NotebookText, Settings, Users } from 'lucide-react'; // Import Users icon
 import { useNavigate, useLocation } from 'react-router-dom';
-import { usePlatform } from '@/hooks/use-platform'; // Keep the hook, as NoteEditor will use it
+import { usePlatform } from '@/hooks/use-platform';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -33,11 +33,19 @@ const Sidebar = () => {
         </Button>
         <Button
           variant="ghost"
-          className={`justify-start ${isActive('/dashboard/all-notes') || isActive('/dashboard') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`}
-          onClick={() => navigate('/dashboard/all-notes')}
+          className={`justify-start ${isActive('/dashboard/your-notes') || isActive('/dashboard') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`}
+          onClick={() => navigate('/dashboard/your-notes')}
         >
           <NotebookText className="mr-2 h-4 w-4" />
-          All Notes
+          Your Notes
+        </Button>
+        <Button
+          variant="ghost"
+          className={`justify-start ${isActive('/dashboard/shared-notes') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`}
+          onClick={() => navigate('/dashboard/shared-notes')}
+        >
+          <Users className="mr-2 h-4 w-4" />
+          Shared Notes
         </Button>
       </nav>
       <div className="mt-auto pt-4 border-t border-sidebar-border">
