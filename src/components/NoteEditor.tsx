@@ -10,48 +10,21 @@ import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
 import FontFamily from '@tiptap/extension-font-family';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Note } from '@/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Trash2, Sparkles, Share2, Download, Type, Plus, Minus as MinusIcon, MoreHorizontal, ChevronDown, Cloud } from 'lucide-react';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import VoiceRecorder from '@/components/VoiceRecorder';
-import NoteCollaborationDialog from '@/components/NoteCollaborationDialog';
-import RenameNoteDialog from '@/components/RenameNoteDialog';
-import jsPDF from 'jspdf';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePlatform } from '@/hooks/use-platform';
 import { useOnlineStatus } from '@/hooks/use-online-status';
 import { db, getNoteFromOfflineDb, saveNoteToOfflineDb, deleteNoteFromOfflineDb, OfflineNote } from '@/lib/offlineDb';
+
+// Import new modular components
+import NoteEditorToolbar from './NoteEditorToolbar';
+import NoteHeader from './NoteHeader';
 
 // Custom FontSize extension
 import { Extension } from '@tiptap/core';
@@ -112,7 +85,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const navigate = useNavigate();
   const { noteId } = useParams<{ noteId: string }>();
   const isMobileView = useIsMobile();
-  const platform = usePlatform();
+  const platform = usePlatform(); // Not directly used in this file after refactor, but kept for consistency if needed elsewhere
   const isOnline = useOnlineStatus();
 
   const [title, setTitle] = useState('');
@@ -124,7 +97,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [canEdit, setCanEdit] = useState(false);
   const [currentFontSize, setCurrentFontSize] = useState('16');
   const [currentFontFamily, setCurrentFontFamily] = useState('Inter');
-  const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
   const [isNewNote, setIsNewNote] = useState(false);
 
   const [lastSavedTitle, setLastSavedTitle] = useState('');
@@ -567,12 +539,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
     }
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      handleImageUpload(event.target.files[0]);
-    }
-  };
-
   const handleTranscription = (text: string) => {
     if (!isOnline) {
       showError('Voice transcription requires an internet connection.');
@@ -587,14 +553,14 @@ const NoteEditor = ({}: NoteEditorProps) => {
     }
   };
 
-  const handleFontFamilyChange = (fontFamily: string) => {
+  const handleFontFamilyChange = useCallback((fontFamily: string) => {
     if (!editor || !canEdit) return;
     
     editor.chain().focus().setFontFamily(fontFamily).run();
     setCurrentFontFamily(fontFamily);
-  };
+  }, [editor, canEdit]);
 
-  const increaseFontSize = () => {
+  const increaseFontSize = useCallback(() => {
     if (!editor || !canEdit) return;
     
     const currentSize = parseInt(currentFontSize) || 16;
@@ -603,9 +569,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
     editor.chain().focus().setFontSize(`${newSize}px`).run();
     
     setCurrentFontSize(newSize.toString());
-  };
+  }, [editor, canEdit, currentFontSize]);
 
-  const decreaseFontSize = () => {
+  const decreaseFontSize = useCallback(() => {
     if (!editor || !canEdit) return;
     
     const currentSize = parseInt(currentFontSize) || 16;
@@ -614,92 +580,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
     editor.chain().focus().setFontSize(`${newSize}px`).run();
     
     setCurrentFontSize(newSize.toString());
-  };
-
-  const getPlainTextContent = () => {
-    if (!editor) return '';
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = editor.getHTML();
-    return tempDiv.textContent || tempDiv.innerText || '';
-  };
-
-  const handleExportAsPDF = () => {
-    if (!editor || editor.isEmpty) {
-      showError('Note is empty, nothing to export.');
-      return;
-    }
-
-    try {
-      const pdf = new jsPDF();
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 20;
-      const maxWidth = pageWidth - 2 * margin;
-      let yPosition = margin;
-
-      pdf.setFontSize(18);
-      pdf.setFont('helvetica', 'bold');
-      const titleLines = pdf.splitTextToSize(title || 'Untitled Note', maxWidth);
-      pdf.text(titleLines, margin, yPosition);
-      yPosition += titleLines.length * 10 + 10;
-
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'normal');
-      
-      const content = getPlainTextContent();
-      const lines = pdf.splitTextToSize(content, maxWidth);
-      
-      for (let i = 0; i < lines.length; i++) {
-        if (yPosition > pageHeight - margin) {
-          pdf.addPage();
-          yPosition = margin;
-        }
-        pdf.text(lines[i], margin, yPosition);
-        yPosition += 7;
-      }
-
-      const currentDate = new Date().toLocaleDateString();
-      pdf.setFontSize(8);
-      pdf.setTextColor(128, 128, 128);
-      pdf.text(`Generated on ${currentDate}`, margin, pageHeight - 10);
-
-      pdf.save(`${title || 'untitled-note'}.pdf`);
-    } catch (error: any) {
-      console.error('Error generating PDF:', error);
-      showError('Failed to generate PDF: ' + error.message);
-    }
-  };
-
-  const handleExportAsText = () => {
-    if (!editor || editor.isEmpty) {
-      showError('Note is empty, nothing to export.');
-      return;
-    }
-    const plainText = getPlainTextContent();
-    const blob = new Blob([plainText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${title || 'untitled-note'}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleCopyToClipboard = async () => {
-    if (!editor || editor.isEmpty) {
-      showError('Note is empty, nothing to copy.');
-      return;
-    }
-    const plainText = getPlainTextContent();
-    try {
-      await navigator.clipboard.writeText(plainText);
-    } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
-      showError('Failed to copy content to clipboard.');
-    }
-  };
+  }, [editor, canEdit, currentFontSize]);
 
   const handleToggleShareableLinkFromDialog = useCallback(async (checked: boolean, permissionLevel: 'read' | 'write') => {
     if (!note || !isOnline) {
@@ -731,154 +612,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
     setCurrentTitleInput(newTitle);
   }, []);
 
-  // Define BasicFormattingTools component
-  const BasicFormattingTools = () => (
-    <div className="flex flex-wrap gap-1">
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBold().run()} disabled={!editor?.can().toggleBold() || !canEdit}>
-        <Bold className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleItalic().run()} disabled={!editor?.can().toggleItalic() || !canEdit}>
-        <Italic className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleUnderline().run()} disabled={!editor?.can().toggleUnderline() || !canEdit}>
-        <UnderlineIcon className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleCode().run()} disabled={!editor?.can().toggleCode() || !canEdit}>
-        <Code className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBulletList().run()} disabled={!editor?.can().toggleBulletList() || !canEdit}>
-        <List className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleOrderedList().run()} disabled={!editor?.can().toggleOrderedList() || !canEdit}>
-        <ListOrdered className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo() || !canEdit}>
-        <Undo className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo() || !canEdit}>
-        <Redo className="h-4 w-4" />
-      </Button>
-    </div>
-  );
-
-  // Define AdvancedFormattingTools component
-  const AdvancedFormattingTools = () => (
-    <div className="flex flex-wrap gap-1 mt-2">
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleStrike().run()} disabled={!editor?.can().toggleStrike() || !canEdit}>
-        Strike
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setParagraph().run()} disabled={!editor?.can().setParagraph() || !canEdit}>
-        P
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} disabled={!editor?.can().toggleHeading({ level: 1 }) || !canEdit}>
-        <Heading1 className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} disabled={!editor?.can().toggleHeading({ level: 2 }) || !canEdit}>
-        <Heading2 className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBlockquote().run()} disabled={!editor?.can().toggleBlockquote() || !canEdit}>
-        <Quote className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setHorizontalRule().run()} disabled={!editor?.can().setHorizontalRule() || !canEdit}>
-        <Minus className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setHardBreak().run()} disabled={!editor?.can().setHardBreak() || !canEdit}>
-        BR
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('left').run()} disabled={!editor?.can().setTextAlign('left') || !canEdit}>
-        <AlignLeft className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('center').run()} disabled={!editor?.can().setTextAlign('center') || !canEdit}>
-        <AlignCenter className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('right').run()} disabled={!editor?.can().setTextAlign('right') || !canEdit}>
-        <AlignRight className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('justify').run()} disabled={!editor?.can().setTextAlign('justify') || !canEdit}>
-        <AlignJustify className="h-4 w-4" />
-      </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" disabled={!canEdit}>
-            <Palette className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#FF0000').run()} disabled={!editor?.can().setColor('#FF0000') || !canEdit}>
-            <span className="w-4 h-4 rounded-full bg-red-500 mr-2"></span> Red
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#0000FF').run()} disabled={!editor?.can().setColor('#0000FF') || !canEdit}>
-            <span className="w-4 h-4 rounded-full bg-blue-500 mr-2"></span> Blue
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#008000').run()} disabled={!editor?.can().setColor('#008000') || !canEdit}>
-            <span className="w-4 h-4 rounded-full bg-green-500 mr-2"></span> Green
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#800080').run()} disabled={!editor?.can().setColor('#800080') || !canEdit}>
-            <span className="w-4 h-4 rounded-full bg-purple-500 mr-2"></span> Purple
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#FFA500').run()} disabled={!editor?.can().setColor('#FFA500') || !canEdit}>
-            <span className="w-4 h-4 rounded-full bg-orange-500 mr-2"></span> Orange
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#000000').run()} disabled={!editor?.can().setColor('#000000') || !canEdit}>
-            <span className="w-4 h-4 rounded-full bg-black mr-2"></span> Black
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#FFFFFF').run()} disabled={!editor?.can().setColor('#FFFFFF') || !canEdit}>
-            <span className="w-4 h-4 rounded-full bg-white border border-gray-300 mr-2"></span> White
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => editor?.chain().focus().unsetColor().run()} disabled={!editor?.can().unsetColor() || !canEdit}>
-            Unset Color
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHighlight({ color: '#fae0e0' }).run()} disabled={!editor?.can().toggleHighlight({ color: '#fae0e0' }) || !canEdit}>
-        <Highlighter className="h-4 w-4" />
-      </Button>
-      
-      <Select value={currentFontFamily} onValueChange={handleFontFamilyChange} disabled={!canEdit}>
-        <SelectTrigger className="w-[120px] h-9">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="Inter">Inter</SelectItem>
-          <SelectItem value="Arial">Arial</SelectItem>
-          <SelectItem value="Helvetica">Helvetica</SelectItem>
-          <SelectItem value="Times New Roman">Times</SelectItem>
-          <SelectItem value="Georgia">Georgia</SelectItem>
-          <SelectItem value="Courier New">Courier</SelectItem>
-          <SelectItem value="Verdana">Verdana</SelectItem>
-          <SelectItem value="Roboto">Roboto</SelectItem>
-          <SelectItem value="Open Sans">Open Sans</SelectItem>
-          <SelectItem value="Lato">Lato</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <div className="flex items-center border rounded-md">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={decreaseFontSize}
-          disabled={!canEdit}
-          className="h-9 px-2 rounded-r-none border-r"
-        >
-          <MinusIcon className="h-3 w-3" />
-        </Button>
-        <div className="flex items-center px-2 min-w-[40px] justify-center text-sm">
-          {currentFontSize}px
-        </div>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={increaseFontSize}
-          disabled={!canEdit}
-          className="h-9 px-2 rounded-l-none border-l"
-        >
-          <Plus className="h-3 w-3" />
-        </Button>
-      </div>
-    </div>
-  );
-
+  const handleNavigateToYourNotes = useCallback(() => {
+    navigate('/dashboard/your-notes');
+  }, [navigate]);
 
   console.log('NoteEditor render. isLoading:', isLoading, 'note:', note ? note.id : 'null', 'note.user_id:', note?.user_id);
   console.log('NoteEditor render. user:', user ? user.id : 'null');
@@ -905,361 +641,42 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   return (
     <div className={`${isMobileView ? 'p-4' : 'p-6'} w-full max-w-4xl mx-auto overflow-y-auto h-full flex flex-col animate-in fade-in-0 slide-in-from-bottom-4 duration-500`}>
-      <div className={`flex ${isMobileView ? 'flex-col space-y-3' : 'justify-between items-center'} mb-4`}>
-        <Input
-          className={`${isMobileView ? 'text-xl' : 'text-2xl'} font-bold border-none focus-visible:ring-0 focus-visible:ring-offset-0`}
-          value={currentTitleInput}
-          onChange={(e) => setCurrentTitleInput(e.target.value)}
-          onBlur={() => saveNote(currentTitleInput, editor?.getHTML() || '')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              saveNote(currentTitleInput, editor?.getHTML() || '');
-              e.currentTarget.blur();
-            }
-          }}
-          placeholder="Note Title"
-          disabled={!canEdit}
-        />
-        
-        <div className={`flex ${isMobileView ? 'flex-col space-y-2' : 'space-x-2'}`}>
-          <Button 
-            onClick={() => saveNote(title, editor?.getHTML() || '')} 
-            disabled={!user || !canEdit}
-          >
-            <Cloud className="mr-2 h-4 w-4" />
-            Save Note
-          </Button>
+      <NoteHeader
+        noteId={noteId}
+        note={note}
+        user={user}
+        isNewNote={isNewNote}
+        isNoteOwner={isNoteOwner}
+        canEdit={canEdit}
+        title={title}
+        currentTitleInput={currentTitleInput}
+        setCurrentTitleInput={setCurrentTitleInput}
+        onSaveNote={saveNote}
+        onDeleteNote={handleDelete}
+        isDeleting={isDeleting}
+        onRenameNote={handleRenameNote}
+        onToggleShareableLink={handleToggleShareableLinkFromDialog}
+        editorContent={editorContent}
+        onNavigateToYourNotes={handleNavigateToYourNotes}
+      />
 
-          {isMobileView ? (
-            <>
-              <div className="flex space-x-2">
-                {noteId && note && user && !isNewNote && (
-                  <NoteCollaborationDialog 
-                    noteId={noteId} 
-                    isNoteOwner={isNoteOwner} 
-                    isSharableLinkEnabled={note.is_sharable_link_enabled}
-                    sharableLinkPermissionLevel={note.sharable_link_permission_level || 'read'}
-                    onToggleShareableLink={handleToggleShareableLinkFromDialog}
-                  />
-                )}
-              </div>
-              <div className="flex space-x-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {canEdit && !isNewNote && (
-                      <RenameNoteDialog currentTitle={title} onRename={handleRenameNote}>
-                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                          Rename
-                        </DropdownMenuItem>
-                      </RenameNoteDialog>
-                    )}
-                    <DropdownMenuItem onClick={() => navigate('/dashboard/your-notes')}>
-                      Close
-                    </DropdownMenuItem>
-                    {isNoteOwner && (
-                      <DropdownMenuItem onClick={handleDelete} disabled={isDeleting} className="text-destructive">
-                        {isDeleting ? 'Deleting...' : 'Delete Note'}
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </>
-          ) : (
-            <>
-              {noteId && note && user && !isNewNote && (
-                <NoteCollaborationDialog 
-                  noteId={noteId} 
-                  isNoteOwner={isNoteOwner} 
-                  isSharableLinkEnabled={note.is_sharable_link_enabled}
-                  sharableLinkPermissionLevel={note.sharable_link_permission_level || 'read'}
-                  onToggleShareableLink={handleToggleShareableLinkFromDialog}
-                />
-              )}
-              {canEdit && !isNewNote && (
-                <RenameNoteDialog currentTitle={title} onRename={handleRenameNote}>
-                  <Button variant="outline">
-                    Rename
-                  </Button>
-                </RenameNoteDialog>
-              )}
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={isDeleting || !isNoteOwner}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {isDeleting ? 'Deleting...' : 'Delete Note'}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete your note
-                      and remove its data from our servers.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button variant="outline" onClick={() => navigate('/dashboard/your-notes')}>
-                Close
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="mb-4 p-2 rounded-md border bg-muted">
-        {isMobileView ? (
-          <div className="space-y-3">
-            <BasicFormattingTools />
-            
-            <div className="flex flex-wrap gap-1">
-              <VoiceRecorder onTranscription={handleTranscription} isIconButton={true} />
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleRefineAI} 
-                disabled={isRefiningAI || !editor?.getHTML() || editor.getHTML() === '<p></p>' || !canEdit || !isOnline}
-              >
-                <Sparkles className="h-4 w-4" />
-              </Button>
-              <label htmlFor="image-upload" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 cursor-pointer">
-                <ImageIcon className="h-4 w-4" />
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  disabled={isUploadingImage || !canEdit || !isOnline}
-                />
-              </label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleExportAsPDF} disabled={!editor || editor.isEmpty}>
-                    Export as PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportAsText} disabled={!editor || editor.isEmpty}>
-                    Export as TXT
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleCopyToClipboard} disabled={!editor || editor.isEmpty}>
-                    Copy to Clipboard
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <Collapsible open={isToolbarExpanded} onOpenChange={setIsToolbarExpanded}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full">
-                  <span>More Tools</span>
-                  <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${isToolbarExpanded ? 'rotate-180' : ''}`} />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <AdvancedFormattingTools />
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-1">
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBold().run()} disabled={!editor?.can().toggleBold() || !canEdit}>
-              <Bold className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleItalic().run()} disabled={!editor?.can().toggleItalic() || !canEdit}>
-              <Italic className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleStrike().run()} disabled={!editor?.can().toggleStrike() || !canEdit}>
-              Strike
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleUnderline().run()} disabled={!editor?.can().toggleUnderline() || !canEdit}>
-              <UnderlineIcon className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleCode().run()} disabled={!editor?.can().toggleCode() || !canEdit}>
-              <Code className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setParagraph().run()} disabled={!editor?.can().setParagraph() || !canEdit}>
-              P
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} disabled={!editor?.can().toggleHeading({ level: 1 }) || !canEdit}>
-              <Heading1 className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} disabled={!editor?.can().toggleHeading({ level: 2 }) || !canEdit}>
-              <Heading2 className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBulletList().run()} disabled={!editor?.can().toggleBulletList() || !canEdit}>
-              <List className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleOrderedList().run()} disabled={!editor?.can().toggleOrderedList() || !canEdit}>
-              <ListOrdered className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBlockquote().run()} disabled={!editor?.can().toggleBlockquote() || !canEdit}>
-              <Quote className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setHorizontalRule().run()} disabled={!editor?.can().setHorizontalRule() || !canEdit}>
-              <Minus className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setHardBreak().run()} disabled={!editor?.can().setHardBreak() || !canEdit}>
-              BR
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo() || !canEdit}>
-              <Undo className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo() || !canEdit}>
-              <Redo className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('left').run()} disabled={!editor?.can().setTextAlign('left') || !canEdit}>
-              <AlignLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('center').run()} disabled={!editor?.can().setTextAlign('center') || !canEdit}>
-              <AlignCenter className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('right').run()} disabled={!editor?.can().setTextAlign('right') || !canEdit}>
-              <AlignRight className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('justify').run()} disabled={!editor?.can().setTextAlign('justify') || !canEdit}>
-              <AlignJustify className="h-4 w-4" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" disabled={!canEdit}>
-                  <Palette className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#FF0000').run()} disabled={!editor?.can().setColor('#FF0000') || !canEdit}>
-                  <span className="w-4 h-4 rounded-full bg-red-500 mr-2"></span> Red
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#0000FF').run()} disabled={!editor?.can().setColor('#0000FF') || !canEdit}>
-                  <span className="w-4 h-4 rounded-full bg-blue-500 mr-2"></span> Blue
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#008000').run()} disabled={!editor?.can().setColor('#008000') || !canEdit}>
-                  <span className="w-4 h-4 rounded-full bg-green-500 mr-2"></span> Green
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#800080').run()} disabled={!editor?.can().setColor('#800080') || !canEdit}>
-                  <span className="w-4 h-4 rounded-full bg-purple-500 mr-2"></span> Purple
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#FFA500').run()} disabled={!editor?.can().setColor('#FFA500') || !canEdit}>
-                  <span className="w-4 h-4 rounded-full bg-orange-500 mr-2"></span> Orange
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#000000').run()} disabled={!editor?.can().setColor('#000000') || !canEdit}>
-                  <span className="w-4 h-4 rounded-full bg-black mr-2"></span> Black
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#FFFFFF').run()} disabled={!editor?.can().setColor('#FFFFFF') || !canEdit}>
-                  <span className="w-4 h-4 rounded-full bg-white border border-gray-300 mr-2"></span> White
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => editor?.chain().focus().unsetColor().run()} disabled={!editor?.can().unsetColor() || !canEdit}>
-                  Unset Color
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHighlight({ color: '#fae0e0' }).run()} disabled={!editor?.can().toggleHighlight({ color: '#fae0e0' }) || !canEdit}>
-              <Highlighter className="h-4 w-4" />
-            </Button>
-            
-            <Select value={currentFontFamily} onValueChange={handleFontFamilyChange} disabled={!canEdit}>
-              <SelectTrigger className="w-[120px] h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Inter">Inter</SelectItem>
-                <SelectItem value="Arial">Arial</SelectItem>
-                <SelectItem value="Helvetica">Helvetica</SelectItem>
-                <SelectItem value="Times New Roman">Times</SelectItem>
-                <SelectItem value="Georgia">Georgia</SelectItem>
-                <SelectItem value="Courier New">Courier</SelectItem>
-                <SelectItem value="Verdana">Verdana</SelectItem>
-                <SelectItem value="Roboto">Roboto</SelectItem>
-                <SelectItem value="Open Sans">Open Sans</SelectItem>
-                <SelectItem value="Lato">Lato</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="flex items-center border rounded-md">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={decreaseFontSize}
-                disabled={!canEdit}
-                className="h-9 px-2 rounded-r-none border-r"
-              >
-                <MinusIcon className="h-3 w-3" />
-              </Button>
-              <div className="flex items-center px-2 min-w-[40px] justify-center text-sm">
-                {currentFontSize}px
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={increaseFontSize}
-                disabled={!canEdit}
-                className="h-9 px-2 rounded-l-none border-l"
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
-            </div>
-
-            <label htmlFor="image-upload" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 cursor-pointer">
-              <ImageIcon className="h-4 w-4 mr-2" />
-              {isUploadingImage ? 'Uploading...' : 'Upload Image'}
-              <input
-                id="image-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-                disabled={isUploadingImage || !canEdit || !isOnline}
-              />
-            </label>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRefineAI} 
-              disabled={isRefiningAI || !editor?.getHTML() || editor.getHTML() === '<p></p>' || !canEdit || !isOnline}
-            >
-              <Sparkles className="mr-2 h-4 w-4" /> 
-              {isRefiningAI ? 'Refining...' : 'Refine with AI'}
-            </Button>
-            <VoiceRecorder onTranscription={handleTranscription} isIconButton={true} />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4" />
-                  <span className="sr-only">Export Note</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleExportAsPDF} disabled={!editor || editor.isEmpty}>
-                  Export as PDF
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportAsText} disabled={!editor || editor.isEmpty}>
-                  Export as TXT
-                </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleCopyToClipboard} disabled={!editor || editor.isEmpty}>
-                  Copy to Clipboard
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
-      </div>
+      <NoteEditorToolbar
+        editor={editor}
+        canEdit={canEdit}
+        isUploadingImage={isUploadingImage}
+        isRefiningAI={isRefiningAI}
+        session={session}
+        isOnline={isOnline}
+        onImageUpload={handleImageUpload}
+        onRefineAI={handleRefineAI}
+        onTranscription={handleTranscription}
+        currentFontSize={currentFontSize}
+        currentFontFamily={currentFontFamily}
+        onFontFamilyChange={handleFontFamilyChange}
+        onIncreaseFontSize={increaseFontSize}
+        onDecreaseFontSize={decreaseFontSize}
+        noteTitle={title}
+      />
 
       <div className="flex-grow overflow-y-auto">
         <EditorContent editor={editor} editable={canEdit} />
