@@ -139,8 +139,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
             user_id,
             permission_level
           )
-        `)
-        .or(`user_id.eq.${user.id},collaborators.user_id.eq.${user.id}`); // Fetch owned and shared notes
+        `); // Removed the .or() clause, relying on RLS
 
       if (fetchError) {
         console.error('Error fetching all notes from Supabase during pull sync:', fetchError);
