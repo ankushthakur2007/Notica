@@ -1053,7 +1053,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
-                  </AlertDialogAction>
+                  </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
               <Button variant="outline" onClick={() => navigate('/dashboard/your-notes')}> {/* Corrected navigation path */}
