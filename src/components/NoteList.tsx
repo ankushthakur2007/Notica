@@ -1,17 +1,35 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge'; // Import Badge component
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Note } from '@/types';
 import { useNavigate } from 'react-router-dom';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { PlusCircle } from 'lucide-react';
 
 const NoteList = () => {
   const { user } = useSessionContext();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [isCreateNoteDialogOpen, setIsCreateNoteDialogOpen] = useState(false);
+  const [newNoteTitle, setNewNoteTitle] = useState('Untitled Note');
+  const [isCreatingNote, setIsCreatingNote] = useState(false);
 
   const { data: notes, isLoading, isError, error, refetch } = useQuery<Note[], Error>({
     queryKey: ['notes', user?.id],
@@ -70,6 +88,41 @@ const NoteList = () => {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
+  const handleCreateNewNote = async () => {
+    if (!user) {
+      showError('You must be logged in to create notes.');
+      return;
+    }
+    if (newNoteTitle.trim() === '') {
+      showError('Note title cannot be empty.');
+      return;
+    }
+
+    setIsCreatingNote(true);
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .insert({ user_id: user.id, title: newNoteTitle.trim(), content: '' })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      showSuccess('Note created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate to refresh the list
+      setIsCreateNoteDialogOpen(false); // Close the dialog
+      setNewNoteTitle('Untitled Note'); // Reset title for next time
+      navigate(`/dashboard/edit-note/${data.id}`); // Navigate to the new note's editor
+    } catch (error: any) {
+      console.error('Error creating new note:', error);
+      showError('Failed to create note: ' + error.message);
+    } finally {
+      setIsCreatingNote(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -94,37 +147,80 @@ const NoteList = () => {
     );
   }
 
-  if (!notes || notes.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-        <h2 className="text-2xl font-bold mb-2">No notes yet!</h2>
-        <p className="text-muted-foreground">Start by creating your first note using the "New Note" button.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 w-full max-w-4xl mx-auto overflow-y-auto h-full">
-      <h2 className="text-3xl font-bold mb-6 text-foreground">Your Notes</h2>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {notes.map((note) => (
-          <Card 
-            key={note.id} 
-            className="hover:shadow-lg transition-shadow cursor-pointer" 
-            onClick={() => navigate(`/dashboard/edit-note/${note.id}`)}
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg">{note.title}</CardTitle>
-              {/* No "Shared" badge here, as this list is for owned notes */}
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-2 line-clamp-3">{note.content ? 'Content available' : 'No content preview available.'}</p>
-              <p className="text-xs text-gray-500">Created: {format(new Date(note.created_at), 'PPP')}</p>
-              <p className="text-xs text-gray-500">Updated: {format(new Date(note.updated_at), 'PPP')}</p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-3xl font-bold text-foreground">Your Notes</h2>
+        <Dialog open={isCreateNoteDialogOpen} onOpenChange={setIsCreateNoteDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create New Note
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Create New Note</DialogTitle>
+              <DialogDescription>
+                Enter a title for your new note.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="new-note-title" className="text-right">
+                  Title
+                </Label>
+                <Input
+                  id="new-note-title"
+                  value={newNoteTitle}
+                  onChange={(e) => setNewNoteTitle(e.target.value)}
+                  className="col-span-3"
+                  placeholder="Untitled Note"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleCreateNewNote();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateNoteDialogOpen(false)}>Cancel</Button>
+              <Button type="submit" onClick={handleCreateNewNote} disabled={isCreatingNote}>
+                {isCreatingNote ? 'Creating...' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
+      
+      {!notes || notes.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center">
+          <h2 className="text-2xl font-bold mb-2">No notes yet!</h2>
+          <p className="text-muted-foreground">Click "Create New Note" to get started.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {notes.map((note) => (
+            <Card 
+              key={note.id} 
+              className="hover:shadow-lg transition-shadow cursor-pointer" 
+              onClick={() => navigate(`/dashboard/edit-note/${note.id}`)}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-lg">{note.title}</CardTitle>
+                {/* No "Shared" badge here, as this list is for owned notes */}
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-2 line-clamp-3">{note.content ? 'Content available' : 'No content preview available.'}</p>
+                <p className="text-xs text-gray-500">Created: {format(new Date(note.created_at), 'PPP')}</p>
+                <p className="text-xs text-gray-500">Updated: {format(new Date(note.updated_at), 'PPP')}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

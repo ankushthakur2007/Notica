@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, NotebookText, Settings, Users } from 'lucide-react'; // Import Users icon
+import { NotebookText, Settings, Users } from 'lucide-react'; // Removed PlusCircle
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePlatform } from '@/hooks/use-platform';
 
@@ -11,11 +11,7 @@ const Sidebar = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const handleNewNoteClick = () => {
-    // Always navigate to a generic 'new' note ID.
-    // The NoteEditor component will handle platform-specific logic for saving.
-    navigate('/dashboard/edit-note/new');
-  };
+  // Removed handleNewNoteClick as the button is removed
 
   return (
     <div className="flex flex-col h-full p-4 bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
@@ -23,14 +19,7 @@ const Sidebar = () => {
         <img src="/logo.png" alt="Notica Logo" className="h-8 w-auto" />
       </div>
       <nav className="flex flex-col space-y-2 flex-grow">
-        <Button
-          variant="ghost"
-          className={`justify-start ${isActive('/dashboard/edit-note/new') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`}
-          onClick={handleNewNoteClick}
-        >
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Note
-        </Button>
+        {/* Removed New Note Button */}
         <Button
           variant="ghost"
           className={`justify-start ${isActive('/dashboard/your-notes') || isActive('/dashboard') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}`}
