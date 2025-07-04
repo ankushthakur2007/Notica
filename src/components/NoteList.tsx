@@ -148,7 +148,7 @@ const NoteList = () => {
   }
 
   return (
-    <div className="p-6 w-full max-w-4xl mx-auto overflow-y-auto h-full">
+    <div className="p-6 w-full max-w-4xl mx-auto overflow-y-auto h-full animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-foreground">Your Notes</h2>
         <Dialog open={isCreateNoteDialogOpen} onOpenChange={setIsCreateNoteDialogOpen}>
@@ -196,16 +196,17 @@ const NoteList = () => {
       </div>
       
       {!notes || notes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center">
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center animate-in fade-in-0 duration-700 delay-100">
           <h2 className="text-2xl font-bold mb-2">No notes yet!</h2>
           <p className="text-muted-foreground">Click "Create New Note" to get started.</p>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {notes.map((note) => (
+          {notes.map((note, index) => (
             <Card 
               key={note.id} 
-              className="hover:shadow-lg transition-shadow cursor-pointer" 
+              className="hover:shadow-lg transition-shadow cursor-pointer animate-in fade-in-0 zoom-in-95 duration-300" 
+              style={{ animationDelay: `${index * 50}ms` }} // Staggered animation
               onClick={() => navigate(`/dashboard/edit-note/${note.id}`)}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

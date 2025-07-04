@@ -947,7 +947,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   );
 
   return (
-    <div className={`${isMobileView ? 'p-4' : 'p-6'} w-full max-w-4xl mx-auto overflow-y-auto h-full flex flex-col`}>
+    <div className={`${isMobileView ? 'p-4' : 'p-6'} w-full max-w-4xl mx-auto overflow-y-auto h-full flex flex-col animate-in fade-in-0 slide-in-from-bottom-4 duration-500`}>
       {/* Header */}
       <div className={`flex ${isMobileView ? 'flex-col space-y-3' : 'justify-between items-center'} mb-4`}>
         <Input

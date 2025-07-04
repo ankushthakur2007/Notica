@@ -15,7 +15,7 @@ const Login = () => {
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <div className="w-full max-w-md p-8 space-y-6 bg-card rounded-lg shadow-lg">
+      <div className="w-full max-w-md p-8 space-y-6 bg-card rounded-lg shadow-lg animate-in fade-in-0 zoom-in-95 duration-500">
         <h2 className="text-2xl font-bold text-center text-foreground">Welcome to Notica</h2>
         <p className="text-center text-muted-foreground">Speak. Refine. Remember.</p>
         <Auth

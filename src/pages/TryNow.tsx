@@ -9,11 +9,11 @@ const TryNow = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4 animate-in fade-in-0 duration-500">
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <div className="text-center max-w-3xl mx-auto mb-12">
+      <div className="text-center max-w-3xl mx-auto mb-12 animate-in fade-in-0 slide-in-from-top-4 duration-700">
         <h1 className="text-5xl font-extrabold mb-4 leading-tight">
           Notica: Speak. Refine. Remember.
         </h1>
@@ -29,7 +29,7 @@ const TryNow = () => {
       </div>
 
       <div className="grid md:grid-cols-3 gap-8 w-full max-w-5xl">
-        <Card className="text-center p-6 flex flex-col items-center">
+        <Card className="text-center p-6 flex flex-col items-center animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-100">
           <Mic className="h-12 w-12 text-primary mb-4" />
           <CardHeader>
             <CardTitle className="text-2xl font-semibold">Voice to Text</CardTitle>
@@ -42,7 +42,7 @@ const TryNow = () => {
           </CardContent>
         </Card>
 
-        <Card className="text-center p-6 flex flex-col items-center">
+        <Card className="text-center p-6 flex flex-col items-center animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-200">
           <Sparkles className="h-12 w-12 text-primary mb-4" />
           <CardHeader>
             <CardTitle className="text-2xl font-semibold">AI-Generated Notes</CardTitle>
@@ -55,7 +55,7 @@ const TryNow = () => {
           </CardContent>
         </Card>
 
-        <Card className="text-center p-6 flex flex-col items-center">
+        <Card className="text-center p-6 flex flex-col items-center animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-300">
           <PencilLine className="h-12 w-12 text-primary mb-4" />
           <CardHeader>
             <CardTitle className="text-2xl font-semibold">Rich Text Editor</CardTitle>
@@ -69,7 +69,7 @@ const TryNow = () => {
         </Card>
       </div>
 
-      <footer className="mt-auto pt-6 text-center text-sm text-muted-foreground">
+      <footer className="mt-auto pt-6 text-center text-sm text-muted-foreground animate-in fade-in-0 duration-700 delay-400">
         <p>
           &copy; {new Date().getFullYear()} Notica. All rights reserved.
         </p>

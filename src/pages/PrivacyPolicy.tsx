@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-8">
-      <div className="w-full max-w-3xl bg-card rounded-lg shadow-lg p-8 space-y-6">
+      <div className="w-full max-w-3xl bg-card rounded-lg shadow-lg p-8 space-y-6 animate-in fade-in-0 zoom-in-95 duration-500">
         <h1 className="text-3xl font-bold text-center text-primary">Privacy Policy</h1>
         <p className="text-muted-foreground">
           This Privacy Policy describes how Notica collects, uses, and discloses your information when you use our service.
