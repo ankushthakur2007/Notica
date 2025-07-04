@@ -2,34 +2,45 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Sparkles, PencilLine } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom'; // Import Link
+import { useNavigate, Link } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 const TryNow = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4 animate-in fade-in-0 duration-500">
-      <div className="absolute top-4 right-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4 
+                    animate-in fade-in-0 duration-500 
+                    relative overflow-hidden"> {/* Added relative and overflow-hidden for gradient */}
+      {/* Subtle radial gradient background */}
+      <div className="absolute inset-0 z-0 opacity-20 dark:opacity-10" 
+           style={{ 
+             background: 'radial-gradient(circle at top left, var(--primary) 0%, transparent 30%), radial-gradient(circle at bottom right, var(--secondary) 0%, transparent 30%)' 
+           }}></div>
+
+      <div className="absolute top-4 right-4 z-10"> {/* Z-index to keep toggle on top */}
         <ThemeToggle />
       </div>
-      <div className="text-center max-w-3xl mx-auto mb-12 animate-in fade-in-0 slide-in-from-top-4 duration-700">
-        <h1 className="text-5xl font-extrabold mb-4 leading-tight">
-          Notica: Speak. Refine. Remember.
+
+      <div className="text-center max-w-3xl mx-auto mb-12 animate-in fade-in-0 slide-in-from-top-4 duration-700 z-10">
+        <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight tracking-tight"> {/* Increased font size */}
+          Notica: <span className="text-primary">Speak.</span> <span className="text-accent-foreground">Refine.</span> <span className="text-primary">Remember.</span>
         </h1>
-        <p className="text-xl text-muted-foreground mb-8">
+        <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
           Transform your spoken thoughts into beautifully structured, AI-powered notes.
           Capture ideas effortlessly, organize them intelligently, and never miss a detail.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" onClick={() => navigate('/login')}>
+          <Button size="lg" onClick={() => navigate('/login')} className="shadow-lg hover:shadow-xl transition-all duration-300"> {/* Added shadow and transition */}
             Get Started
           </Button>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 w-full max-w-5xl">
-        <Card className="text-center p-6 flex flex-col items-center animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-100">
+      <div className="grid md:grid-cols-3 gap-8 w-full max-w-5xl z-10"> {/* Z-index for cards */}
+        <Card className="text-center p-6 flex flex-col items-center 
+                        animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-100 
+                        hover:scale-[1.02] hover:shadow-xl transition-all duration-300 cursor-pointer"> {/* Added hover effects */}
           <Mic className="h-12 w-12 text-primary mb-4" />
           <CardHeader>
             <CardTitle className="text-2xl font-semibold">Voice to Text</CardTitle>
@@ -42,7 +53,9 @@ const TryNow = () => {
           </CardContent>
         </Card>
 
-        <Card className="text-center p-6 flex flex-col items-center animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-200">
+        <Card className="text-center p-6 flex flex-col items-center 
+                        animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-200 
+                        hover:scale-[1.02] hover:shadow-xl transition-all duration-300 cursor-pointer">
           <Sparkles className="h-12 w-12 text-primary mb-4" />
           <CardHeader>
             <CardTitle className="text-2xl font-semibold">AI-Generated Notes</CardTitle>
@@ -55,7 +68,9 @@ const TryNow = () => {
           </CardContent>
         </Card>
 
-        <Card className="text-center p-6 flex flex-col items-center animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-300">
+        <Card className="text-center p-6 flex flex-col items-center 
+                        animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-300 
+                        hover:scale-[1.02] hover:shadow-xl transition-all duration-300 cursor-pointer">
           <PencilLine className="h-12 w-12 text-primary mb-4" />
           <CardHeader>
             <CardTitle className="text-2xl font-semibold">Rich Text Editor</CardTitle>
@@ -69,7 +84,7 @@ const TryNow = () => {
         </Card>
       </div>
 
-      <footer className="mt-auto pt-6 text-center text-sm text-muted-foreground animate-in fade-in-0 duration-700 delay-400">
+      <footer className="mt-auto pt-6 text-center text-sm text-muted-foreground animate-in fade-in-0 duration-700 delay-400 z-10">
         <p>
           &copy; {new Date().getFullYear()} Notica. All rights reserved.
         </p>
