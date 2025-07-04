@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -50,8 +50,8 @@ import RenameNoteDialog from '@/components/RenameNoteDialog';
 import jsPDF from 'jspdf';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePlatform } from '@/hooks/use-platform';
-import { useOnlineStatus } from '@/hooks/use-online-status'; // Import useOnlineStatus
-import { db, getNoteFromOfflineDb, saveNoteToOfflineDb, deleteNoteFromOfflineDb, OfflineNote } from '@/lib/offlineDb'; // Import offline DB functions
+import { useOnlineStatus } from '@/hooks/use-online-status';
+import { db, getNoteFromOfflineDb, saveNoteToOfflineDb, deleteNoteFromOfflineDb, OfflineNote } from '@/lib/offlineDb';
 
 // Custom FontSize extension
 import { Extension } from '@tiptap/core';
@@ -113,7 +113,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const { noteId } = useParams<{ noteId: string }>();
   const isMobileView = useIsMobile();
   const platform = usePlatform();
-  const isOnline = useOnlineStatus(); // Get online status
+  const isOnline = useOnlineStatus();
 
   const [title, setTitle] = useState('');
   const [currentTitleInput, setCurrentTitleInput] = useState('');
@@ -125,13 +125,11 @@ const NoteEditor = ({}: NoteEditorProps) => {
   const [currentFontSize, setCurrentFontSize] = useState('16');
   const [currentFontFamily, setCurrentFontFamily] = useState('Inter');
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
-  const [isNewNote, setIsNewNote] = useState(false); // Tracks if it's a new note (not yet in DB)
+  const [isNewNote, setIsNewNote] = useState(false);
 
-  // States to track the last successfully saved values to IndexedDB
   const [lastSavedTitle, setLastSavedTitle] = useState('');
   const [lastSavedContent, setLastSavedContent] = useState('');
 
-  // Query to fetch note from Supabase or IndexedDB
   const { data: note, isLoading, isError, error, refetch } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
     queryFn: async () => {
@@ -141,16 +139,13 @@ const NoteEditor = ({}: NoteEditorProps) => {
         throw new Error('Note ID is missing.');
       }
 
-      // Try to load from IndexedDB first
       const offlineNote = await getNoteFromOfflineDb(noteId);
       if (offlineNote) {
         console.log('✅ Note found in IndexedDB:', offlineNote.id);
-        // If it's a pending_create note, it's a new note not yet synced
         setIsNewNote(offlineNote.sync_status === 'pending_create');
         return offlineNote;
       }
 
-      // If not in IndexedDB or if online, try Supabase
       if (isOnline) {
         console.log('📡 Online: Fetching note from Supabase...');
         const { data, error } = await supabase
@@ -165,10 +160,9 @@ const NoteEditor = ({}: NoteEditorProps) => {
         }
         console.log('✅ Note fetched successfully from Supabase. Raw data:', JSON.stringify(data, null, 2));
         
-        // Save to IndexedDB with 'synced' status
         if (data) {
           await saveNoteToOfflineDb(data, 'synced');
-          setIsNewNote(false); // It's now a synced note
+          setIsNewNote(false);
         }
         return data;
       } else {
@@ -176,7 +170,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         throw new Error('Note not found locally and offline. Cannot fetch from cloud.');
       }
     },
-    enabled: !!noteId, // Only enable if noteId is present
+    enabled: !!noteId,
     staleTime: 5 * 60 * 1000,
     cacheTime: 10 * 60 * 1000,
     onSuccess: (data) => {
@@ -191,22 +185,17 @@ const NoteEditor = ({}: NoteEditorProps) => {
     },
   });
 
-  // Query to fetch permission level for the current user on this note
   const { data: permissionData, isLoading: isLoadingPermission } = useQuery<{ permission_level: 'read' | 'write' } | null, Error>({
     queryKey: ['notePermission', noteId, user?.id],
     queryFn: async () => {
       if (!user || !noteId) return null;
 
-      // If the current user is the owner, they implicitly have write permission
       if (note && note.user_id === user.id) {
         return { permission_level: 'write' };
       }
 
-      // If offline, we can't verify collaboration permissions from Supabase
       if (!isOnline) {
         console.log('Offline: Cannot verify collaboration permissions from Supabase.');
-        // Fallback: if the note is in IndexedDB and not owned, assume read-only for now
-        // A more robust solution would cache collaborator permissions in IndexedDB
         return { permission_level: 'read' }; 
       }
 
@@ -217,7 +206,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
         .eq('user_id', user.id)
         .single();
 
-      if (error && error.code === 'PGRST116') { // No rows found
+      if (error && error.code === 'PGRST116') {
         return null;
       } else if (error) {
         console.error('Error fetching collaboration permission:', error.message);
@@ -225,7 +214,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       }
       return data;
     },
-    enabled: !!user && !!noteId && !!note, // Only enable if note is loaded
+    enabled: !!user && !!noteId && !!note,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -235,7 +224,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
     return calculatedOwner;
   }, [user, note]);
 
-  // Initialize editor
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -306,7 +294,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
     },
   });
 
-  // Effect to initialize editor content and last saved state when note data loads
   useEffect(() => {
     if (!editor || !note) return;
 
@@ -317,25 +304,21 @@ const NoteEditor = ({}: NoteEditorProps) => {
     setLastSavedTitle(note.title); 
     setLastSavedContent(note.content || ''); 
     editor.commands.setContent(note.content || '');
-    setIsNewNote(note.sync_status === 'pending_create'); // Set new note status based on fetched note
+    setIsNewNote(note.sync_status === 'pending_create');
   }, [editor, note]);
 
-  // Effect to update canEdit status
   useEffect(() => {
     if (!note || isLoadingPermission) {
-      setCanEdit(false); // Default to false while loading or if no note
+      setCanEdit(false);
       return;
     }
 
-    // If it's a new note (pending_create), it's always editable by the creator
     if (note.sync_status === 'pending_create') {
       setCanEdit(true);
       return;
     }
 
     const hasWritePermission = isNoteOwner || (user && permissionData?.permission_level === 'write');
-    // If public link is enabled and set to 'write', and user is not logged in, grant edit.
-    // This is a client-side check, actual write permission is enforced by RLS.
     if (!user && note.is_sharable_link_enabled && note.sharable_link_permission_level === 'write') {
       setCanEdit(true);
     } else {
@@ -345,14 +328,12 @@ const NoteEditor = ({}: NoteEditorProps) => {
   }, [note, user, permissionData, isLoadingPermission, isNoteOwner]);
 
 
-  // Function to save a note to IndexedDB and conditionally to Supabase
   const saveNote = useCallback(async (currentTitle: string, currentContent: string) => {
     if (!noteId || !user || !canEdit || !note) {
       console.log('Save skipped: Missing noteId, user, edit permission, or note object.');
       return;
     }
 
-    // Compare with last successfully saved values to IndexedDB to avoid redundant saves
     if (currentTitle === lastSavedTitle && currentContent === lastSavedContent) {
       console.log('Save skipped: No changes detected since last successful local save.');
       return;
@@ -364,29 +345,27 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
     const now = new Date().toISOString();
     const updatedNote: OfflineNote = {
-      ...note, // Use the existing note object to preserve other properties
+      ...note,
       title: currentTitle,
       content: currentContent,
       updated_at: now,
-      sync_status: note.sync_status === 'pending_create' ? 'pending_create' : 'pending_update', // Preserve pending_create or set to pending_update
+      sync_status: note.sync_status === 'pending_create' ? 'pending_create' : 'pending_update',
     };
 
     try {
-      // Always save to IndexedDB first
       await saveNoteToOfflineDb(updatedNote, updatedNote.sync_status);
       console.log('Note saved to IndexedDB!');
-      setLastSavedTitle(currentTitle); // Update last saved values on success
-      setLastSavedContent(currentContent); // Update last saved values on success
+      setLastSavedTitle(currentTitle);
+      setLastSavedContent(currentContent);
 
-      // If online, also attempt to save to Supabase
-      if (isOnline && updatedNote.sync_status !== 'pending_create') { // Don't try to update a note that hasn't been created in Supabase yet
+      if (isOnline && updatedNote.sync_status !== 'pending_create') {
         console.log('Online: Attempting to save to Supabase...');
         const { error } = await supabase
           .from('notes')
           .update({
             title: currentTitle,
             content: currentContent,
-            updated_at: now, // Ensure updated_at is set for Supabase
+            updated_at: now,
           })
           .eq('id', noteId);
 
@@ -397,16 +376,14 @@ const NoteEditor = ({}: NoteEditorProps) => {
             hint: error.hint,
             code: error.code
           });
-          throw error; // This error will be caught by the outer catch block
+          throw error;
         }
         console.log('Save successful to Supabase!');
-        // After successful Supabase sync, update status in IndexedDB to 'synced'
         await saveNoteToOfflineDb({ ...updatedNote, sync_status: 'synced' }, 'synced');
       } else if (!isOnline) {
         showSuccess('Note saved locally (offline). Will sync when online.');
       }
 
-      // Manually update the react-query cache to reflect local changes immediately
       queryClient.setQueryData(['note', noteId], (oldNote: Note | undefined) => {
         if (!oldNote) return oldNote;
         return {
@@ -414,10 +391,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
           title: currentTitle,
           content: currentContent,
           updated_at: now,
-          sync_status: updatedNote.sync_status, // Reflect the local sync status
+          sync_status: updatedNote.sync_status,
         };
       });
-      queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate the list of notes to update title/timestamp
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
     } catch (error: any) {
       console.error('Error during save:', error);
       showError('Failed to save note: ' + error.message);
@@ -425,15 +402,14 @@ const NoteEditor = ({}: NoteEditorProps) => {
   }, [noteId, user, canEdit, note, isOnline, queryClient, lastSavedTitle, lastSavedContent]);
 
 
-  // Effect to save on component unmount or before page unload
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (editor && note) { // Only if editor and note object exist
+      if (editor && note) {
         const currentContent = editor.getHTML();
         if (title !== lastSavedTitle || currentContent !== lastSavedContent) {
           console.log('BeforeUnload event detected with unsaved changes. Attempting to save...');
           event.preventDefault();
-          event.returnValue = ''; // Required for Chrome
+          event.returnValue = '';
           saveNote(title, currentContent);
         }
       }
@@ -443,8 +419,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      // This runs on component unmount (e.g., internal navigation)
-      if (editor && note) { // Only if editor and note object exist
+      if (editor && note) {
         const currentContent = editor.getHTML();
         if (title !== lastSavedTitle || currentContent !== lastSavedContent) {
           console.log('NoteEditor unmounting with unsaved changes. Attempting to save...');
@@ -512,15 +487,12 @@ const NoteEditor = ({}: NoteEditorProps) => {
     setIsDeleting(true);
     try {
       if (note.sync_status === 'pending_create') {
-        // If it's a new note not yet synced, just delete from local DB
         await deleteNoteFromOfflineDb(note.id);
         showSuccess('Note deleted locally.');
       } else {
-        // For existing notes, mark as pending_delete in local DB
         await saveNoteToOfflineDb({ ...note, sync_status: 'pending_delete' }, 'pending_delete');
         showSuccess('Note marked for deletion. Will sync when online.');
 
-        // If online, attempt to delete from Supabase immediately
         if (isOnline) {
           console.log('Online: Attempting to delete from Supabase...');
           const { error } = await supabase
@@ -533,7 +505,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
             throw error;
           }
           console.log('Note deleted from Supabase!');
-          await deleteNoteFromOfflineDb(note.id); // Remove from local DB after successful cloud delete
+          await deleteNoteFromOfflineDb(note.id);
           showSuccess('Note deleted successfully!');
         }
       }
@@ -759,6 +731,154 @@ const NoteEditor = ({}: NoteEditorProps) => {
     setCurrentTitleInput(newTitle);
   }, []);
 
+  // Define BasicFormattingTools component
+  const BasicFormattingTools = () => (
+    <div className="flex flex-wrap gap-1">
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBold().run()} disabled={!editor?.can().toggleBold() || !canEdit}>
+        <Bold className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleItalic().run()} disabled={!editor?.can().toggleItalic() || !canEdit}>
+        <Italic className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleUnderline().run()} disabled={!editor?.can().toggleUnderline() || !canEdit}>
+        <UnderlineIcon className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleCode().run()} disabled={!editor?.can().toggleCode() || !canEdit}>
+        <Code className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBulletList().run()} disabled={!editor?.can().toggleBulletList() || !canEdit}>
+        <List className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleOrderedList().run()} disabled={!editor?.can().toggleOrderedList() || !canEdit}>
+        <ListOrdered className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo() || !canEdit}>
+        <Undo className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo() || !canEdit}>
+        <Redo className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+
+  // Define AdvancedFormattingTools component
+  const AdvancedFormattingTools = () => (
+    <div className="flex flex-wrap gap-1 mt-2">
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleStrike().run()} disabled={!editor?.can().toggleStrike() || !canEdit}>
+        Strike
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setParagraph().run()} disabled={!editor?.can().setParagraph() || !canEdit}>
+        P
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} disabled={!editor?.can().toggleHeading({ level: 1 }) || !canEdit}>
+        <Heading1 className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} disabled={!editor?.can().toggleHeading({ level: 2 }) || !canEdit}>
+        <Heading2 className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBlockquote().run()} disabled={!editor?.can().toggleBlockquote() || !canEdit}>
+        <Quote className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setHorizontalRule().run()} disabled={!editor?.can().setHorizontalRule() || !canEdit}>
+        <Minus className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setHardBreak().run()} disabled={!editor?.can().setHardBreak() || !canEdit}>
+        BR
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('left').run()} disabled={!editor?.can().setTextAlign('left') || !canEdit}>
+        <AlignLeft className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('center').run()} disabled={!editor?.can().setTextAlign('center') || !canEdit}>
+        <AlignCenter className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('right').run()} disabled={!editor?.can().setTextAlign('right') || !canEdit}>
+        <AlignRight className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('justify').run()} disabled={!editor?.can().setTextAlign('justify') || !canEdit}>
+        <AlignJustify className="h-4 w-4" />
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" disabled={!canEdit}>
+            <Palette className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#FF0000').run()} disabled={!editor?.can().setColor('#FF0000') || !canEdit}>
+            <span className="w-4 h-4 rounded-full bg-red-500 mr-2"></span> Red
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#0000FF').run()} disabled={!editor?.can().setColor('#0000FF') || !canEdit}>
+            <span className="w-4 h-4 rounded-full bg-blue-500 mr-2"></span> Blue
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#008000').run()} disabled={!editor?.can().setColor('#008000') || !canEdit}>
+            <span className="w-4 h-4 rounded-full bg-green-500 mr-2"></span> Green
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#800080').run()} disabled={!editor?.can().setColor('#800080') || !canEdit}>
+            <span className="w-4 h-4 rounded-full bg-purple-500 mr-2"></span> Purple
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#FFA500').run()} disabled={!editor?.can().setColor('#FFA500') || !canEdit}>
+            <span className="w-4 h-4 rounded-full bg-orange-500 mr-2"></span> Orange
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#000000').run()} disabled={!editor?.can().setColor('#000000') || !canEdit}>
+            <span className="w-4 h-4 rounded-full bg-black mr-2"></span> Black
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#FFFFFF').run()} disabled={!editor?.can().setColor('#FFFFFF') || !canEdit}>
+            <span className="w-4 h-4 rounded-full bg-white border border-gray-300 mr-2"></span> White
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => editor?.chain().focus().unsetColor().run()} disabled={!editor?.can().unsetColor() || !canEdit}>
+            Unset Color
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHighlight({ color: '#fae0e0' }).run()} disabled={!editor?.can().toggleHighlight({ color: '#fae0e0' }) || !canEdit}>
+        <Highlighter className="h-4 w-4" />
+      </Button>
+      
+      <Select value={currentFontFamily} onValueChange={handleFontFamilyChange} disabled={!canEdit}>
+        <SelectTrigger className="w-[120px] h-9">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="Inter">Inter</SelectItem>
+          <SelectItem value="Arial">Arial</SelectItem>
+          <SelectItem value="Helvetica">Helvetica</SelectItem>
+          <SelectItem value="Times New Roman">Times</SelectItem>
+          <SelectItem value="Georgia">Georgia</SelectItem>
+          <SelectItem value="Courier New">Courier</SelectItem>
+          <SelectItem value="Verdana">Verdana</SelectItem>
+          <SelectItem value="Roboto">Roboto</SelectItem>
+          <SelectItem value="Open Sans">Open Sans</SelectItem>
+          <SelectItem value="Lato">Lato</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <div className="flex items-center border rounded-md">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={decreaseFontSize}
+          disabled={!canEdit}
+          className="h-9 px-2 rounded-r-none border-r"
+        >
+          <MinusIcon className="h-3 w-3" />
+        </Button>
+        <div className="flex items-center px-2 min-w-[40px] justify-center text-sm">
+          {currentFontSize}px
+        </div>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={increaseFontSize}
+          disabled={!canEdit}
+          className="h-9 px-2 rounded-l-none border-l"
+        >
+          <Plus className="h-3 w-3" />
+        </Button>
+      </div>
+    </div>
+  );
+
 
   console.log('NoteEditor render. isLoading:', isLoading, 'note:', note ? note.id : 'null', 'note.user_id:', note?.user_id);
   console.log('NoteEditor render. user:', user ? user.id : 'null');
@@ -775,7 +895,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
     );
   }
 
-  // If it's an existing note and it failed to load (and not a new note)
   if (!note && !isNewNote) {
     return (
       <div className="flex items-center justify-center h-full text-destructive">
@@ -786,16 +905,15 @@ const NoteEditor = ({}: NoteEditorProps) => {
 
   return (
     <div className={`${isMobileView ? 'p-4' : 'p-6'} w-full max-w-4xl mx-auto overflow-y-auto h-full flex flex-col animate-in fade-in-0 slide-in-from-bottom-4 duration-500`}>
-      {/* Header */}
       <div className={`flex ${isMobileView ? 'flex-col space-y-3' : 'justify-between items-center'} mb-4`}>
         <Input
           className={`${isMobileView ? 'text-xl' : 'text-2xl'} font-bold border-none focus-visible:ring-0 focus-visible:ring-offset-0`}
           value={currentTitleInput}
           onChange={(e) => setCurrentTitleInput(e.target.value)}
-          onBlur={() => saveNote(currentTitleInput, editor?.getHTML() || '')} // Save on blur
+          onBlur={() => saveNote(currentTitleInput, editor?.getHTML() || '')}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
-              saveNote(currentTitleInput, editor?.getHTML() || ''); // Save on Enter
+              saveNote(currentTitleInput, editor?.getHTML() || '');
               e.currentTarget.blur();
             }
           }}
@@ -803,12 +921,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
           disabled={!canEdit}
         />
         
-        {/* Action buttons */}
         <div className={`flex ${isMobileView ? 'flex-col space-y-2' : 'space-x-2'}`}>
-          {/* "Save to Cloud" button is now just "Save" and always saves locally first */}
           <Button 
             onClick={() => saveNote(title, editor?.getHTML() || '')} 
-            disabled={!user || !canEdit} // Disable if no user or no edit permission
+            disabled={!user || !canEdit}
           >
             <Cloud className="mr-2 h-4 w-4" />
             Save Note
@@ -901,14 +1017,11 @@ const NoteEditor = ({}: NoteEditorProps) => {
         </div>
       </div>
 
-      {/* Mobile-optimized toolbar */}
       <div className="mb-4 p-2 rounded-md border bg-muted">
         {isMobileView ? (
           <div className="space-y-3">
-            {/* Always visible basic tools */}
             <BasicFormattingTools />
             
-            {/* Quick action buttons */}
             <div className="flex flex-wrap gap-1">
               <VoiceRecorder onTranscription={handleTranscription} isIconButton={true} />
               <Button 
@@ -951,7 +1064,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
               </DropdownMenu>
             </div>
 
-            {/* Collapsible advanced tools */}
             <Collapsible open={isToolbarExpanded} onOpenChange={setIsToolbarExpanded}>
               <CollapsibleTrigger asChild>
                 <Button variant="outline" size="sm" className="w-full">
@@ -965,63 +1077,62 @@ const NoteEditor = ({}: NoteEditorProps) => {
             </Collapsible>
           </div>
         ) : (
-          // Desktop toolbar (existing layout)
           <div className="flex flex-wrap gap-1">
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBold().run()} disabled={!editor.can().toggleBold() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBold().run()} disabled={!editor?.can().toggleBold() || !canEdit}>
               <Bold className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleItalic().run()} disabled={!editor.can().toggleItalic() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleItalic().run()} disabled={!editor?.can().toggleItalic() || !canEdit}>
               <Italic className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleStrike().run()} disabled={!editor.can().toggleStrike() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleStrike().run()} disabled={!editor?.can().toggleStrike() || !canEdit}>
               Strike
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleUnderline().run()} disabled={!editor.can().toggleUnderline() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleUnderline().run()} disabled={!editor?.can().toggleUnderline() || !canEdit}>
               <UnderlineIcon className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleCode().run()} disabled={!editor.can().toggleCode() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleCode().run()} disabled={!editor?.can().toggleCode() || !canEdit}>
               <Code className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setParagraph().run()} disabled={!editor.can().setParagraph() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setParagraph().run()} disabled={!editor?.can().setParagraph() || !canEdit}>
               P
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} disabled={!editor.can().toggleHeading({ level: 1 }) || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} disabled={!editor?.can().toggleHeading({ level: 1 }) || !canEdit}>
               <Heading1 className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} disabled={!editor.can().toggleHeading({ level: 2 }) || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} disabled={!editor?.can().toggleHeading({ level: 2 }) || !canEdit}>
               <Heading2 className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBulletList().run()} disabled={!editor.can().toggleBulletList() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBulletList().run()} disabled={!editor?.can().toggleBulletList() || !canEdit}>
               <List className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleOrderedList().run()} disabled={!editor.can().toggleOrderedList() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleOrderedList().run()} disabled={!editor?.can().toggleOrderedList() || !canEdit}>
               <ListOrdered className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleBlockquote().run()} disabled={!editor.can().toggleBlockquote() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBlockquote().run()} disabled={!editor?.can().toggleBlockquote() || !canEdit}>
               <Quote className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setHorizontalRule().run()} disabled={!editor.can().setHorizontalRule() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setHorizontalRule().run()} disabled={!editor?.can().setHorizontalRule() || !canEdit}>
               <Minus className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setHardBreak().run()} disabled={!editor.can().setHardBreak() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setHardBreak().run()} disabled={!editor?.can().setHardBreak() || !canEdit}>
               BR
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo() || !canEdit}>
               <Undo className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo() || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo() || !canEdit}>
               <Redo className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('left').run()} disabled={!editor.can().setTextAlign('left') || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('left').run()} disabled={!editor?.can().setTextAlign('left') || !canEdit}>
               <AlignLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('center').run()} disabled={!editor.can().setTextAlign('center') || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('center').run()} disabled={!editor?.can().setTextAlign('center') || !canEdit}>
               <AlignCenter className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('right').run()} disabled={!editor.can().setTextAlign('right') || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('right').run()} disabled={!editor?.can().setTextAlign('right') || !canEdit}>
               <AlignRight className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().setTextAlign('justify').run()} disabled={!editor.can().setTextAlign('justify') || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setTextAlign('justify').run()} disabled={!editor?.can().setTextAlign('justify') || !canEdit}>
               <AlignJustify className="h-4 w-4" />
             </Button>
             <DropdownMenu>
@@ -1031,34 +1142,34 @@ const NoteEditor = ({}: NoteEditorProps) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#FF0000').run()} disabled={!editor.can().setColor('#FF0000') || !canEdit}>
+                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#FF0000').run()} disabled={!editor?.can().setColor('#FF0000') || !canEdit}>
                   <span className="w-4 h-4 rounded-full bg-red-500 mr-2"></span> Red
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#0000FF').run()} disabled={!editor.can().setColor('#0000FF') || !canEdit}>
+                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#0000FF').run()} disabled={!editor?.can().setColor('#0000FF') || !canEdit}>
                   <span className="w-4 h-4 rounded-full bg-blue-500 mr-2"></span> Blue
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#008000').run()} disabled={!editor.can().setColor('#008000') || !canEdit}>
+                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#008000').run()} disabled={!editor?.can().setColor('#008000') || !canEdit}>
                   <span className="w-4 h-4 rounded-full bg-green-500 mr-2"></span> Green
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#800080').run()} disabled={!editor.can().setColor('#800080') || !canEdit}>
+                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#800080').run()} disabled={!editor?.can().setColor('#800080') || !canEdit}>
                   <span className="w-4 h-4 rounded-full bg-purple-500 mr-2"></span> Purple
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#FFA500').run()} disabled={!editor.can().setColor('#FFA500') || !canEdit}>
+                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#FFA500').run()} disabled={!editor?.can().setColor('#FFA500') || !canEdit}>
                   <span className="w-4 h-4 rounded-full bg-orange-500 mr-2"></span> Orange
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#000000').run()} disabled={!editor.can().setColor('#000000') || !canEdit}>
+                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#000000').run()} disabled={!editor?.can().setColor('#000000') || !canEdit}>
                   <span className="w-4 h-4 rounded-full bg-black mr-2"></span> Black
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor.chain().focus().setColor('#FFFFFF').run()} disabled={!editor.can().setColor('#FFFFFF') || !canEdit}>
+                <DropdownMenuItem onClick={() => editor?.chain().focus().setColor('#FFFFFF').run()} disabled={!editor?.can().setColor('#FFFFFF') || !canEdit}>
                   <span className="w-4 h-4 rounded-full bg-white border border-gray-300 mr-2"></span> White
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => editor.chain().focus().unsetColor().run()} disabled={!editor.can().unsetColor() || !canEdit}>
+                <DropdownMenuItem onClick={() => editor?.chain().focus().unsetColor().run()} disabled={!editor?.can().unsetColor() || !canEdit}>
                   Unset Color
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={() => editor.chain().focus().toggleHighlight({ color: '#fae0e0' }).run()} disabled={!editor.can().toggleHighlight({ color: '#fae0e0' }) || !canEdit}>
+            <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHighlight({ color: '#fae0e0' }).run()} disabled={!editor?.can().toggleHighlight({ color: '#fae0e0' }) || !canEdit}>
               <Highlighter className="h-4 w-4" />
             </Button>
             
@@ -1150,7 +1261,6 @@ const NoteEditor = ({}: NoteEditorProps) => {
         )}
       </div>
 
-      {/* Editor */}
       <div className="flex-grow overflow-y-auto">
         <EditorContent editor={editor} editable={canEdit} />
       </div>
