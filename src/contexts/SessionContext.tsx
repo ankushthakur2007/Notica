@@ -16,20 +16,20 @@ const SessionContext = createContext<SessionContextType | undefined>(undefined);
 export const SessionContextProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Start loading true
   const navigate = useNavigate();
-  const location = useLocation();
+  const location = useLocation(); // Keep location to use its current value inside the callback
 
   useEffect(() => {
-    let authSubscription: any; // To hold the subscription object
+    let authSubscription: any;
 
-    const initializeSession = async () => {
-      console.log('Initializing session...');
-      // Explicitly fetch the session on initial load
+    const setupAuthListener = async () => {
+      console.log('Setting up Supabase Auth listener...');
+      // Fetch initial session first
       const { data: { session: initialSession } } = await supabase.auth.getSession();
       setSession(initialSession);
       setUser(initialSession?.user || null);
-      setLoading(false); // Initial load complete
+      setLoading(false); // Initial load complete after first session check
 
       // Set up the auth state change listener
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
@@ -39,8 +39,10 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
         setSession(currentSession);
         setUser(currentSession?.user || null);
 
-        const currentPath = location.pathname;
-        const isPublicPath = currentPath === '/' || currentPath === '/login' || currentPath === '/try-now' || currentPath === '/privacy-policy' || currentPath === '/terms-of-service';
+        // Navigation logic based on auth state and current path
+        // Use location.pathname directly from the hook's closure
+        const currentPath = location.pathname; 
+        const isPublicPath = ['/', '/login', '/try-now', '/privacy-policy', '/terms-of-service'].includes(currentPath);
         const isProtectedPath = currentPath.startsWith('/dashboard') || currentPath.startsWith('/settings');
 
         if (currentSession) {
@@ -53,39 +55,37 @@ export const SessionContextProvider = ({ children }: { children: ReactNode }) =>
             console.log('User session too old, forcing sign out.');
             await supabase.auth.signOut();
             showError('Your session has expired. Please sign in again.');
-            navigate('/login');
+            navigate('/login', { replace: true });
             return;
           }
 
-          // Removed: if (event === 'SIGNED_IN') { showSuccess('Successfully signed in!'); }
-
           if (isPublicPath) {
             console.log('Navigating to /dashboard as user is logged in and on a public page.');
-            navigate('/dashboard');
+            navigate('/dashboard', { replace: true }); // Use replace to avoid history stack issues
           }
         } else {
           // User is NOT logged in
-          // Removed: if (event === 'SIGNED_OUT') { showSuccess('Successfully signed out!'); }
           if (isProtectedPath) {
             console.log('Navigating to /login as user is logged out and on a protected page.');
-            navigate('/login');
+            navigate('/login', { replace: true });
           } else if (currentPath === '/') {
             console.log('Navigating to /try-now as user is logged out and on root.');
-            navigate('/try-now');
+            navigate('/try-now', { replace: true });
           }
         }
       });
-      authSubscription = subscription; // Store the subscription
+      authSubscription = subscription;
     };
 
-    initializeSession();
+    setupAuthListener();
 
     return () => {
       if (authSubscription) {
-        authSubscription.unsubscribe(); // Unsubscribe on cleanup
+        console.log('Unsubscribing from Supabase Auth listener.');
+        authSubscription.unsubscribe();
       }
     };
-  }, [navigate, location.pathname]); // Dependencies remain the same
+  }, []); // Empty dependency array: runs only once on mount
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
