@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Note, Collaborator } from '@/types';
 import { useNavigate } from 'react-router-dom';
+import { db, saveNoteToOfflineDb, getNotesForUserFromOfflineDb, OfflineNote } from '@/lib/offlineDb'; // Import offline DB functions
+import { useOnlineStatus } from '@/hooks/use-online-status'; // Import useOnlineStatus
 
 // Define a type for the data fetched from the collaborators table
 interface CollaboratorNote {
@@ -19,6 +21,7 @@ interface CollaboratorNote {
 const SharedNoteList = () => {
   const { user } = useSessionContext();
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus(); // Get online status
 
   const { data: sharedNotes, isLoading, isError, error, refetch } = useQuery<Note[], Error>({
     queryKey: ['sharedNotes', user?.id],
@@ -28,65 +31,75 @@ const SharedNoteList = () => {
       
       if (!user) {
         console.error('❌ User not logged in, cannot fetch shared notes.');
-        throw new Error('User not logged in.');
+        return [];
       }
 
-      try {
-        console.log('📡 Making Supabase query for shared notes...');
-        // Fetch entries from the 'collaborators' table where the current user is a collaborator
-        // and join with the 'notes' table to get note details.
-        const { data, error } = await supabase
-          .from('collaborators')
-          .select(`
-            note_id,
-            permission_level,
-            notes(
-              id,
-              user_id,
-              title,
-              content,
-              created_at,
-              updated_at,
-              is_sharable_link_enabled,
-              sharable_link_permission_level
-            )
-          `)
-          .eq('user_id', user.id);
+      if (isOnline) {
+        try {
+          console.log('📡 Online: Making Supabase query for shared notes...');
+          const { data, error } = await supabase
+            .from('collaborators')
+            .select(`
+              note_id,
+              permission_level,
+              notes(
+                id,
+                user_id,
+                title,
+                content,
+                created_at,
+                updated_at,
+                is_sharable_link_enabled,
+                sharable_link_permission_level
+              )
+            `)
+            .eq('user_id', user.id);
 
-        if (error) {
-          console.error('❌ Supabase query error for shared notes:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
-          throw error;
-        }
+          if (error) {
+            console.error('❌ Supabase query error for shared notes:', {
+              message: error.message,
+              details: error.details,
+              hint: error.hint,
+              code: error.code
+            });
+            throw error;
+          }
 
-        console.log('✅ Shared notes fetched successfully:', data?.length || 0, 'notes');
-        // Map the fetched data to an array of Note objects, adding permission_level
-        const notesWithPermissions: Note[] = data
-          .filter((collabEntry: CollaboratorNote) => collabEntry.notes !== null) // Filter out null notes if any
-          .map((collabEntry: CollaboratorNote) => ({
-            ...collabEntry.notes,
-            permission_level: collabEntry.permission_level, // Add permission level to the Note object
-          }));
-        
-        return notesWithPermissions || [];
-      } catch (fetchError: any) {
-        console.error('❌ Fetch operation failed for shared notes:', {
-          name: fetchError.name,
-          message: fetchError.message,
-          stack: fetchError.stack
-        });
-        
-        if (fetchError.message?.includes('Failed to fetch')) {
-          throw new Error('Network connection failed. Please check your internet connection and Supabase configuration.');
-        } else if (fetchError.message?.includes('CORS')) {
-          throw new Error('CORS error. Please check your Supabase project settings.');
-        } else {
-          throw fetchError;
+          console.log('✅ Shared notes fetched successfully from Supabase:', data?.length || 0, 'notes');
+          
+          const notesWithPermissions: Note[] = data
+            .filter((collabEntry: CollaboratorNote) => collabEntry.notes !== null)
+            .map((collabEntry: CollaboratorNote) => ({
+              ...collabEntry.notes,
+              permission_level: collabEntry.permission_level,
+            }));
+          
+          // Sync fetched shared notes to IndexedDB
+          if (notesWithPermissions) {
+            for (const note of notesWithPermissions) {
+              // Shared notes are always 'synced' from the perspective of the local cache
+              await saveNoteToOfflineDb(note, 'synced'); 
+            }
+          }
+          return notesWithPermissions || [];
+        } catch (fetchError: any) {
+          console.error('❌ Online fetch operation failed for shared notes, attempting to load from offline cache:', fetchError);
+          showError('Failed to load shared notes from cloud. Loading from local cache.');
+          // Fallback to offline data if online fetch fails
+          // For shared notes, we need to filter notes from offlineDb that are not owned by the user
+          const allOfflineNotes = await getNotesForUserFromOfflineDb(user.id);
+          // This is a simplification; a more robust solution would involve storing collaborator info in IndexedDB
+          // For now, we'll just return all notes from offlineDb, which might include owned notes.
+          // A proper shared notes offline view would require a separate IndexedDB table for shared notes or more complex filtering.
+          return allOfflineNotes.filter(note => note.user_id !== user.id); // Basic filter to exclude owned notes
         }
+      } else {
+        console.log('📴 Offline: Loading shared notes from IndexedDB...');
+        // When offline, we can only show notes that were previously synced.
+        // This is a simplified approach. A full offline shared notes feature
+        // would require caching collaborator data and permissions in IndexedDB.
+        const allOfflineNotes = await getNotesForUserFromOfflineDb(user.id);
+        return allOfflineNotes.filter(note => note.user_id !== user.id); // Filter out owned notes
       }
     },
     enabled: !!user,

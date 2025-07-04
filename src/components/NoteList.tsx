@@ -21,11 +21,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlusCircle } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid'; // Import uuid for local note IDs
+import { db, getNotesForUserFromOfflineDb, saveNoteToOfflineDb, OfflineNote } from '@/lib/offlineDb'; // Import offline DB functions
+import { useOnlineStatus } from '@/hooks/use-online-status'; // Import useOnlineStatus
 
 const NoteList = () => {
   const { user } = useSessionContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const isOnline = useOnlineStatus(); // Get online status
 
   const [isCreateNoteDialogOpen, setIsCreateNoteDialogOpen] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState('Untitled Note');
@@ -39,45 +43,47 @@ const NoteList = () => {
       
       if (!user) {
         console.error('❌ User not logged in, cannot fetch notes.');
-        throw new Error('User not logged in.');
+        // If offline and no user, or user logs out, return empty array
+        return [];
       }
 
-      try {
-        console.log('📡 Making Supabase query for owned notes...');
-        // Fetch notes owned by the user
-        const { data, error } = await supabase
-          .from('notes')
-          .select(`*`)
-          .eq('user_id', user.id) // Explicitly filter for notes owned by the current user
-          .order('updated_at', { ascending: false });
+      if (isOnline) {
+        try {
+          console.log('📡 Online: Fetching owned notes from Supabase...');
+          const { data, error } = await supabase
+            .from('notes')
+            .select(`*`)
+            .eq('user_id', user.id)
+            .order('updated_at', { ascending: false });
 
-        if (error) {
-          console.error('❌ Supabase query error:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
-          throw error;
-        }
+          if (error) {
+            console.error('❌ Supabase query error:', {
+              message: error.message,
+              details: error.details,
+              hint: error.hint,
+              code: error.code
+            });
+            throw error;
+          }
 
-        console.log('✅ Owned notes fetched successfully:', data?.length || 0, 'notes');
-        return data || [];
-      } catch (fetchError: any) {
-        console.error('❌ Fetch operation failed:', {
-          name: fetchError.name,
-          message: fetchError.message,
-          stack: fetchError.stack
-        });
-        
-        // Provide more specific error messages
-        if (fetchError.message?.includes('Failed to fetch')) {
-          throw new Error('Network connection failed. Please check your internet connection and Supabase configuration.');
-        } else if (fetchError.message?.includes('CORS')) {
-          throw new Error('CORS error. Please check your Supabase project settings.');
-        } else {
-          throw fetchError;
+          console.log('✅ Owned notes fetched successfully from Supabase:', data?.length || 0, 'notes');
+          
+          // Sync fetched notes to IndexedDB
+          if (data) {
+            for (const note of data) {
+              await saveNoteToOfflineDb(note, 'synced');
+            }
+          }
+          return data || [];
+        } catch (fetchError: any) {
+          console.error('❌ Online fetch operation failed, attempting to load from offline cache:', fetchError);
+          showError('Failed to load notes from cloud. Loading from local cache.');
+          // Fallback to offline data if online fetch fails
+          return await getNotesForUserFromOfflineDb(user.id);
         }
+      } else {
+        console.log('📴 Offline: Loading notes from IndexedDB...');
+        return await getNotesForUserFromOfflineDb(user.id);
       }
     },
     enabled: !!user,
@@ -100,23 +106,28 @@ const NoteList = () => {
 
     setIsCreatingNote(true);
     try {
-      const { data, error } = await supabase
-        .from('notes')
-        .insert({ user_id: user.id, title: newNoteTitle.trim(), content: '' })
-        .select()
-        .single();
+      const newId = uuidv4(); // Generate a local UUID for the new note
+      const now = new Date().toISOString();
+      const newNote: OfflineNote = {
+        id: newId,
+        user_id: user.id,
+        title: newNoteTitle.trim(),
+        content: '',
+        created_at: now,
+        updated_at: now,
+        is_sharable_link_enabled: false,
+        sharable_link_permission_level: 'read',
+        sync_status: 'pending_create', // Mark as pending creation
+      };
 
-      if (error) {
-        throw error;
-      }
-
-      showSuccess('Note created successfully!');
+      await saveNoteToOfflineDb(newNote, 'pending_create');
+      showSuccess('Note created locally!');
       queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate to refresh the list
       setIsCreateNoteDialogOpen(false); // Close the dialog
       setNewNoteTitle('Untitled Note'); // Reset title for next time
-      navigate(`/dashboard/edit-note/${data.id}`); // Navigate to the new note's editor
+      navigate(`/dashboard/edit-note/${newId}`); // Navigate to the new note's editor
     } catch (error: any) {
-      console.error('Error creating new note:', error);
+      console.error('Error creating new note locally:', error);
       showError('Failed to create note: ' + error.message);
     } finally {
       setIsCreatingNote(false);
@@ -211,7 +222,11 @@ const NoteList = () => {
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-lg">{note.title}</CardTitle>
-                {/* No "Shared" badge here, as this list is for owned notes */}
+                {note.sync_status && note.sync_status !== 'synced' && (
+                  <Badge variant="secondary" className="ml-2">
+                    {note.sync_status === 'pending_create' ? 'New (Offline)' : 'Unsynced Changes'}
+                  </Badge>
+                )}
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-2 line-clamp-3">{note.content ? 'Content available' : 'No content preview available.'}</p>
