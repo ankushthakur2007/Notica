@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useOnlineStatus } from '@/hooks/use-online-status';
 import { useSessionContext } from '@/contexts/SessionContext';
@@ -18,13 +18,16 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
   const isOnline = useOnlineStatus();
   const { user, loading: userSessionLoading } = useSessionContext();
   const queryClient = useQueryClient();
+  // Use a ref to prevent immediate re-triggering of syncNotes
+  const isSyncInProgressRef = useRef(false);
 
   const syncNotes = useCallback(async () => {
-    if (isSyncing || !user || !isOnline || userSessionLoading) {
-      console.log('Sync skipped:', { isSyncing, user: !!user, isOnline, userSessionLoading });
+    if (isSyncing || !user || !isOnline || userSessionLoading || isSyncInProgressRef.current) {
+      console.log('Sync skipped:', { isSyncing, user: !!user, isOnline, userSessionLoading, isSyncInProgressRef: isSyncInProgressRef.current });
       return;
     }
 
+    isSyncInProgressRef.current = true; // Set flag to true at the start of sync
     setIsSyncing(true);
     const syncToastId = showLoading('Syncing notes with cloud...');
     console.log('Starting note synchronization...');
@@ -196,6 +199,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
       showError('Synchronization failed: ' + error.message);
     } finally {
       setIsSyncing(false);
+      isSyncInProgressRef.current = false; // Reset flag after sync completes
       // Invalidate all relevant queries to ensure UI reflects latest data
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       queryClient.invalidateQueries({ queryKey: ['sharedNotes'] });
@@ -205,7 +209,8 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
 
   // Trigger sync when online status changes to online, or on initial load if already online
   useEffect(() => {
-    if (isOnline && user && !userSessionLoading) {
+    // Only trigger sync if online, user is loaded, and no sync is currently in progress
+    if (isOnline && user && !userSessionLoading && !isSyncInProgressRef.current) {
       console.log('Online status detected or user session loaded, triggering sync...');
       syncNotes();
     }
