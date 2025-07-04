@@ -300,7 +300,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       } else if (!user) {
         // If not logged in, new notes cannot be created. Redirect.
         showError('You must be logged in to create new notes.');
-        navigate('/dashboard/all-notes');
+        navigate('/dashboard/your-notes');
       }
     } else if (note) {
       // For existing notes, load from fetched data
@@ -530,7 +530,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
       // Removed: showSuccess('Note deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       // No need to clear local storage for local-only notes anymore
-      navigate('/dashboard/all-notes');
+      navigate('/dashboard/your-notes'); // Corrected navigation path
     } catch (error: any) {
       console.error('Error deleting note:', error);
       showError('Failed to delete note: ' + error.message);
@@ -1005,7 +1005,7 @@ const NoteEditor = ({}: NoteEditorProps) => {
                         </DropdownMenuItem>
                       </RenameNoteDialog>
                     )}
-                    <DropdownMenuItem onClick={() => navigate('/dashboard/all-notes')}>
+                    <DropdownMenuItem onClick={() => navigate('/dashboard/your-notes')}> {/* Corrected navigation path */}
                       Close
                     </DropdownMenuItem>
                     {isNoteOwner && ( // Allow delete only for owner
@@ -1053,10 +1053,10 @@ const NoteEditor = ({}: NoteEditorProps) => {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
-                  </AlertDialogFooter>
+                  </AlertDialogAction>
                 </AlertDialogContent>
               </AlertDialog>
-              <Button variant="outline" onClick={() => navigate('/dashboard/all-notes')}>
+              <Button variant="outline" onClick={() => navigate('/dashboard/your-notes')}> {/* Corrected navigation path */}
                 Close
               </Button>
             </>
