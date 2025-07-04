@@ -103,6 +103,8 @@ const SharedNoteList = () => {
       }
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000, // Keep data fresh for 5 minutes
+    cacheTime: 10 * 60 * 1000, // Cache data for 10 minutes
     retry: (failureCount, error) => {
       console.log(`🔄 Query retry attempt ${failureCount + 1}:`, error.message);
       return failureCount < 2;
