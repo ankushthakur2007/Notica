@@ -15,7 +15,6 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 
 // Import components for nested dashboard routes
-import NewNoteForm from "./components/NewNoteForm"; // Re-added
 import NoteList from "./components/NoteList";
 import NoteEditor from "./components/NoteEditor";
 
@@ -44,7 +43,6 @@ const AppContent = () => {
       
       {/* Dashboard and its nested routes */}
       <Route path="/dashboard" element={<Dashboard />}>
-        <Route path="new-note" element={<NewNoteForm />} /> {/* Re-added */}
         <Route path="all-notes" element={<NoteList />} />
         <Route path="edit-note/:noteId" element={<NoteEditor />} />
       </Route>
