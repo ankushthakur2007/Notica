@@ -15,7 +15,7 @@ const Dashboard = () => {
 
   React.useEffect(() => {
     if (!loading && session && location.pathname === '/dashboard') {
-      navigate('/dashboard/all-notes', { replace: true });
+      navigate('/dashboard/your-notes', { replace: true }); // Changed from /dashboard/all-notes
     }
   }, [loading, session, location.pathname, navigate]);
 
