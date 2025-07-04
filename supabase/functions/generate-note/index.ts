@@ -33,7 +33,7 @@ serve(async (req) => {
     console.log('Received text for AI refinement. Length:', text.length);
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Changed model here
 
     const prompt = `You are Notica's advanced AI Note Architect, a master of clarity, conciseness, and aesthetic presentation. Your mission is to transform raw, often verbose, input text into a meticulously structured, highly readable, and visually captivating HTML note. The output **MUST be pure, unadulterated HTML**, with no markdown syntax or code block wrappers (e.g., no \`\`\`html\` or \`\`\`\` tags).
 
