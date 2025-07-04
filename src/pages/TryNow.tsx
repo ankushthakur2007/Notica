@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Sparkles, PencilLine } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import AbstractGraphic from '@/components/AbstractGraphic'; // Import the new graphic component
 
 const TryNow = () => {
   const navigate = useNavigate();
@@ -11,19 +12,23 @@ const TryNow = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4 
                     animate-in fade-in-0 duration-500 
-                    relative overflow-hidden"> {/* Added relative and overflow-hidden for gradient */}
+                    relative overflow-hidden">
       {/* Subtle radial gradient background */}
       <div className="absolute inset-0 z-0 opacity-20 dark:opacity-10" 
            style={{ 
              background: 'radial-gradient(circle at top left, var(--primary) 0%, transparent 30%), radial-gradient(circle at bottom right, var(--secondary) 0%, transparent 30%)' 
            }}></div>
 
-      <div className="absolute top-4 right-4 z-10"> {/* Z-index to keep toggle on top */}
+      {/* Abstract Graphic */}
+      <AbstractGraphic className="top-1/4 left-1/4 w-1/2 h-1/2 animate-in fade-in-0 zoom-in-95 duration-1000 delay-500" />
+      <AbstractGraphic className="bottom-1/4 right-1/4 w-1/2 h-1/2 animate-in fade-in-0 zoom-in-95 duration-1000 delay-700 rotate-180" />
+
+      <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />
       </div>
 
       <div className="text-center max-w-3xl mx-auto mb-12 animate-in fade-in-0 slide-in-from-top-4 duration-700 z-10">
-        <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight tracking-tight"> {/* Increased font size */}
+        <h1 className="text-5xl md:text-6xl font-extrabold mb-4 leading-tight tracking-tight">
           Notica: <span className="text-primary">Speak.</span> <span className="text-accent-foreground">Refine.</span> <span className="text-primary">Remember.</span>
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -31,16 +36,16 @@ const TryNow = () => {
           Capture ideas effortlessly, organize them intelligently, and never miss a detail.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" onClick={() => navigate('/login')} className="shadow-lg hover:shadow-xl transition-all duration-300"> {/* Added shadow and transition */}
+          <Button size="lg" onClick={() => navigate('/login')} className="shadow-lg hover:shadow-xl transition-all duration-300">
             Get Started
           </Button>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 w-full max-w-5xl z-10"> {/* Z-index for cards */}
+      <div className="grid md:grid-cols-3 gap-8 w-full max-w-5xl z-10">
         <Card className="text-center p-6 flex flex-col items-center 
                         animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-100 
-                        hover:scale-[1.02] hover:shadow-xl transition-all duration-300 cursor-pointer"> {/* Added hover effects */}
+                        hover:scale-[1.02] hover:shadow-xl transition-all duration-300 cursor-pointer">
           <Mic className="h-12 w-12 text-primary mb-4" />
           <CardHeader>
             <CardTitle className="text-2xl font-semibold">Voice to Text</CardTitle>
