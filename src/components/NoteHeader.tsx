@@ -82,13 +82,7 @@ const NoteHeader = ({
       />
       
       <div className={`flex ${isMobileView ? 'flex-col space-y-2' : 'space-x-2'}`}>
-        <Button 
-          onClick={() => onSaveNote(currentTitleInput, editorContent)} 
-          disabled={!user || !canEdit}
-        >
-          <Cloud className="mr-2 h-4 w-4" />
-          Save Note
-        </Button>
+        {/* Removed the explicit "Save Note" button */}
 
         {isMobileView ? (
           <>
@@ -138,7 +132,7 @@ const NoteHeader = ({
                 isNoteOwner={isNoteOwner} 
                 isSharableLinkEnabled={note.is_sharable_link_enabled}
                 sharableLinkPermissionLevel={note.sharable_link_permission_level || 'read'}
-                onToggleShareableLink={onToggleShareableLink}
+              onToggleShareableLink={onToggleShareableLink}
               />
             )}
             {canEdit && !isNewNote && (
