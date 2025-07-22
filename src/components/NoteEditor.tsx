@@ -202,7 +202,9 @@ const NoteEditor = () => {
       const { error } = await supabase.storage.from('note-images').upload(fileName, file, { upsert: false });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('note-images').getPublicUrl(fileName);
-      if (publicUrl) editor?.chain().focus().setNode('resizableImage', { src: publicUrl }).run();
+      if (publicUrl) {
+        editor?.chain().focus().insertContent({ type: 'resizableImage', attrs: { src: publicUrl } }).run();
+      }
     } catch (error: any) {
       showError('Failed to upload image: ' + error.message);
     } finally {
