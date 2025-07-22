@@ -42,8 +42,14 @@ const Dashboard = () => {
         console.error('Error fetching shared notes:', sharedError);
       } else {
         const sharedNotesData = shared
-          ?.map(item => item.notes ? ({ ...item.notes, permission_level: item.permission_level }) : null)
-          .filter(Boolean) as Note[];
+          ?.map(item => {
+            const noteData = item.notes as Note;
+            if (noteData) {
+              return { ...noteData, permission_level: item.permission_level as 'read' | 'write' };
+            }
+            return null;
+          })
+          .filter((note): note is Note => note !== null);
         setSharedNotes(sharedNotesData);
       }
       

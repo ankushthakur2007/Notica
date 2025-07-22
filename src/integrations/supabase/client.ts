@@ -55,7 +55,4 @@ supabase.from('notes').select('count', { count: 'exact', head: true })
     } else {
       console.log('✅ Supabase connection test successful');
     }
-  })
-  .catch((error) => {
-    console.error('❌ Supabase connection test error:', error);
   });

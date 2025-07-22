@@ -6,7 +6,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { useTheme } from 'next-themes';
 
 const Login = () => {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const redirectToUrl = window.location.origin + '/dashboard';
   console.log('Supabase Auth redirectTo URL:', redirectToUrl);
 
@@ -43,13 +43,13 @@ const Login = () => {
                   messageBackground: 'hsl(var(--background))',
                   messageBorder: 'hsl(var(--border))',
                   dividerBackground: 'hsl(var(--border))',
-                  anchorText: 'hsl(var(--primary))',
-                  anchorTextHover: 'hsl(var(--primary-foreground))',
+                  anchorTextColor: 'hsl(var(--primary))',
+                  anchorTextHoverColor: 'hsl(var(--primary-foreground))',
                 },
               },
             },
           }}
-          theme={theme === 'dark' ? ThemeSupa : ThemeSupa} // Use ThemeSupa for both, but ensure the theme prop is dynamic
+          theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
           redirectTo={redirectToUrl}
         />
       </div>

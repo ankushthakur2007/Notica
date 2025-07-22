@@ -9,14 +9,13 @@ interface VoiceRecorderProps {
   isIconButton?: boolean;
 }
 
+// This is a browser API, so we need to declare it for TypeScript
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
   }
 }
-
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderProps) => {
   const { session } = useAppStore();
@@ -24,7 +23,6 @@ const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderP
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const startRecording = async () => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {

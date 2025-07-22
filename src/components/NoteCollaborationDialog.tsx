@@ -29,6 +29,14 @@ interface ShareNoteDialogProps {
   onToggleShareableLink: (checked: boolean, permissionLevel: 'read' | 'write') => Promise<void>; // Updated prop for update function
 }
 
+interface UserDetail {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  email: string | null;
+}
+
 const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, sharableLinkPermissionLevel, onToggleShareableLink }: ShareNoteDialogProps) => {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
@@ -76,13 +84,13 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, s
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to search users.');
         }
-        const data = await response.json();
-        return data.profiles.map((profile: any) => ({
+        const data: { profiles: UserDetail[] } = await response.json();
+        return data.profiles.map((profile) => ({
           id: profile.id,
           first_name: profile.first_name,
           last_name: profile.last_name,
           avatar_url: profile.avatar_url,
-          email: profile.email, // Email is now included from the edge function
+          email: profile.email,
         })) as Collaborator[];
       } catch (error: any) {
         console.error('Error searching users:', error);
@@ -141,11 +149,11 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, s
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to fetch user details for collaborators.');
         }
-        const { users: userDetails } = await response.json();
+        const { users: userDetails }: { users: UserDetail[] } = await response.json();
         console.log('Fetched user details from Edge Function:', userDetails);
 
         // Map user details to a lookup object
-        const userDetailsMap = new Map(userDetails.map((user: any) => [user.id, user]));
+        const userDetailsMap = new Map<string, UserDetail>(userDetails.map((user) => [user.id, user]));
 
         // Combine basic collaborator data with full user details
         const combinedCollaborators = basicCollaborators.map(collab => {
@@ -168,7 +176,7 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, s
         // Return basic collaborators if details fetch fails, so at least something shows
         return basicCollaborators.map(collab => ({
           ...collab,
-          first_name: null, last_name: null, avatar_url: null, email: null
+          first_name: undefined, last_name: undefined, avatar_url: null, email: undefined
         })) as Collaborator[];
       }
     },

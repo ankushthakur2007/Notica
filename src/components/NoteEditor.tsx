@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -20,7 +20,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import NoteEditorToolbar from './NoteEditorToolbar';
 import NoteHeader from './NoteHeader';
-import { Extension } from '@tiptap/core';
+import { Extension, ChainedCommands, RawCommands } from '@tiptap/core';
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    fontSize: {
+      setFontSize: (size: string) => ReturnType;
+      unsetFontSize: () => ReturnType;
+    }
+  }
+}
 
 const FontSize = Extension.create({
   name: 'fontSize',
@@ -42,9 +51,18 @@ const FontSize = Extension.create({
   },
   addCommands() {
     return {
-      setFontSize: fontSize => ({ chain }) => chain().setMark('textStyle', { fontSize }).run(),
-      unsetFontSize: () => ({ chain }) => chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run(),
-    };
+      setFontSize: (fontSize: string) => ({ chain }: { chain: ChainedCommands }) => {
+        return chain()
+          .setMark('textStyle', { fontSize })
+          .run()
+      },
+      unsetFontSize: () => ({ chain }: { chain: ChainedCommands }) => {
+        return chain()
+          .setMark('textStyle', { fontSize: null })
+          .removeEmptyTextStyle()
+          .run()
+      },
+    }
   },
 });
 
@@ -92,7 +110,7 @@ const NoteEditor = () => {
   const isNoteOwner = React.useMemo(() => !!user && !!note && user.id === note.user_id, [user, note]);
 
   const editor = useEditor({
-    extensions: [StarterKit, Link.configure({ openOnClick: false, autolink: true }), Placeholder.configure({ placeholder: 'Start typing...' }), TextAlign.configure({ types: ['heading', 'paragraph'] }), Underline, TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), Image.configure({ inline: true, allowBase64: true, resizable: true }), FontFamily.configure({ types: ['textStyle'] })],
+    extensions: [StarterKit, Link.configure({ openOnClick: false, autolink: true }), Placeholder.configure({ placeholder: 'Start typing...' }), TextAlign.configure({ types: ['heading', 'paragraph'] }), Underline, TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), Image.configure({ inline: true, allowBase64: true }), FontFamily.configure({ types: ['textStyle'] })],
     content: '',
     editorProps: {
       attributes: { class: `prose dark:prose-invert max-w-none focus:outline-none p-4 min-h-[300px] border rounded-md bg-background text-foreground ${isMobileView ? 'text-base' : ''}` },
@@ -119,6 +137,12 @@ const NoteEditor = () => {
       setCurrentFontFamily(attrs.fontFamily || 'Inter');
     },
   });
+
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(canEdit);
+    }
+  }, [editor, canEdit]);
 
   useEffect(() => {
     if (!editor || !note) return;
@@ -255,7 +279,7 @@ const NoteEditor = () => {
         noteTitle={title}
       />
       <div className="flex-grow overflow-y-auto">
-        <EditorContent editor={editor} editable={canEdit} />
+        <EditorContent editor={editor} />
       </div>
     </div>
   );

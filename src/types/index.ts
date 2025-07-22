@@ -7,6 +7,7 @@ export interface Note {
   updated_at: string;
   is_sharable_link_enabled: boolean; // New property for shareable link status
   sharable_link_permission_level?: 'read' | 'write'; // New property for public link permission
+  permission_level?: 'read' | 'write'; // For notes shared via collaboration
 }
 
 export interface Collaborator {

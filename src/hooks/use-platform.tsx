@@ -8,7 +8,7 @@ export function usePlatform(): Platform {
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      setPlatform(Capacitor.getPlatform());
+      setPlatform(Capacitor.getPlatform() as Platform);
     } else {
       setPlatform('web');
     }
