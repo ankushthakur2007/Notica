@@ -19,7 +19,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import NoteEditorToolbar from './NoteEditorToolbar';
 import NoteHeader from './NoteHeader';
-import { Extension, ChainedCommands, RawCommands } from '@tiptap/core';
+import { Extension } from '@tiptap/core';
 import ResizableImage from './editor/ResizableImageNode';
 
 declare module '@tiptap/core' {
@@ -146,7 +146,6 @@ const NoteEditor = () => {
 
   useEffect(() => {
     if (!editor || !note) return;
-    // Do not update content if the user is currently focused on the editor
     if (editor.isFocused) return;
 
     setTitle(note.title);
@@ -171,7 +170,7 @@ const NoteEditor = () => {
       showSuccess('Note saved!');
       setLastSavedTitle(currentTitle);
       setLastSavedContent(currentContent);
-      updateNote(data); // Update store
+      updateNote(data);
       queryClient.setQueryData(['note', noteId], data);
     } catch (error: any) {
       showError('Failed to save note: ' + error.message);
@@ -219,7 +218,7 @@ const NoteEditor = () => {
       const { error } = await supabase.from('notes').delete().eq('id', note.id);
       if (error) throw error;
       showSuccess('Note deleted!');
-      deleteNoteFromStore(note.id); // Update store
+      deleteNoteFromStore(note.id);
       navigate('/dashboard/your-notes');
     } catch (error: any) {
       showError('Failed to delete note: ' + error.message);
@@ -280,25 +279,45 @@ const NoteEditor = () => {
   if (isLoading || isLoadingPermission) return <div className="flex items-center justify-center h-full"><p>Loading note...</p></div>;
   if (isError || !note) return <div className="flex items-center justify-center h-full text-destructive"><p>Error loading note.</p></div>;
 
+  const commonProps = {
+    noteId, note, user, isNewNote: false, isNoteOwner, canEdit, title,
+    onDeleteNote: handleDelete, isDeleting, onRenameNote: setTitle,
+    onToggleShareableLink: handleToggleShareableLinkFromDialog,
+    onNavigateToYourNotes: () => navigate('/dashboard/your-notes'),
+    editor, isUploadingImage, isRefiningAI, session,
+    onImageUpload: handleImageUpload, onRefineAI: handleRefineAI,
+    onTranscription: (text: string) => editor?.chain().focus().insertContent(text + ' ').run(),
+    currentFontSize, currentFontFamily,
+    onFontFamilyChange: (font: string) => editor?.chain().focus().setFontFamily(font).run(),
+    onIncreaseFontSize: handleIncreaseFontSize,
+    onDecreaseFontSize: handleDecreaseFontSize,
+    noteTitle: title,
+  };
+
+  if (isMobileView) {
+    return (
+      <div className="w-full h-screen flex flex-col bg-background">
+        <div className="p-4 border-b border-border/50">
+          <NoteHeader {...commonProps} />
+        </div>
+        <div className="flex-grow overflow-y-auto px-4 pb-24">
+          <EditorContent editor={editor} />
+        </div>
+        <NoteEditorToolbar {...commonProps} />
+      </div>
+    );
+  }
+
   return (
-    <div className={`${isMobileView ? 'p-4' : 'p-6'} w-full overflow-y-auto h-screen flex flex-col`}>
+    <div className="p-6 w-full overflow-y-auto h-screen flex flex-col">
       <NoteHeader
-        noteId={noteId} note={note} user={user} isNewNote={false} isNoteOwner={isNoteOwner} canEdit={canEdit}
-        title={title} currentTitleInput={currentTitleInput} setCurrentTitleInput={setCurrentTitleInput}
+        {...commonProps}
+        currentTitleInput={currentTitleInput}
+        setCurrentTitleInput={setCurrentTitleInput}
         onSaveNote={() => saveNote(currentTitleInput, editor?.getHTML() || '')}
-        onDeleteNote={handleDelete} isDeleting={isDeleting} onRenameNote={setTitle}
-        onToggleShareableLink={handleToggleShareableLinkFromDialog}
-        editorContent={editor?.getHTML() || ''} onNavigateToYourNotes={() => navigate('/dashboard/your-notes')}
+        editorContent={editor?.getHTML() || ''}
       />
-      <NoteEditorToolbar
-        editor={editor} canEdit={canEdit} isUploadingImage={isUploadingImage} isRefiningAI={isRefiningAI} session={session}
-        onImageUpload={handleImageUpload} onRefineAI={handleRefineAI} onTranscription={(text) => editor?.chain().focus().insertContent(text + ' ').run()}
-        currentFontSize={currentFontSize} currentFontFamily={currentFontFamily}
-        onFontFamilyChange={(font) => editor?.chain().focus().setFontFamily(font).run()}
-        onIncreaseFontSize={handleIncreaseFontSize}
-        onDecreaseFontSize={handleDecreaseFontSize}
-        noteTitle={title}
-      />
+      <NoteEditorToolbar {...commonProps} />
       <div className="flex-grow overflow-y-auto bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg p-4">
         <EditorContent editor={editor} />
       </div>
