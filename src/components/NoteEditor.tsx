@@ -8,7 +8,6 @@ import Underline from '@tiptap/extension-underline';
 import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
-import Image from '@tiptap/extension-image';
 import FontFamily from '@tiptap/extension-font-family';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
@@ -21,6 +20,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import NoteEditorToolbar from './NoteEditorToolbar';
 import NoteHeader from './NoteHeader';
 import { Extension, ChainedCommands, RawCommands } from '@tiptap/core';
+import ResizableImage from './editor/ResizableImageNode';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -110,7 +110,7 @@ const NoteEditor = () => {
   const isNoteOwner = React.useMemo(() => !!user && !!note && user.id === note.user_id, [user, note]);
 
   const editor = useEditor({
-    extensions: [StarterKit, Link.configure({ openOnClick: false, autolink: true }), Placeholder.configure({ placeholder: 'Start typing...' }), TextAlign.configure({ types: ['heading', 'paragraph'] }), Underline, TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), Image.configure({ inline: true, allowBase64: true }), FontFamily.configure({ types: ['textStyle'] })],
+    extensions: [StarterKit, Link.configure({ openOnClick: false, autolink: true }), Placeholder.configure({ placeholder: 'Start typing...' }), TextAlign.configure({ types: ['heading', 'paragraph'] }), Underline, TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), ResizableImage.configure({ inline: true, allowBase64: true }), FontFamily.configure({ types: ['textStyle'] })],
     content: '',
     editorProps: {
       attributes: { class: `prose dark:prose-invert max-w-none focus:outline-none p-4 min-h-[300px] border rounded-md bg-background text-foreground ${isMobileView ? 'text-base' : ''}` },
@@ -199,7 +199,7 @@ const NoteEditor = () => {
       const { error } = await supabase.storage.from('note-images').upload(fileName, file, { upsert: false });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage.from('note-images').getPublicUrl(fileName);
-      if (publicUrl) editor?.chain().focus().setImage({ src: publicUrl }).run();
+      if (publicUrl) editor?.chain().focus().setNode('resizableImage', { src: publicUrl }).run();
     } catch (error: any) {
       showError('Failed to upload image: ' + error.message);
     } finally {
