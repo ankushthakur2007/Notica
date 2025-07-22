@@ -68,8 +68,8 @@ const AppContent = () => {
   return (
     <Routes>
       <Route path="/login" element={session ? <Navigate to="/dashboard/your-notes" /> : <Login />} />
-      <Route path="/" element={<TryNow />} />
-      <Route path="/try-now" element={<TryNow />} />
+      <Route path="/" element={session ? <Navigate to="/dashboard/your-notes" /> : <TryNow />} />
+      <Route path="/try-now" element={session ? <Navigate to="/dashboard/your-notes" /> : <TryNow />} />
       
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}>
         <Route index element={<Navigate to="your-notes" replace />} />
