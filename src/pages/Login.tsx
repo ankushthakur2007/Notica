@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes';
 
 const Login = () => {
   const { resolvedTheme } = useTheme();
-  const redirectToUrl = window.location.origin + '/dashboard';
+  const redirectToUrl = window.location.origin + '/dashboard/your-notes';
   console.log('Supabase Auth redirectTo URL:', redirectToUrl);
 
   return (
