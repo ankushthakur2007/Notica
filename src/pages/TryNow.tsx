@@ -28,8 +28,8 @@ const TryNow = () => {
       <main className="pt-32 pb-16">
         {/* Background Glow */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-          <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-200/50 dark:bg-purple-500/30 rounded-full filter blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-200/50 dark:bg-blue-500/30 rounded-full filter blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-200/50 dark:bg-purple-500/30 rounded-full filter blur-3xl animate-float-1 [will-change:transform]"></div>
+          <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-200/50 dark:bg-blue-500/30 rounded-full filter blur-3xl animate-float-2 [will-change:transform]"></div>
         </div>
 
         {/* Hero Section */}
@@ -44,7 +44,7 @@ const TryNow = () => {
 
         {/* Floating Editor Mockup */}
         <div className="relative max-w-4xl mx-auto px-4 z-10">
-          <div className="bg-card/50 dark:bg-gray-900/50 border rounded-xl shadow-lg dark:shadow-2xl dark:shadow-purple-500/10 backdrop-blur-md p-4 animate-fade-in-up opacity-0" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>
+          <div className="bg-card/50 dark:bg-gray-900/50 border rounded-xl shadow-lg dark:shadow-2xl dark:shadow-purple-500/10 backdrop-blur-md p-4 animate-fade-in-up opacity-0 [will-change:transform,opacity]" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>
             <div className="flex items-center space-x-1.5 mb-3">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
               <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
