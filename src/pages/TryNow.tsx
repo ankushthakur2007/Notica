@@ -14,24 +14,24 @@ const TryNow = () => {
       <header className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center p-4 bg-background/30 backdrop-blur-sm">
         <div className="flex items-center space-x-2">
           <img src="/logo.png" alt="Notica Logo" className="h-8 w-auto" />
-          <span className="font-semibold text-lg">Notica</span>
+          <span className="font-semibold text-lg hidden sm:inline">Notica</span>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <ThemeToggle />
-          <Button onClick={() => navigate('/login')} className="bg-foreground text-background hover:bg-foreground/90">
+          <Button onClick={() => navigate('/login')} className="bg-foreground text-background hover:bg-foreground/90 px-3 sm:px-4">
             Get Started
           </Button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="pt-32 pb-16">
-        {/* Background Glow */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-          <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-200/50 dark:bg-purple-500/30 rounded-full filter blur-3xl animate-float-1 [will-change:transform]"></div>
-          <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-200/50 dark:bg-blue-500/30 rounded-full filter blur-3xl animate-float-2 [will-change:transform]"></div>
-        </div>
+      {/* Background Glow */}
+      <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+        <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-200/50 dark:bg-purple-500/30 rounded-full filter blur-3xl animate-float-1 [will-change:transform]"></div>
+        <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-200/50 dark:bg-blue-500/30 rounded-full filter blur-3xl animate-float-2 [will-change:transform]"></div>
+      </div>
 
+      {/* Main Content */}
+      <main className="pt-24 sm:pt-32 pb-16">
         {/* Hero Section */}
         <div className="text-center max-w-4xl mx-auto mb-16 relative z-10 px-4">
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold mb-6 leading-tight tracking-tight bg-gradient-to-r from-primary via-slate-700 to-primary dark:from-gray-200 dark:via-white dark:to-gray-400 bg-clip-text text-transparent">
