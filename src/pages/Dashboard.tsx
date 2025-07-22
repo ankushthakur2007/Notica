@@ -43,14 +43,17 @@ const Dashboard = () => {
       } else {
         const sharedNotesData = shared
           ?.map(item => {
-            const noteData = item.notes as Note;
+            const noteData = item.notes as unknown as Note;
             if (noteData) {
               return { ...noteData, permission_level: item.permission_level as 'read' | 'write' };
             }
             return null;
           })
-          .filter((note): note is Note => note !== null);
-        setSharedNotes(sharedNotesData);
+          .filter(Boolean);
+        
+        if (sharedNotesData) {
+            setSharedNotes(sharedNotesData as Note[]);
+        }
       }
       
       finishFetchingNotes();

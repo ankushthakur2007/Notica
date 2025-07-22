@@ -51,12 +51,12 @@ const FontSize = Extension.create({
   },
   addCommands() {
     return {
-      setFontSize: (fontSize: string) => ({ chain }: { chain: ChainedCommands }) => {
+      setFontSize: (fontSize: string) => ({ chain }) => {
         return chain()
           .setMark('textStyle', { fontSize })
           .run()
       },
-      unsetFontSize: () => ({ chain }: { chain: ChainedCommands }) => {
+      unsetFontSize: () => ({ chain }) => {
         return chain()
           .setMark('textStyle', { fontSize: null })
           .removeEmptyTextStyle()
