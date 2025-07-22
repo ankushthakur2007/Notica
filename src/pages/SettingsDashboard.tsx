@@ -104,8 +104,8 @@ const SettingsDashboard = () => {
   }
 
   return (
-    <div className="p-6 w-full max-w-2xl mx-auto overflow-y-auto h-full flex flex-col animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.2s' }}>
-      <h1 className="text-4xl font-extrabold tracking-tight mb-6 text-foreground">Settings</h1>
+    <div className="p-4 sm:p-6 w-full max-w-2xl mx-auto overflow-y-auto h-full flex flex-col animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.2s' }}>
+      <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-6 text-foreground">Settings</h1>
       <Card className="mb-6 bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md">
         <CardHeader><CardTitle>Profile Information</CardTitle></CardHeader>
         <CardContent>

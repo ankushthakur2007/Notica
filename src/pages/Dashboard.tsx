@@ -105,7 +105,7 @@ const Dashboard = () => {
           <div className="flex flex-col flex-grow">
             <header className="flex items-center p-4 border-b border-border/50 bg-background/30 backdrop-blur-sm relative">
               <MobileSidebar />
-              <img src="/logo.png" alt="Notica Logo" className="h-10 md:h-8 w-auto absolute left-1/2 -translate-x-1/2" />
+              <img src="/logo.png" alt="Notica Logo" className="h-8 w-auto absolute left-1/2 -translate-x-1/2" />
               <div className="ml-auto">
                 <ThemeToggle />
               </div>

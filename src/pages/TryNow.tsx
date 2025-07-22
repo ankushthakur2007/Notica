@@ -33,8 +33,8 @@ const TryNow = () => {
         </div>
 
         {/* Hero Section */}
-        <div className="text-center max-w-4xl mx-auto mb-16 relative z-10">
-          <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-tight tracking-tight bg-gradient-to-r from-primary via-slate-700 to-primary dark:from-gray-200 dark:via-white dark:to-gray-400 bg-clip-text text-transparent">
+        <div className="text-center max-w-4xl mx-auto mb-16 relative z-10 px-4">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold mb-6 leading-tight tracking-tight bg-gradient-to-r from-primary via-slate-700 to-primary dark:from-gray-200 dark:via-white dark:to-gray-400 bg-clip-text text-transparent">
             From Voice to Vision, Instantly.
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">

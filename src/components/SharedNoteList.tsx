@@ -27,7 +27,7 @@ const SharedNoteList = () => {
   return (
     <div className="p-6 w-full max-w-6xl mx-auto overflow-y-auto h-full animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.2s' }}>
       <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-        <h2 className="text-4xl font-extrabold tracking-tight text-foreground">Shared Notes</h2>
+        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">Shared Notes</h2>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input

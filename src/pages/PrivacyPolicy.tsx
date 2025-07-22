@@ -4,19 +4,19 @@ import { Button } from '@/components/ui/button';
 
 const PrivacyPolicy = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4 sm:p-8">
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-200/50 dark:bg-purple-500/30 rounded-full filter blur-3xl animate-float-1 [will-change:transform]"></div>
         <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-200/50 dark:bg-blue-500/30 rounded-full filter blur-3xl animate-float-2 [will-change:transform]"></div>
       </div>
-      <div className="relative z-10 w-full max-w-3xl bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg shadow-lg p-8 space-y-6 animate-in fade-in-0 zoom-in-95 duration-500">
-        <h1 className="text-3xl font-bold text-center text-primary">Privacy Policy</h1>
+      <div className="relative z-10 w-full max-w-3xl bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg shadow-lg p-6 sm:p-8 space-y-6 animate-in fade-in-0 zoom-in-95 duration-500">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center text-primary">Privacy Policy</h1>
         <p className="text-muted-foreground">
           This Privacy Policy describes how Notica collects, uses, and discloses your information when you use our service.
           By using Notica, you agree to the collection and use of information in accordance with this policy.
         </p>
 
-        <h2 className="text-2xl font-semibold text-foreground">1. Information We Collect</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">1. Information We Collect</h2>
         <p className="text-muted-foreground">
           We collect information you provide directly to us when you create an account or use our services. This includes:
         </p>
@@ -27,7 +27,7 @@ const PrivacyPolicy = () => {
           <li><strong>Images:</strong> Images you upload to your notes, which are stored in Supabase Storage.</li>
         </ul>
 
-        <h2 className="text-2xl font-semibold text-foreground">2. How We Use Your Information</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">2. How We Use Your Information</h2>
         <p className="text-muted-foreground">
           We use the information we collect for the following purposes:
         </p>
@@ -40,7 +40,7 @@ const PrivacyPolicy = () => {
           <li><strong>Security and Fraud Prevention:</strong> To protect the integrity and security of our service and users.</li>
         </ul>
 
-        <h2 className="text-2xl font-semibold text-foreground">3. Sharing Your Information</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">3. Sharing Your Information</h2>
         <p className="text-muted-foreground">
           We do not sell your personal information. We may share your information with third-party service providers only to the extent necessary to provide our services, under strict data processing agreements. These include:
         </p>
@@ -53,12 +53,12 @@ const PrivacyPolicy = () => {
           We may also disclose your information if required by law or in response to valid requests by public authorities (e.g., a court order or government agency).
         </p>
 
-        <h2 className="text-2xl font-semibold text-foreground">4. Data Security</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">4. Data Security</h2>
         <p className="text-muted-foreground">
           We implement reasonable security measures, including encryption and access controls, to protect your information from unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the Internet or electronic storage is 100% secure.
         </p>
 
-        <h2 className="text-2xl font-semibold text-foreground">5. Your Choices and Rights</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">5. Your Choices and Rights</h2>
         <p className="text-muted-foreground">
           You have certain rights regarding your personal data:
         </p>
@@ -68,12 +68,12 @@ const PrivacyPolicy = () => {
           <li><strong>Account Deletion:</strong> If you wish to delete your entire account, please contact us.</li>
         </ul>
 
-        <h2 className="text-2xl font-semibold text-foreground">6. Changes to This Policy</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">6. Changes to This Policy</h2>
         <p className="text-muted-foreground">
           We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date at the top. We encourage you to review this Privacy Policy periodically for any changes.
         </p>
 
-        <h2 className="text-2xl font-semibold text-foreground">7. Contact Us</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-foreground">7. Contact Us</h2>
         <p className="text-muted-foreground">
           If you have any questions about this Privacy Policy, please contact us at k41946688@gmail.com .
         </p>
