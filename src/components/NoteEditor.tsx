@@ -146,6 +146,9 @@ const NoteEditor = () => {
 
   useEffect(() => {
     if (!editor || !note) return;
+    // Do not update content if the user is currently focused on the editor
+    if (editor.isFocused) return;
+
     setTitle(note.title);
     setCurrentTitleInput(note.title);
     setLastSavedTitle(note.title);

@@ -10,13 +10,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Note } from '@/types';
 
 const Dashboard = () => {
-  const { session, setNotes, setSharedNotes, startFetchingNotes, finishFetchingNotes } = useAppStore();
+  const { session, setNotes, setSharedNotes, startFetchingNotes, finishFetchingNotes, addNote, updateNote, deleteNote } = useAppStore();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    if (!session?.user) return;
+
     const fetchAllNotes = async () => {
-      if (!session?.user) return;
       startFetchingNotes();
       
       // Fetch user's own notes
@@ -68,7 +69,16 @@ const Dashboard = () => {
         { event: '*', schema: 'public', table: 'notes' },
         (payload) => {
           console.log('Real-time change received!', payload);
-          fetchAllNotes();
+          if (payload.eventType === 'INSERT') {
+            addNote(payload.new as Note);
+          }
+          if (payload.eventType === 'UPDATE') {
+            updateNote(payload.new as Note);
+          }
+          if (payload.eventType === 'DELETE') {
+            // The old record is available in the payload on delete
+            deleteNote((payload.old as Note).id);
+          }
         }
       )
       .subscribe();
@@ -76,7 +86,7 @@ const Dashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session, setNotes, setSharedNotes, startFetchingNotes, finishFetchingNotes]);
+  }, [session]);
 
   if (!session) {
     navigate('/login', { replace: true });
