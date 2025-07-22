@@ -81,7 +81,7 @@ const NoteList = () => {
   }
 
   return (
-    <div className="p-6 w-full max-w-6xl mx-auto overflow-y-auto h-full animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+    <div className="p-6 w-full max-w-6xl mx-auto overflow-y-auto h-full animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.2s' }}>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-4xl font-extrabold tracking-tight text-foreground">Your Notes</h2>
         <Dialog open={isCreateNoteDialogOpen} onOpenChange={setIsCreateNoteDialogOpen}>
@@ -125,7 +125,7 @@ const NoteList = () => {
       </div>
       
       {notes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center animate-in fade-in-0 duration-700 delay-100">
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.4s' }}>
           <h2 className="text-2xl font-bold mb-2">No notes yet!</h2>
           <p className="text-muted-foreground">Click "Create New Note" to get started.</p>
         </div>

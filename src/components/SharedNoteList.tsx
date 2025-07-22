@@ -19,7 +19,7 @@ const SharedNoteList = () => {
 
   if (!sharedNotes || sharedNotes.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-4 text-center animate-in fade-in-0 duration-700 delay-100">
+      <div className="flex flex-col items-center justify-center h-full p-4 text-center animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.2s' }}>
         <h2 className="text-2xl font-bold mb-2">No shared notes yet!</h2>
         <p className="text-muted-foreground">Notes shared with you will appear here.</p>
       </div>
@@ -27,7 +27,7 @@ const SharedNoteList = () => {
   }
 
   return (
-    <div className="p-6 w-full max-w-6xl mx-auto overflow-y-auto h-full animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+    <div className="p-6 w-full max-w-6xl mx-auto overflow-y-auto h-full animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.2s' }}>
       <h2 className="text-4xl font-extrabold tracking-tight mb-6 text-foreground">Shared Notes</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {sharedNotes.map((note, index) => (

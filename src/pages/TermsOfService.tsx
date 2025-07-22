@@ -6,8 +6,8 @@ const TermsOfService = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-8">
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-        <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-200/50 dark:bg-purple-500/30 rounded-full filter blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-200/50 dark:bg-blue-500/30 rounded-full filter blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-200/50 dark:bg-purple-500/30 rounded-full filter blur-3xl animate-float-1 [will-change:transform]"></div>
+        <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-200/50 dark:bg-blue-500/30 rounded-full filter blur-3xl animate-float-2 [will-change:transform]"></div>
       </div>
       <div className="relative z-10 w-full max-w-3xl bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg shadow-lg p-8 space-y-6 animate-in fade-in-0 zoom-in-95 duration-500">
         <h1 className="text-3xl font-bold text-center text-primary">Terms of Service</h1>
