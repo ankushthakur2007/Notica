@@ -297,7 +297,7 @@ const NoteEditorToolbar = ({
   );
 
   return (
-    <div className="mb-4 p-2 rounded-md border bg-muted">
+    <div className="mb-4 p-2 rounded-md border border-border/50 bg-card/50 backdrop-blur-sm">
       {isMobileView ? (
         <div className="space-y-3">
           <BasicFormattingTools />

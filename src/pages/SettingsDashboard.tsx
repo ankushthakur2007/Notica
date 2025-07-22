@@ -105,8 +105,8 @@ const SettingsDashboard = () => {
 
   return (
     <div className="p-6 w-full max-w-2xl mx-auto overflow-y-auto h-full flex flex-col animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
-      <h1 className="text-3xl font-bold mb-6 text-foreground">Settings</h1>
-      <Card className="mb-6">
+      <h1 className="text-4xl font-extrabold tracking-tight mb-6 text-foreground">Settings</h1>
+      <Card className="mb-6 bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md">
         <CardHeader><CardTitle>Profile Information</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleProfileUpdate} className="space-y-4">
@@ -134,7 +134,7 @@ const SettingsDashboard = () => {
           </form>
         </CardContent>
       </Card>
-      <Card className="mb-6">
+      <Card className="mb-6 bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md">
         <CardHeader><CardTitle>App Appearance</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
@@ -152,7 +152,7 @@ const SettingsDashboard = () => {
           </div>
         </CardContent>
       </Card>
-      <Card className="mb-6">
+      <Card className="mb-6 bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md">
         <CardHeader><CardTitle>Account Actions</CardTitle></CardHeader>
         <CardContent>
           <Button variant="destructive" onClick={handleSignOut}>Log Out</Button>

@@ -27,18 +27,18 @@ const SharedNoteList = () => {
   }
 
   return (
-    <div className="p-6 w-full max-w-4xl mx-auto overflow-y-auto h-full animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
-      <h2 className="text-3xl font-bold mb-6 text-foreground">Shared Notes</h2>
+    <div className="p-6 w-full max-w-6xl mx-auto overflow-y-auto h-full animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+      <h2 className="text-4xl font-extrabold tracking-tight mb-6 text-foreground">Shared Notes</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {sharedNotes.map((note, index) => (
           <Card 
             key={note.id} 
-            className="hover:shadow-lg transition-shadow cursor-pointer animate-in fade-in-0 zoom-in-95 duration-300" 
+            className="bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md hover:border-primary/50 transition-all duration-300 cursor-pointer"
             style={{ animationDelay: `${index * 50}ms` }}
             onClick={() => navigate(`/dashboard/edit-note/${note.id}`)}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg">{note.title}</CardTitle>
+              <CardTitle className="text-lg font-semibold">{note.title}</CardTitle>
               <Badge variant={note.permission_level === 'write' ? 'default' : 'secondary'} className="ml-2">
                 {note.permission_level === 'write' ? 'Editable' : 'Read-Only'}
               </Badge>

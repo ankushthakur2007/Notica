@@ -94,31 +94,38 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      {isMobile ? (
-        <div className="flex flex-col flex-grow">
-          <header className="flex items-center p-4 border-b border-border relative">
-            <MobileSidebar />
-            <img src="/logo.png" alt="Notica Logo" className="h-10 md:h-8 w-auto absolute left-1/2 -translate-x-1/2" />
-            <div className="ml-auto">
-              <ThemeToggle />
-            </div>
-          </header>
-          <main className="flex-grow overflow-y-auto">
-            <Outlet />
-          </main>
-        </div>
-      ) : (
-        <ResizablePanelGroup direction="horizontal" className="flex-grow">
-          <ResizablePanel defaultSize={20} minSize={15} maxSize={25}>
-            <Sidebar />
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={80}>
-            <Outlet />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      )}
+    <div className="min-h-screen w-full bg-background text-foreground overflow-hidden">
+      {/* Background Glow */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+        <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-200/50 dark:bg-purple-500/30 rounded-full filter blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-200/50 dark:bg-blue-500/30 rounded-full filter blur-3xl animate-pulse delay-1000"></div>
+      </div>
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {isMobile ? (
+          <div className="flex flex-col flex-grow">
+            <header className="flex items-center p-4 border-b border-border/50 bg-background/30 backdrop-blur-sm relative">
+              <MobileSidebar />
+              <img src="/logo.png" alt="Notica Logo" className="h-10 md:h-8 w-auto absolute left-1/2 -translate-x-1/2" />
+              <div className="ml-auto">
+                <ThemeToggle />
+              </div>
+            </header>
+            <main className="flex-grow overflow-y-auto">
+              <Outlet />
+            </main>
+          </div>
+        ) : (
+          <ResizablePanelGroup direction="horizontal" className="flex-grow">
+            <ResizablePanel defaultSize={20} minSize={15} maxSize={25}>
+              <Sidebar />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={80}>
+              <Outlet />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        )}
+      </div>
     </div>
   );
 };
