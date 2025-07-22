@@ -40,7 +40,7 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   // Actions
   setSession: (session) => set({ session, user: session?.user ?? null }),
   setNotes: (notes) => set({ notes }),
-  setSharedNotes: (notes) => set({ sharedNotes }),
+  setSharedNotes: (notes) => set({ sharedNotes: notes }),
   addNote: (note) => set((state) => ({ notes: [note, ...state.notes].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()) })),
   updateNote: (updatedNote) => set((state) => ({
     notes: state.notes.map((note) =>
