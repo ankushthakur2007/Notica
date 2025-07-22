@@ -261,6 +261,22 @@ const NoteEditor = () => {
     }
   }, [note, noteId, queryClient]);
 
+  const handleIncreaseFontSize = useCallback(() => {
+    if (!editor || !canEdit) return;
+    const { fontSize } = editor.getAttributes('textStyle');
+    const currentSize = parseInt(fontSize || '16', 10);
+    const newSize = Math.min(currentSize + 2, 32);
+    editor.chain().focus().setFontSize(`${newSize}px`).run();
+  }, [editor, canEdit]);
+
+  const handleDecreaseFontSize = useCallback(() => {
+    if (!editor || !canEdit) return;
+    const { fontSize } = editor.getAttributes('textStyle');
+    const currentSize = parseInt(fontSize || '16', 10);
+    const newSize = Math.max(currentSize - 2, 10);
+    editor.chain().focus().setFontSize(`${newSize}px`).run();
+  }, [editor, canEdit]);
+
   if (isLoading || isLoadingPermission) return <div className="flex items-center justify-center h-full"><p>Loading note...</p></div>;
   if (isError || !note) return <div className="flex items-center justify-center h-full text-destructive"><p>Error loading note.</p></div>;
 
@@ -279,8 +295,8 @@ const NoteEditor = () => {
         onImageUpload={handleImageUpload} onRefineAI={handleRefineAI} onTranscription={(text) => editor?.chain().focus().insertContent(text + ' ').run()}
         currentFontSize={currentFontSize} currentFontFamily={currentFontFamily}
         onFontFamilyChange={(font) => editor?.chain().focus().setFontFamily(font).run()}
-        onIncreaseFontSize={() => { const newSize = Math.min(parseInt(currentFontSize) + 2, 32); editor?.chain().focus().setFontSize(`${newSize}px`).run(); }}
-        onDecreaseFontSize={() => { const newSize = Math.max(parseInt(currentFontSize) - 2, 10); editor?.chain().focus().setFontSize(`${newSize}px`).run(); }}
+        onIncreaseFontSize={handleIncreaseFontSize}
+        onDecreaseFontSize={handleDecreaseFontSize}
         noteTitle={title}
       />
       <div className="flex-grow overflow-y-auto">
