@@ -27,6 +27,7 @@ interface ShareNoteDialogProps {
   isSharableLinkEnabled: boolean; // Current status of shareable link
   sharableLinkPermissionLevel: 'read' | 'write'; // Current permission level for shareable link
   onToggleShareableLink: (checked: boolean, permissionLevel: 'read' | 'write') => Promise<void>; // Updated prop for update function
+  children?: React.ReactNode; // To allow DialogTrigger to be passed as a child
 }
 
 interface UserDetail {
@@ -37,7 +38,7 @@ interface UserDetail {
   email: string | null;
 }
 
-const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, sharableLinkPermissionLevel, onToggleShareableLink }: ShareNoteDialogProps) => {
+const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, sharableLinkPermissionLevel, onToggleShareableLink, children }: ShareNoteDialogProps) => {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [shareLink, setShareLink] = useState('');
@@ -279,10 +280,14 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, s
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Share2 className="h-4 w-4 mr-2" />
-          Share
-        </Button>
+        {children ? (
+          children
+        ) : (
+          <Button variant="outline" size="sm">
+            <Share2 className="h-4 w-4 mr-2" />
+            Share
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
