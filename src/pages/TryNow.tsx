@@ -26,15 +26,15 @@ const TryNow = () => {
 
       {/* Main Content */}
       <main className="pt-32 pb-16">
-        {/* Background Glow (Dark Mode Only) */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 hidden dark:block">
-          <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-500/30 rounded-full filter blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-500/30 rounded-full filter blur-3xl animate-pulse delay-1000"></div>
+        {/* Background Glow */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+          <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-200/50 dark:bg-purple-500/30 rounded-full filter blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-200/50 dark:bg-blue-500/30 rounded-full filter blur-3xl animate-pulse delay-1000"></div>
         </div>
 
         {/* Hero Section */}
         <div className="text-center max-w-4xl mx-auto mb-16 relative z-10">
-          <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-tight tracking-tight text-primary dark:bg-gradient-to-r dark:from-gray-200 dark:via-white dark:to-gray-400 dark:bg-clip-text dark:text-transparent">
+          <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-tight tracking-tight bg-gradient-to-r from-primary via-slate-700 to-primary dark:from-gray-200 dark:via-white dark:to-gray-400 bg-clip-text text-transparent">
             From Voice to Vision, Instantly.
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
