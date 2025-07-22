@@ -67,7 +67,7 @@ const NoteHeader = ({
   return (
     <div className={`flex ${isMobileView ? 'flex-col space-y-3' : 'justify-between items-center'} mb-4`}>
       <Input
-        className={`${isMobileView ? 'text-xl' : 'text-2xl'} font-bold border-none focus-visible:ring-0 focus-visible:ring-offset-0`}
+        className={`${isMobileView ? 'text-xl' : 'text-2xl'} font-bold border-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent`}
         value={currentTitleInput}
         onChange={(e) => setCurrentTitleInput(e.target.value)}
         onBlur={() => onSaveNote(currentTitleInput, editorContent)}
