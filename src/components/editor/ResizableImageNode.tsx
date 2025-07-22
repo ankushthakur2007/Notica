@@ -1,18 +1,17 @@
 import React, { useRef, useCallback } from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
-import { ReactNodeViewRenderer } from '@tiptap/react';
+import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import Image from '@tiptap/extension-image';
 
 // The React component that will be rendered for our custom node
 const ResizableImageView = (props: any) => {
   const { node, updateAttributes, editor } = props;
-  const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const isResizable = editor.isEditable;
 
   const onMouseDown = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    if (!isResizable || !containerRef.current || !imgRef.current) return;
+    if (!isResizable || !imgRef.current) return;
     event.preventDefault();
 
     const handle = event.currentTarget;
@@ -35,8 +34,7 @@ const ResizableImageView = (props: any) => {
   }, [isResizable, updateAttributes]);
 
   return (
-    <div
-      ref={containerRef}
+    <NodeViewWrapper
       className={`relative inline-block ${node.attrs.align === 'left' ? 'float-left mr-4' : ''} ${node.attrs.align === 'right' ? 'float-right ml-4' : ''}`}
       style={{ width: node.attrs.width }}
       data-drag-handle // Important for Tiptap's drag and drop
@@ -60,7 +58,7 @@ const ResizableImageView = (props: any) => {
           />
         </>
       )}
-    </div>
+    </NodeViewWrapper>
   );
 };
 
