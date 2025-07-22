@@ -299,7 +299,7 @@ const NoteEditor = () => {
         onDecreaseFontSize={handleDecreaseFontSize}
         noteTitle={title}
       />
-      <div className="flex-grow overflow-y-auto">
+      <div className="flex-grow overflow-y-auto bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg p-4">
         <EditorContent editor={editor} />
       </div>
     </div>
