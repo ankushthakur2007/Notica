@@ -1,31 +1,73 @@
-import React from 'react';
-import { useSessionContext } from '@/contexts/SessionContext';
+import React, { useEffect } from 'react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import Sidebar from '@/components/Sidebar';
 import MobileSidebar from '@/components/MobileSidebar';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAppStore } from '@/stores/appStore';
+import { supabase } from '@/integrations/supabase/client';
+import { Note } from '@/types';
 
 const Dashboard = () => {
-  const { session, signOut, loading } = useSessionContext();
-  const location = useLocation();
+  const { session, setNotes, setSharedNotes, startFetchingNotes, finishFetchingNotes } = useAppStore();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
-  React.useEffect(() => {
-    if (!loading && session && location.pathname === '/dashboard') {
-      navigate('/dashboard/your-notes', { replace: true }); // Changed from /dashboard/all-notes
-    }
-  }, [loading, session, location.pathname, navigate]);
+  useEffect(() => {
+    const fetchAllNotes = async () => {
+      if (!session?.user) return;
+      startFetchingNotes();
+      
+      // Fetch user's own notes
+      const { data: notes, error: notesError } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('updated_at', { ascending: false });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <p>Loading user session...</p>
-      </div>
-    );
-  }
+      if (notesError) {
+        console.error('Error fetching notes:', notesError);
+      } else {
+        setNotes(notes as Note[]);
+      }
+
+      // Fetch notes shared with the user
+      const { data: shared, error: sharedError } = await supabase
+        .from('collaborators')
+        .select('permission_level, notes(*)')
+        .eq('user_id', session.user.id);
+
+      if (sharedError) {
+        console.error('Error fetching shared notes:', sharedError);
+      } else {
+        const sharedNotesData = shared
+          ?.map(item => item.notes ? ({ ...item.notes, permission_level: item.permission_level }) : null)
+          .filter(Boolean) as Note[];
+        setSharedNotes(sharedNotesData);
+      }
+      
+      finishFetchingNotes();
+    };
+
+    fetchAllNotes();
+
+    const channel = supabase
+      .channel('realtime notes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notes' },
+        (payload) => {
+          console.log('Real-time change received!', payload);
+          fetchAllNotes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session, setNotes, setSharedNotes, startFetchingNotes, finishFetchingNotes]);
 
   if (!session) {
     navigate('/login', { replace: true });
@@ -39,7 +81,7 @@ const Dashboard = () => {
           <header className="flex items-center p-4 border-b border-border relative">
             <MobileSidebar />
             <img src="/logo.png" alt="Notica Logo" className="h-10 md:h-8 w-auto absolute left-1/2 -translate-x-1/2" />
-            <div className="ml-auto"> {/* This pushes ThemeToggle to the right */}
+            <div className="ml-auto">
               <ThemeToggle />
             </div>
           </header>

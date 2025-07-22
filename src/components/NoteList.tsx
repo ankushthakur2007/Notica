@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAppStore } from '@/stores/appStore';
 import { supabase } from '@/integrations/supabase/client';
-import { useSessionContext } from '@/contexts/SessionContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { Note } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
@@ -21,65 +18,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlusCircle } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid'; // Import uuid for local note IDs
-// Removed imports for offlineDb and useOnlineStatus
+import { v4 as uuidv4 } from 'uuid';
 
 const NoteList = () => {
-  const { user } = useSessionContext();
+  const { user, notes, isFetchingNotes, addNote } = useAppStore();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  // Removed useOnlineStatus
-
   const [isCreateNoteDialogOpen, setIsCreateNoteDialogOpen] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState('Untitled Note');
   const [isCreatingNote, setIsCreatingNote] = useState(false);
-
-  const { data: notes, isLoading, isError, error, refetch } = useQuery<Note[], Error>({
-    queryKey: ['notes', user?.id],
-    queryFn: async () => {
-      console.log('🔍 Starting notes fetch...');
-      console.log('User ID:', user?.id);
-      
-      if (!user) {
-        console.error('❌ User not logged in, cannot fetch notes.');
-        return [];
-      }
-
-      try {
-        console.log('📡 Fetching owned notes from Supabase...');
-        const { data, error } = await supabase
-          .from('notes')
-          .select(`*`)
-          .eq('user_id', user.id)
-          .order('updated_at', { ascending: false });
-
-        if (error) {
-          console.error('❌ Supabase query error:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
-          throw error;
-        }
-
-        console.log('✅ Owned notes fetched successfully from Supabase:', data?.length || 0, 'notes');
-        return data || [];
-      } catch (fetchError: any) {
-        console.error('❌ Failed to load notes from Supabase:', fetchError);
-        showError('Failed to load notes: ' + fetchError.message);
-        throw fetchError; // Re-throw to let react-query handle retry/error state
-      }
-    },
-    enabled: !!user,
-    staleTime: 5 * 60 * 1000, // Keep data fresh for 5 minutes
-    cacheTime: 10 * 60 * 1000, // Cache data for 10 minutes
-    retry: (failureCount, error) => {
-      console.log(`🔄 Query retry attempt ${failureCount + 1}:`, error.message);
-      return failureCount < 2; // Retry up to 2 times
-    },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
 
   const handleCreateNewNote = async () => {
     if (!user) {
@@ -93,13 +39,13 @@ const NoteList = () => {
 
     setIsCreatingNote(true);
     try {
-      const newId = uuidv4(); // Generate a UUID for the new note
+      const newId = uuidv4();
       const now = new Date().toISOString();
       
       const { data, error } = await supabase
         .from('notes')
         .insert({
-          id: newId, // Use the generated ID
+          id: newId,
           user_id: user.id,
           title: newNoteTitle.trim(),
           content: '',
@@ -111,16 +57,13 @@ const NoteList = () => {
         .select()
         .single();
 
-      if (error) {
-        console.error('Error creating note in Supabase:', error);
-        throw error;
-      }
+      if (error) throw error;
 
+      addNote(data); // Add to store for immediate UI update
       showSuccess('Note created successfully!');
-      queryClient.invalidateQueries({ queryKey: ['notes'] }); // Invalidate to refresh the list
-      setIsCreateNoteDialogOpen(false); // Close the dialog
-      setNewNoteTitle('Untitled Note'); // Reset title for next time
-      navigate(`/dashboard/edit-note/${newId}`); // Navigate to the new note's editor
+      setIsCreateNoteDialogOpen(false);
+      setNewNoteTitle('Untitled Note');
+      navigate(`/dashboard/edit-note/${newId}`);
     } catch (error: any) {
       console.error('Error creating new note:', error);
       showError('Failed to create note: ' + error.message);
@@ -129,26 +72,10 @@ const NoteList = () => {
     }
   };
 
-  if (isLoading) {
+  if (isFetchingNotes) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted-foreground">Loading your notes...</p>
-      </div>
-    );
-  }
-
-  if (isError) {
-    console.error('❌ NoteList error state:', error?.message);
-    showError('Failed to load your notes: ' + error?.message);
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-destructive p-4">
-        <p className="mb-4">Error loading your notes: {error?.message}</p>
-        <button 
-          onClick={() => refetch()} 
-          className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-        >
-          Retry
-        </button>
       </div>
     );
   }
@@ -167,15 +94,11 @@ const NoteList = () => {
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Create New Note</DialogTitle>
-              <DialogDescription>
-                Enter a title for your new note.
-              </DialogDescription>
+              <DialogDescription>Enter a title for your new note.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="new-note-title" className="text-right">
-                  Title
-                </Label>
+                <Label htmlFor="new-note-title" className="text-right">Title</Label>
                 <Input
                   id="new-note-title"
                   value={newNoteTitle}
@@ -201,7 +124,7 @@ const NoteList = () => {
         </Dialog>
       </div>
       
-      {!notes || notes.length === 0 ? (
+      {notes.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center animate-in fade-in-0 duration-700 delay-100">
           <h2 className="text-2xl font-bold mb-2">No notes yet!</h2>
           <p className="text-muted-foreground">Click "Create New Note" to get started.</p>
@@ -212,12 +135,11 @@ const NoteList = () => {
             <Card 
               key={note.id} 
               className="hover:shadow-lg transition-shadow cursor-pointer animate-in fade-in-0 zoom-in-95 duration-300" 
-              style={{ animationDelay: `${index * 50}ms` }} // Staggered animation
+              style={{ animationDelay: `${index * 50}ms` }}
               onClick={() => navigate(`/dashboard/edit-note/${note.id}`)}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-lg">{note.title}</CardTitle>
-                {/* Removed sync_status badge */}
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-2 line-clamp-3">{note.content ? 'Content available' : 'No content preview available.'}</p>
