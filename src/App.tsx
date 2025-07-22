@@ -12,11 +12,11 @@ import SettingsDashboard from "./pages/SettingsDashboard";
 import TryNow from "./pages/TryNow";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import NoteEditorPage from "./pages/NoteEditorPage";
 
 // Component imports
 import NoteList from "./components/NoteList";
 import SharedNoteList from "./components/SharedNoteList";
-import NoteEditor from "./components/NoteEditor";
 
 // Zustand store and Supabase client
 import { useAppStore } from './stores/appStore';
@@ -75,8 +75,9 @@ const AppContent = () => {
         <Route index element={<Navigate to="your-notes" replace />} />
         <Route path="your-notes" element={<NoteList />} />
         <Route path="shared-notes" element={<SharedNoteList />} />
-        <Route path="edit-note/:noteId" element={<NoteEditor />} />
       </Route>
+
+      <Route path="/dashboard/edit-note/:noteId" element={<ProtectedRoute><NoteEditorPage /></ProtectedRoute>} />
 
       <Route path="/settings" element={<ProtectedRoute><SettingsDashboard /></ProtectedRoute>} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />

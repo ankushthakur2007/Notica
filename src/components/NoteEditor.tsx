@@ -265,7 +265,7 @@ const NoteEditor = () => {
   if (isError || !note) return <div className="flex items-center justify-center h-full text-destructive"><p>Error loading note.</p></div>;
 
   return (
-    <div className={`${isMobileView ? 'p-4' : 'p-6'} w-full max-w-4xl mx-auto overflow-y-auto h-full flex flex-col`}>
+    <div className={`${isMobileView ? 'p-4' : 'p-6'} w-full max-w-4xl mx-auto overflow-y-auto h-screen flex flex-col`}>
       <NoteHeader
         noteId={noteId} note={note} user={user} isNewNote={false} isNoteOwner={isNoteOwner} canEdit={canEdit}
         title={title} currentTitleInput={currentTitleInput} setCurrentTitleInput={setCurrentTitleInput}
