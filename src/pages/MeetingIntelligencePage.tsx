@@ -78,7 +78,7 @@ const MeetingIntelligencePage = () => {
     if (!user) return;
 
     // Delete the audio file from storage first
-    const filePath = `public/${user.id}/${meeting.id}.webm`;
+    const filePath = `${user.id}/${meeting.id}.webm`;
     const { error: storageError } = await supabase.storage
       .from('meeting-recordings')
       .remove([filePath]);

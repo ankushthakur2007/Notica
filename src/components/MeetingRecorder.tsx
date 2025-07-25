@@ -88,7 +88,7 @@ const MeetingRecorder = ({ title, onRecordingFinish }: MeetingRecorderProps) => 
         
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const meetingId = uuidv4();
-        const filePath = `public/${user!.id}/${meetingId}.webm`;
+        const filePath = `${user!.id}/${meetingId}.webm`;
 
         const { error: uploadError } = await supabase.storage.from('meeting-recordings').upload(filePath, audioBlob);
         if (uploadError) {
@@ -136,7 +136,7 @@ const MeetingRecorder = ({ title, onRecordingFinish }: MeetingRecorderProps) => 
       } else if (err.name === 'NotFoundError') {
         setError('No microphone or screen audio source was found. Please ensure your devices are connected.');
       } else if (err.name === 'NotSupportedError') {
-        setError('Screen and audio recording is not supported by your browser or device. Please try a different browser like Chrome or Firefox.');
+        setError('Screen and audio recording is not supported by your device. Please try a different browser like Chrome or Firefox.');
       } else {
         setError(`An unexpected error occurred: ${err.message}`);
       }
