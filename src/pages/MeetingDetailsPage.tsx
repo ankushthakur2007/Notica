@@ -44,10 +44,13 @@ const MeetingDetailsPage = () => {
           <Button asChild variant="ghost" size="icon">
             <Link to="/dashboard/meetings"><ChevronLeft className="h-5 w-5" /></Link>
           </Button>
-          <h1 className="text-lg font-bold truncate ml-2">{meeting.title}</h1>
+          <div className="ml-2 truncate">
+            <h1 className="text-lg font-bold truncate">{meeting.title}</h1>
+            <p className="text-xs text-muted-foreground truncate">{`Recorded on ${format(new Date(meeting.created_at), "M/d/yy, p")}`}</p>
+          </div>
         </header>
         <Tabs defaultValue="summary" className="w-full flex-grow flex flex-col">
-          <TabsList className="grid w-full grid-cols-3 sticky top-[65px] bg-background/80 backdrop-blur-sm z-10">
+          <TabsList className="grid w-full grid-cols-3 sticky top-[73px] bg-background/80 backdrop-blur-sm z-10">
             <TabsTrigger value="summary">Summary</TabsTrigger>
             <TabsTrigger value="transcript">Transcript</TabsTrigger>
             <TabsTrigger value="chat">Chat</TabsTrigger>
@@ -80,8 +83,8 @@ const MeetingDetailsPage = () => {
                 <Button asChild variant="ghost" className="mb-4 -ml-4 text-muted-foreground hover:text-foreground">
                   <Link to="/dashboard/meetings"><ChevronLeft className="h-4 w-4 mr-2" /> Back to Meetings</Link>
                 </Button>
-                <h1 className="text-3xl font-bold mb-2">{`Meeting from ${format(new Date(meeting.created_at), "M/d/yyyy, p")}`}</h1>
-                <p className="text-muted-foreground">{meeting.title}</p>
+                <h1 className="text-3xl font-bold mb-2">{meeting.title}</h1>
+                <p className="text-muted-foreground">{`Recorded on ${format(new Date(meeting.created_at), "MMMM d, yyyy 'at' p")}`}</p>
               </div>
               <div className="space-y-12">
                 <AISummary meeting={meeting} />
