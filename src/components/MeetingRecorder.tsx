@@ -113,8 +113,16 @@ const MeetingRecorder = ({ onRecordingFinish }: MeetingRecorderProps) => {
       setIsRecording(true);
       startTimer();
     } catch (err: any) {
-      setError('Could not start recording. Please grant permissions for both microphone and screen audio.');
-      console.error(err);
+      console.error("Recording failed to start:", err);
+      if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
+        setError('Permission to record was denied or cancelled. Please allow microphone and screen sharing permissions to record.');
+      } else if (err.name === 'NotFoundError') {
+        setError('No microphone or screen audio source was found. Please ensure your devices are connected.');
+      } else if (err.name === 'NotSupportedError') {
+        setError('Screen and audio recording is not supported by your browser or device. Please try a different browser like Chrome or Firefox.');
+      } else {
+        setError(`An unexpected error occurred: ${err.message}`);
+      }
     }
   };
 

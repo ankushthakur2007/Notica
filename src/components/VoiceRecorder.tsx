@@ -72,8 +72,13 @@ const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderP
         mediaRecorderRef.current.start();
         setIsRecording(true);
         showSuccess('Recording started...');
-      } catch (err) {
-        showError('Failed to start recording. Please check microphone permissions.');
+      } catch (err: any) {
+        console.error("Voice recording failed to start:", err);
+        if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
+          showError('Microphone permission denied. Please allow access to your microphone.');
+        } else {
+          showError('Failed to start recording. Please check microphone permissions.');
+        }
       }
     } else {
       showError('MediaRecorder is not supported in your browser.');
