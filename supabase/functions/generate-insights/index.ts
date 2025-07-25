@@ -33,6 +33,12 @@ serve(async (req) => {
       throw new Error('Transcript not found for this meeting.');
     }
 
+    // Extract plain text from the rich transcript object
+    const transcriptText = meeting.transcript?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+    if (!transcriptText) {
+      throw new Error('Could not extract plain text from transcript object.');
+    }
+
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     if (!geminiApiKey) throw new Error('Gemini API key not set.');
 
@@ -43,7 +49,7 @@ serve(async (req) => {
 
 Transcript:
 ---
-${meeting.transcript}
+${transcriptText}
 ---`;
 
     const result = await model.generateContent(prompt);

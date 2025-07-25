@@ -31,7 +31,7 @@ export interface Meeting {
   title: string;
   audio_url: string | null;
   status: 'transcribing' | 'analyzing' | 'completed' | 'failed';
-  transcript: string | null;
+  transcript: any | null;
   summary: string | null;
   action_items: string[] | null;
   key_decisions: string[] | null;

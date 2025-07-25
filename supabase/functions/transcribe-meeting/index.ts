@@ -33,8 +33,14 @@ serve(async (req) => {
     const deepgramApiKey = Deno.env.get('DEEPGRAM_API_KEY');
     if (!deepgramApiKey) throw new Error('Deepgram API key not set.');
 
-    // Added diarize=true to the Deepgram API call to enable speaker detection
-    const deepgramResponse = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2-meeting&diarize=true', {
+    // Enhanced Deepgram API call with more features
+    const url = new URL('https://api.deepgram.com/v1/listen');
+    url.searchParams.append('model', 'nova-2-meeting');
+    url.searchParams.append('utterances', 'true'); // Get sentence-level timestamps and speakers
+    url.searchParams.append('diarize', 'true'); // Identify different speakers
+    url.searchParams.append('smart_format', 'true'); // Add punctuation and formatting
+
+    const deepgramResponse = await fetch(url.toString(), {
       method: 'POST',
       headers: {
         'Authorization': `Token ${deepgramApiKey}`,
@@ -49,29 +55,16 @@ serve(async (req) => {
     }
 
     const deepgramData = await deepgramResponse.json();
-    
-    // Process the diarized response to create a formatted transcript
-    const paragraphs = deepgramData.results?.channels?.[0]?.alternatives?.[0]?.paragraphs?.paragraphs;
-    let transcript = '';
-    if (paragraphs) {
-      transcript = paragraphs.map((para: any) => {
-        // Add 1 to the speaker index to make it 1-based (Speaker 1, Speaker 2, etc.)
-        const speakerLabel = `Speaker ${para.speaker + 1}`;
-        const text = para.sentences.map((sentence: any) => sentence.text).join(' ');
-        return `${speakerLabel}: ${text}`;
-      }).join('\n\n'); // Use double newline for better visual separation between speakers
-    } else {
-      // Fallback for non-diarized or unexpected response format
-      transcript = deepgramData.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
-    }
 
+    // Save the entire rich JSON object to the database
     const { error: updateError } = await supabaseAdmin
       .from('meetings')
-      .update({ transcript, status: 'analyzing' })
+      .update({ transcript: deepgramData, status: 'analyzing' })
       .eq('id', meetingId);
 
     if (updateError) throw new Error(`DB update failed: ${updateError.message}`);
 
+    // Invoke the next function in the chain
     const { error: invokeError } = await supabaseAdmin.functions.invoke('generate-insights', {
       body: { meetingId },
     });
