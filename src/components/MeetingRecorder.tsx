@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, StopCircle, Loader2 } from 'lucide-react';
+import { Mic, StopCircle, Loader2, Terminal } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppStore } from '@/stores/appStore';
 import { v4 as uuidv4 } from 'uuid';
 import { showError, showSuccess } from '@/utils/toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from "lucide-react";
 
 interface MeetingRecorderProps {
   title: string;
@@ -26,6 +25,7 @@ const MeetingRecorder = ({ title, onRecordingFinish }: MeetingRecorderProps) => 
   const streamsRef = useRef<MediaStream[]>([]);
 
   useEffect(() => {
+    // Cleanup function
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       streamsRef.current.forEach(stream => stream.getTracks().forEach(track => track.stop()));
@@ -155,7 +155,6 @@ const MeetingRecorder = ({ title, onRecordingFinish }: MeetingRecorderProps) => 
     }
   };
 
-  // Automatically start recording when the component mounts
   useEffect(() => {
     startRecording();
   }, []);
@@ -173,11 +172,18 @@ const MeetingRecorder = ({ title, onRecordingFinish }: MeetingRecorderProps) => 
       <div className="text-6xl font-mono mb-4">{formatTime(timer)}</div>
       <Button onClick={stopRecording} size="lg" variant="destructive" disabled={isUploading}>
         {isUploading ? (
-          <><Loader2 className="mr-2 h-6 w-6 animate-spin" /> Uploading...</>
+          <>
+            <Loader2 className="mr-2 h-6 w-6 animate-spin" /> Uploading...
+          </>
         ) : (
-          <><StopCircle className="mr-2 h-6 w-6" /> Stop Recording</>
+          <>
+            <StopCircle className="mr-2 h-6 w-6" /> Stop Recording
+          </>
         )}
       </Button>
        <Button variant="link" onClick={onRecordingFinish} className="mt-4">Cancel</Button>
     </div>
   );
+};
+
+export default MeetingRecorder;
