@@ -77,14 +77,13 @@ const AppContent = () => {
         <Route index element={<Navigate to="your-notes" replace />} />
         <Route path="your-notes" element={<NoteList />} />
         <Route path="shared-notes" element={<SharedNoteList />} />
+        <Route path="meetings" element={<MeetingIntelligencePage />} />
+        <Route path="settings" element={<SettingsDashboard />} />
+        <Route path="edit-note/:noteId" element={<NoteEditorPage />} />
       </Route>
 
-      <Route path="/meetings" element={<ProtectedRoute><Dashboard><MeetingIntelligencePage /></Dashboard></ProtectedRoute>} />
       <Route path="/meetings/:meetingId" element={<ProtectedRoute><MeetingDetailsPage /></ProtectedRoute>} />
 
-      <Route path="/dashboard/edit-note/:noteId" element={<ProtectedRoute><NoteEditorPage /></ProtectedRoute>} />
-
-      <Route path="/settings" element={<ProtectedRoute><SettingsDashboard /></ProtectedRoute>} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/terms-of-service" element={<TermsOfService />} />
       <Route path="*" element={<NotFound />} />

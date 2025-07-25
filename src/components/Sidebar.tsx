@@ -46,8 +46,8 @@ const Sidebar = ({ onLinkClick }: SidebarProps) => {
         </Button>
         <Button
           variant="ghost"
-          className={`justify-start ${isActive('/meetings') ? 'bg-white/20 dark:bg-white/10' : 'hover:bg-white/20 dark:hover:bg-white/10'}`}
-          onClick={() => handleNavigationClick('/meetings')}
+          className={`justify-start ${isActive('/dashboard/meetings') ? 'bg-white/20 dark:bg-white/10' : 'hover:bg-white/20 dark:hover:bg-white/10'}`}
+          onClick={() => handleNavigationClick('/dashboard/meetings')}
         >
           <BrainCircuit className="mr-2 h-4 w-4" />
           Meetings
@@ -56,8 +56,8 @@ const Sidebar = ({ onLinkClick }: SidebarProps) => {
       <div className="mt-auto pt-4 border-t border-white/10">
         <Button
           variant="ghost"
-          className={`justify-start w-full ${isActive('/settings') ? 'bg-white/20 dark:bg-white/10' : 'hover:bg-white/20 dark:hover:bg-white/10'}`}
-          onClick={() => handleNavigationClick('/settings')}
+          className={`justify-start w-full ${isActive('/dashboard/settings') ? 'bg-white/20 dark:bg-white/10' : 'hover:bg-white/20 dark:hover:bg-white/10'}`}
+          onClick={() => handleNavigationClick('/dashboard/settings')}
         >
           <Settings className="mr-2 h-4 w-4" />
           Settings
