@@ -104,7 +104,7 @@ const MeetingRecorder = ({ title, onRecordingFinish }: MeetingRecorderProps) => 
           user_id: user!.id,
           title: title,
           audio_url: publicUrl,
-          status: 'processing',
+          status: 'transcribing',
         });
 
         if (dbError) {

@@ -30,7 +30,7 @@ export interface Meeting {
   created_at: string;
   title: string;
   audio_url: string | null;
-  status: 'processing' | 'completed' | 'failed';
+  status: 'transcribing' | 'analyzing' | 'completed' | 'failed';
   transcript: string | null;
   summary: string | null;
   action_items: string[] | null;

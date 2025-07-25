@@ -52,7 +52,7 @@ serve(async (req) => {
 
     const { error: updateError } = await supabaseAdmin
       .from('meetings')
-      .update({ transcript })
+      .update({ transcript, status: 'analyzing' })
       .eq('id', meetingId);
 
     if (updateError) throw new Error(`DB update failed: ${updateError.message}`);

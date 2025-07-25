@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Meeting } from '@/types';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -17,6 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import MeetingStatusIndicator from './MeetingStatusIndicator';
 
 interface MeetingListProps {
   meetings: Meeting[];
@@ -33,54 +33,47 @@ const MeetingList = ({ meetings, onDeleteMeeting }: MeetingListProps) => {
     setIsDeleting(null);
   };
 
-  const getStatusBadge = (status: Meeting['status']) => {
-    switch (status) {
-      case 'completed':
-        return <Badge variant="default" className="bg-green-500 hover:bg-green-600"><CheckCircle className="mr-1 h-3 w-3" />Completed</Badge>;
-      case 'processing':
-        return <Badge variant="secondary"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing</Badge>;
-      case 'failed':
-        return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Failed</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2">
       {meetings.map(meeting => (
         <Card 
           key={meeting.id} 
-          className="flex flex-col"
+          className="flex flex-col justify-between bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md transition-all duration-300"
         >
           <div 
-            className={`flex-grow cursor-pointer hover:bg-muted/50 transition-all ${meeting.status !== 'completed' ? 'cursor-not-allowed' : ''}`}
+            className={meeting.status === 'completed' ? 'cursor-pointer hover:bg-muted/50 rounded-t-lg' : ''}
             onClick={() => meeting.status === 'completed' && navigate(`/meetings/${meeting.id}`)}
           >
             <CardHeader>
-              <div className="flex justify-between items-start">
-                  <CardTitle className="truncate pr-2">{meeting.title}</CardTitle>
-                  {getStatusBadge(meeting.status)}
-              </div>
+              <CardTitle className="truncate">{meeting.title}</CardTitle>
               <CardDescription>
                 {format(new Date(meeting.created_at), 'PPP p')}
               </CardDescription>
             </CardHeader>
+            <CardContent className="flex-grow flex items-center justify-center min-h-[100px]">
+              {meeting.status === 'completed' ? (
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <CheckCircle className="h-10 w-10 text-green-500" />
+                  <p className="font-semibold text-foreground">Insights Ready</p>
+                  <p className="text-sm text-muted-foreground">Click to view details</p>
+                </div>
+              ) : (
+                <MeetingStatusIndicator status={meeting.status} />
+              )}
+            </CardContent>
           </div>
-          <div className="p-4 pt-0 mt-auto">
+          <CardFooter className="bg-muted/30 dark:bg-black/20 p-3 flex justify-end border-t">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button 
-                  variant="outline" 
+                  variant="destructive" 
                   size="sm" 
-                  className="w-full"
                   disabled={isDeleting === meeting.id}
                 >
                   {isDeleting === meeting.id ? 
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : 
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Loader2 className="h-4 w-4 animate-spin" /> : 
+                    <Trash2 className="h-4 w-4" />
                   }
-                  Delete
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -98,7 +91,7 @@ const MeetingList = ({ meetings, onDeleteMeeting }: MeetingListProps) => {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
+          </CardFooter>
         </Card>
       ))}
     </div>
