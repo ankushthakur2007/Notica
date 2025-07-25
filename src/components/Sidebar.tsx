@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { NotebookText, Settings, Users } from 'lucide-react';
+import { NotebookText, Settings, Users, BrainCircuit } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile'; // Import useIsMobile
 
@@ -43,6 +43,14 @@ const Sidebar = ({ onLinkClick }: SidebarProps) => {
         >
           <Users className="mr-2 h-4 w-4" />
           Shared Notes
+        </Button>
+        <Button
+          variant="ghost"
+          className={`justify-start ${isActive('/meetings') ? 'bg-white/20 dark:bg-white/10' : 'hover:bg-white/20 dark:hover:bg-white/10'}`}
+          onClick={() => handleNavigationClick('/meetings')}
+        >
+          <BrainCircuit className="mr-2 h-4 w-4" />
+          Meetings
         </Button>
       </nav>
       <div className="mt-auto pt-4 border-t border-white/10">

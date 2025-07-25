@@ -13,6 +13,8 @@ import TryNow from "./pages/TryNow";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NoteEditorPage from "./pages/NoteEditorPage";
+import MeetingIntelligencePage from "./pages/MeetingIntelligencePage";
+import MeetingDetailsPage from "./pages/MeetingDetailsPage";
 
 // Component imports
 import NoteList from "./components/NoteList";
@@ -76,6 +78,9 @@ const AppContent = () => {
         <Route path="your-notes" element={<NoteList />} />
         <Route path="shared-notes" element={<SharedNoteList />} />
       </Route>
+
+      <Route path="/meetings" element={<ProtectedRoute><Dashboard><MeetingIntelligencePage /></Dashboard></ProtectedRoute>} />
+      <Route path="/meetings/:meetingId" element={<ProtectedRoute><MeetingDetailsPage /></ProtectedRoute>} />
 
       <Route path="/dashboard/edit-note/:noteId" element={<ProtectedRoute><NoteEditorPage /></ProtectedRoute>} />
 

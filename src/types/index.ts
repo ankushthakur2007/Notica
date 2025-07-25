@@ -23,3 +23,16 @@ export interface Collaborator {
   avatar_url?: string | null;
   email?: string; // Email from auth.users for display
 }
+
+export interface Meeting {
+  id: string;
+  user_id: string;
+  created_at: string;
+  title: string;
+  audio_url: string | null;
+  status: 'processing' | 'completed' | 'failed';
+  transcript: string | null;
+  summary: string | null;
+  action_items: string[] | null;
+  key_decisions: string[] | null;
+}
