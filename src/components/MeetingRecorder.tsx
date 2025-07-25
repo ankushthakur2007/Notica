@@ -58,29 +58,49 @@ const MeetingRecorder = ({ onRecordingFinish }: MeetingRecorderProps) => {
     }
 
     try {
+      // Get both mic and display streams
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: false });
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
       streamsRef.current = [micStream, displayStream];
 
+      // Setup AudioContext to merge audio tracks
       audioContextRef.current = new AudioContext();
       const destination = audioContextRef.current.createMediaStreamDestination();
       
-      streamsRef.current.forEach(stream => {
-        audioContextRef.current!.createMediaStreamSource(stream).connect(destination);
-      });
+      // Always add microphone audio
+      const micSource = audioContextRef.current.createMediaStreamSource(micStream);
+      micSource.connect(destination);
 
-      mediaRecorderRef.current = new MediaRecorder(destination.stream, { mimeType: 'audio/webm' });
+      // Fix for Issue #1: Conditionally add screen audio
+      if (displayStream.getAudioTracks().length > 0) {
+        const displayAudioSource = audioContextRef.current.createMediaStreamSource(displayStream);
+        displayAudioSource.connect(destination);
+      } else {
+        showSuccess("Screen audio not shared. Recording microphone only.");
+      }
+
+      // Get video track and add it to the destination stream
+      const videoTrack = displayStream.getVideoTracks()[0];
+      const combinedStream = destination.stream;
+      if (videoTrack) {
+        combinedStream.addTrack(videoTrack);
+      }
+
+      mediaRecorderRef.current = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
       audioChunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (event) => audioChunksRef.current.push(event.data);
 
       mediaRecorderRef.current.onstop = async () => {
         setIsUploading(true);
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        
+        // Fix for Issue #2: Use correct blob type and variable name
+        const mediaBlob = new Blob(audioChunksRef.current, { type: 'video/webm' });
         const meetingId = uuidv4();
         const filePath = `public/${user!.id}/${meetingId}.webm`;
 
-        const { error: uploadError } = await supabase.storage.from('meeting-recordings').upload(filePath, audioBlob);
+        // Fix for Issue #3 is handled by uploading first, then creating the DB record.
+        const { error: uploadError } = await supabase.storage.from('meeting-recordings').upload(filePath, mediaBlob);
         if (uploadError) {
           showError(`Upload failed: ${uploadError.message}`);
           setIsUploading(false);
@@ -100,6 +120,8 @@ const MeetingRecorder = ({ onRecordingFinish }: MeetingRecorderProps) => {
         if (dbError) {
           showError(`DB error: ${dbError.message}`);
           setIsUploading(false);
+          // Clean up orphaned file if DB insert fails
+          await supabase.storage.from('meeting-recordings').remove([filePath]);
           return;
         }
 
