@@ -5,18 +5,20 @@ import { Send, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-
-interface MeetingChatProps {
-  meetingId: string;
-}
+import { showError } from '@/utils/toast';
 
 interface Message {
   sender: 'user' | 'ai';
   text: string;
 }
 
-const MeetingChat = ({ meetingId }: MeetingChatProps) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+interface MeetingChatProps {
+  meetingId: string;
+  initialMessages: Message[];
+}
+
+const MeetingChat = ({ meetingId, initialMessages }: MeetingChatProps) => {
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -32,7 +34,8 @@ const MeetingChat = ({ meetingId }: MeetingChatProps) => {
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = { sender: 'user', text: input };
-    setMessages(prev => [...prev, userMessage]);
+    const updatedMessagesWithUser = [...messages, userMessage];
+    setMessages(updatedMessagesWithUser);
     setInput('');
     setIsLoading(true);
 
@@ -44,7 +47,19 @@ const MeetingChat = ({ meetingId }: MeetingChatProps) => {
       if (error) throw error;
 
       const aiMessage: Message = { sender: 'ai', text: data.answer };
-      setMessages(prev => [...prev, aiMessage]);
+      const finalMessages = [...updatedMessagesWithUser, aiMessage];
+      setMessages(finalMessages);
+
+      // Save the complete history to DB
+      const { error: updateError } = await supabase
+        .from('meetings')
+        .update({ chat_history: finalMessages })
+        .eq('id', meetingId);
+
+      if (updateError) {
+        showError('Failed to save chat history.');
+        console.error(updateError);
+      }
 
     } catch (error: any) {
       const errorMessage: Message = { sender: 'ai', text: `Sorry, I encountered an error: ${error.message}` };

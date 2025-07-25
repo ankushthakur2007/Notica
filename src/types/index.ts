@@ -35,4 +35,5 @@ export interface Meeting {
   summary: string | null;
   action_items: string[] | null;
   key_decisions: string[] | null;
+  chat_history?: { sender: 'user' | 'ai'; text: string }[] | null;
 }

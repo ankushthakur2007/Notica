@@ -40,7 +40,7 @@ const MeetingDetailsPage = () => {
       <div className="flex flex-col h-screen">
         <header className="p-4 border-b flex items-center">
           <Button asChild variant="ghost" size="icon">
-            <Link to="/meetings"><ChevronLeft className="h-5 w-5" /></Link>
+            <Link to="/dashboard/meetings"><ChevronLeft className="h-5 w-5" /></Link>
           </Button>
           <h1 className="text-lg font-bold truncate ml-2">{meeting.title}</h1>
         </header>
@@ -52,7 +52,7 @@ const MeetingDetailsPage = () => {
           </TabsList>
           <TabsContent value="summary" className="flex-grow overflow-y-auto p-4"><AISummary meeting={meeting} /></TabsContent>
           <TabsContent value="transcript" className="flex-grow overflow-y-auto p-4"><TranscriptDisplay transcript={meeting.transcript || ''} /></TabsContent>
-          <TabsContent value="chat" className="flex-grow m-0"><MeetingChat meetingId={meeting.id} /></TabsContent>
+          <TabsContent value="chat" className="flex-grow m-0"><MeetingChat meetingId={meeting.id} initialMessages={meeting.chat_history || []} /></TabsContent>
         </Tabs>
       </div>
     );
@@ -69,7 +69,7 @@ const MeetingDetailsPage = () => {
       </ResizablePanel>
       <ResizableHandle withHandle />
       <ResizablePanel defaultSize={35} minSize={25}>
-        <MeetingChat meetingId={meeting.id} />
+        <MeetingChat meetingId={meeting.id} initialMessages={meeting.chat_history || []} />
       </ResizablePanel>
     </ResizablePanelGroup>
   );
