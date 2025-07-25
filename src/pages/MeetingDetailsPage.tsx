@@ -11,6 +11,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const fetchMeetingDetails = async (meetingId: string): Promise<Meeting> => {
   const { data, error } = await supabase
@@ -32,46 +34,68 @@ const MeetingDetailsPage = () => {
     enabled: !!meetingId,
   });
 
-  if (isLoading) return <div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /><span className="ml-2">Loading meeting...</span></div>;
-  if (isError || !meeting) return <div className="flex items-center justify-center h-screen">Error loading meeting.</div>;
+  if (isLoading) return <div className="flex items-center justify-center h-screen bg-background"><Loader2 className="h-8 w-8 animate-spin" /><span className="ml-2">Loading meeting...</span></div>;
+  if (isError || !meeting) return <div className="flex items-center justify-center h-screen bg-background">Error loading meeting.</div>;
 
   if (isMobile) {
     return (
-      <div className="flex flex-col h-screen">
-        <header className="p-4 border-b flex items-center">
+      <div className="flex flex-col h-screen bg-background">
+        <header className="p-4 border-b flex items-center sticky top-0 bg-background/80 backdrop-blur-sm z-10">
           <Button asChild variant="ghost" size="icon">
             <Link to="/dashboard/meetings"><ChevronLeft className="h-5 w-5" /></Link>
           </Button>
           <h1 className="text-lg font-bold truncate ml-2">{meeting.title}</h1>
         </header>
         <Tabs defaultValue="summary" className="w-full flex-grow flex flex-col">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-3 sticky top-[65px] bg-background/80 backdrop-blur-sm z-10">
             <TabsTrigger value="summary">Summary</TabsTrigger>
             <TabsTrigger value="transcript">Transcript</TabsTrigger>
             <TabsTrigger value="chat">Chat</TabsTrigger>
           </TabsList>
-          <TabsContent value="summary" className="flex-grow overflow-y-auto p-4"><AISummary meeting={meeting} /></TabsContent>
-          <TabsContent value="transcript" className="flex-grow overflow-y-auto p-4"><TranscriptDisplay transcript={meeting.transcript || ''} /></TabsContent>
-          <TabsContent value="chat" className="flex-grow m-0"><MeetingChat meetingId={meeting.id} initialMessages={meeting.chat_history || []} /></TabsContent>
+          <TabsContent value="summary" className="flex-grow overflow-y-auto p-4">
+            <div className="space-y-8">
+              <AISummary meeting={meeting} />
+            </div>
+          </TabsContent>
+          <TabsContent value="transcript" className="flex-grow overflow-y-auto p-4">
+            <div className="space-y-8">
+              <TranscriptDisplay transcript={meeting.transcript || ''} />
+            </div>
+          </TabsContent>
+          <TabsContent value="chat" className="flex-grow m-0 flex flex-col">
+            <MeetingChat meetingId={meeting.id} initialMessages={meeting.chat_history || []} />
+          </TabsContent>
         </Tabs>
       </div>
     );
   }
 
   return (
-    <ResizablePanelGroup direction="horizontal" className="h-screen">
-      <ResizablePanel defaultSize={65}>
-        <div className="flex flex-col h-full p-6 overflow-y-auto">
-          <h1 className="text-2xl font-bold mb-4">{meeting.title}</h1>
-          <AISummary meeting={meeting} />
-          <TranscriptDisplay transcript={meeting.transcript || ''} />
-        </div>
-      </ResizablePanel>
-      <ResizableHandle withHandle />
-      <ResizablePanel defaultSize={35} minSize={25}>
-        <MeetingChat meetingId={meeting.id} initialMessages={meeting.chat_history || []} />
-      </ResizablePanel>
-    </ResizablePanelGroup>
+    <div className="h-screen w-full bg-background text-foreground">
+      <ResizablePanelGroup direction="horizontal" className="h-full">
+        <ResizablePanel defaultSize={65}>
+          <ScrollArea className="h-full">
+            <div className="p-8 max-w-4xl mx-auto">
+              <div className="mb-8">
+                <Button asChild variant="ghost" className="mb-4 -ml-4 text-muted-foreground hover:text-foreground">
+                  <Link to="/dashboard/meetings"><ChevronLeft className="h-4 w-4 mr-2" /> Back to Meetings</Link>
+                </Button>
+                <h1 className="text-3xl font-bold mb-2">{`Meeting from ${format(new Date(meeting.created_at), "M/d/yyyy, p")}`}</h1>
+                <p className="text-muted-foreground">{meeting.title}</p>
+              </div>
+              <div className="space-y-12">
+                <AISummary meeting={meeting} />
+                <TranscriptDisplay transcript={meeting.transcript || ''} />
+              </div>
+            </div>
+          </ScrollArea>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={35} minSize={25}>
+          <MeetingChat meetingId={meeting.id} initialMessages={meeting.chat_history || []} />
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
   );
 };
 

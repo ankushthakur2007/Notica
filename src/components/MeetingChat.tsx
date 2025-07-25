@@ -70,16 +70,16 @@ const MeetingChat = ({ meetingId, initialMessages }: MeetingChatProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-muted/50">
-      <div className="p-4 border-b">
-        <h3 className="font-semibold text-center">Chat with Meeting</h3>
+    <div className="flex flex-col h-full bg-muted/30 dark:bg-black/20">
+      <div className="p-4 border-b border-border/50">
+        <h3 className="font-semibold text-center text-foreground">Chat with Meeting</h3>
       </div>
       <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
         <div className="space-y-4">
           {messages.map((msg, index) => (
             <div key={index} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.sender === 'ai' && <Avatar className="h-8 w-8"><AvatarFallback>AI</AvatarFallback></Avatar>}
-              <div className={`rounded-lg px-3 py-2 max-w-[85%] break-words ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
+              <div className={`rounded-lg px-3 py-2 max-w-[85%] break-words ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card'}`}>
                 {msg.text}
               </div>
             </div>
@@ -87,14 +87,14 @@ const MeetingChat = ({ meetingId, initialMessages }: MeetingChatProps) => {
           {isLoading && (
             <div className="flex items-end gap-2 justify-start">
               <Avatar className="h-8 w-8"><AvatarFallback>AI</AvatarFallback></Avatar>
-              <div className="rounded-lg px-3 py-2 bg-background flex items-center">
+              <div className="rounded-lg px-3 py-2 bg-card flex items-center">
                 <Loader2 className="h-4 w-4 animate-spin" />
               </div>
             </div>
           )}
         </div>
       </ScrollArea>
-      <div className="p-4 border-t bg-background">
+      <div className="p-4 border-t border-border/50 bg-background/50">
         <form onSubmit={handleSendMessage} className="flex gap-2">
           <Input 
             value={input}
@@ -102,6 +102,7 @@ const MeetingChat = ({ meetingId, initialMessages }: MeetingChatProps) => {
             placeholder="Ask about the meeting..."
             disabled={isLoading}
             autoComplete="off"
+            className="bg-card border-border"
           />
           <Button type="submit" disabled={isLoading || !input.trim()}>
             <Send className="h-4 w-4" />
