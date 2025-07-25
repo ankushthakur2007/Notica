@@ -77,18 +77,34 @@ const MeetingChat = ({ meetingId, initialMessages }: MeetingChatProps) => {
       <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
         <div className="space-y-4">
           {messages.map((msg, index) => (
-            <div key={index} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              {msg.sender === 'ai' && <Avatar className="h-8 w-8"><AvatarFallback>NA</AvatarFallback></Avatar>}
-              <div className={`rounded-lg px-3 py-2 max-w-[85%] break-words ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card'}`}>
-                {msg.text}
-              </div>
+            <div key={index}>
+              {msg.sender === 'user' ? (
+                <div className="flex justify-end">
+                  <div className="rounded-lg px-3 py-2 max-w-[85%] break-words bg-primary text-primary-foreground">
+                    {msg.text}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2">
+                  <Avatar className="h-8 w-8 self-end"><AvatarFallback>NA</AvatarFallback></Avatar>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground mb-1">Notica AI</span>
+                    <div className="rounded-lg px-3 py-2 max-w-[85%] break-words bg-card">
+                      {msg.text}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           {isLoading && (
-            <div className="flex items-end gap-2 justify-start">
-              <Avatar className="h-8 w-8"><AvatarFallback>NA</AvatarFallback></Avatar>
-              <div className="rounded-lg px-3 py-2 bg-card flex items-center">
-                <Loader2 className="h-4 w-4 animate-spin" />
+            <div className="flex items-start gap-2">
+              <Avatar className="h-8 w-8 self-end"><AvatarFallback>NA</AvatarFallback></Avatar>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground mb-1">Notica AI</span>
+                <div className="rounded-lg px-3 py-2 bg-card flex items-center">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
               </div>
             </div>
           )}
