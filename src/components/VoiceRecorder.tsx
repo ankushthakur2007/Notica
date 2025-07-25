@@ -25,6 +25,11 @@ const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderP
   const audioChunksRef = useRef<Blob[]>([]);
 
   const startRecording = async () => {
+    if (typeof window.MediaRecorder === 'undefined') {
+      showError('MediaRecorder is not supported in your browser.');
+      return;
+    }
+
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -81,7 +86,7 @@ const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderP
         }
       }
     } else {
-      showError('MediaRecorder is not supported in your browser.');
+      showError('Your browser does not support the Media Devices API.');
     }
   };
 

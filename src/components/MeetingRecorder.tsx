@@ -51,6 +51,12 @@ const MeetingRecorder = ({ onRecordingFinish }: MeetingRecorderProps) => {
 
   const startRecording = async () => {
     setError(null);
+
+    if (typeof window.MediaRecorder === 'undefined') {
+      setError('Recording is not supported by your browser. Please try a different browser like Chrome or Firefox.');
+      return;
+    }
+
     try {
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const displayStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: false });
