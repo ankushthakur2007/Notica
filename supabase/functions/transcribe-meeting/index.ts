@@ -33,7 +33,8 @@ serve(async (req) => {
     const deepgramApiKey = Deno.env.get('DEEPGRAM_API_KEY');
     if (!deepgramApiKey) throw new Error('Deepgram API key not set.');
 
-    const deepgramResponse = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2-meeting', {
+    // Added diarize=true to the Deepgram API call to enable speaker detection
+    const deepgramResponse = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2-meeting&diarize=true', {
       method: 'POST',
       headers: {
         'Authorization': `Token ${deepgramApiKey}`,
@@ -48,7 +49,21 @@ serve(async (req) => {
     }
 
     const deepgramData = await deepgramResponse.json();
-    const transcript = deepgramData.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+    
+    // Process the diarized response to create a formatted transcript
+    const paragraphs = deepgramData.results?.channels?.[0]?.alternatives?.[0]?.paragraphs?.paragraphs;
+    let transcript = '';
+    if (paragraphs) {
+      transcript = paragraphs.map((para: any) => {
+        // Add 1 to the speaker index to make it 1-based (Speaker 1, Speaker 2, etc.)
+        const speakerLabel = `Speaker ${para.speaker + 1}`;
+        const text = para.sentences.map((sentence: any) => sentence.text).join(' ');
+        return `${speakerLabel}: ${text}`;
+      }).join('\n\n'); // Use double newline for better visual separation between speakers
+    } else {
+      // Fallback for non-diarized or unexpected response format
+      transcript = deepgramData.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+    }
 
     const { error: updateError } = await supabaseAdmin
       .from('meetings')
