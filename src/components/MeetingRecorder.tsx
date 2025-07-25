@@ -9,10 +9,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 
 interface MeetingRecorderProps {
+  title: string;
   onRecordingFinish: () => void;
 }
 
-const MeetingRecorder = ({ onRecordingFinish }: MeetingRecorderProps) => {
+const MeetingRecorder = ({ title, onRecordingFinish }: MeetingRecorderProps) => {
   const { user } = useAppStore();
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -58,20 +59,16 @@ const MeetingRecorder = ({ onRecordingFinish }: MeetingRecorderProps) => {
     }
 
     try {
-      // Get both mic and display streams. Video is requested but will not be recorded.
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const displayStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
       streamsRef.current = [micStream, displayStream];
 
-      // Setup AudioContext to merge audio tracks
       audioContextRef.current = new AudioContext();
       const destination = audioContextRef.current.createMediaStreamDestination();
       
-      // Always add microphone audio
       const micSource = audioContextRef.current.createMediaStreamSource(micStream);
       micSource.connect(destination);
 
-      // Conditionally add screen audio if it exists
       if (displayStream.getAudioTracks().length > 0) {
         const displayAudioSource = audioContextRef.current.createMediaStreamSource(displayStream);
         displayAudioSource.connect(destination);
@@ -79,7 +76,6 @@ const MeetingRecorder = ({ onRecordingFinish }: MeetingRecorderProps) => {
         showSuccess("Screen audio not shared. Recording microphone only.");
       }
 
-      // The combined stream is now audio-only
       const combinedAudioStream = destination.stream;
 
       mediaRecorderRef.current = new MediaRecorder(combinedAudioStream, { mimeType: 'audio/webm' });
@@ -90,12 +86,10 @@ const MeetingRecorder = ({ onRecordingFinish }: MeetingRecorderProps) => {
       mediaRecorderRef.current.onstop = async () => {
         setIsUploading(true);
         
-        // Create an audio blob
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const meetingId = uuidv4();
         const filePath = `public/${user!.id}/${meetingId}.webm`;
 
-        // Upload the audio file first
         const { error: uploadError } = await supabase.storage.from('meeting-recordings').upload(filePath, audioBlob);
         if (uploadError) {
           showError(`Upload failed: ${uploadError.message}`);
@@ -105,11 +99,10 @@ const MeetingRecorder = ({ onRecordingFinish }: MeetingRecorderProps) => {
 
         const { data: { publicUrl } } = supabase.storage.from('meeting-recordings').getPublicUrl(filePath);
 
-        // Then, create the database record
         const { error: dbError } = await supabase.from('meetings').insert({
           id: meetingId,
           user_id: user!.id,
-          title: `Meeting from ${new Date().toLocaleString()}`,
+          title: title,
           audio_url: publicUrl,
           status: 'processing',
         });
@@ -117,12 +110,10 @@ const MeetingRecorder = ({ onRecordingFinish }: MeetingRecorderProps) => {
         if (dbError) {
           showError(`DB error: ${dbError.message}`);
           setIsUploading(false);
-          // Clean up orphaned file if DB insert fails
           await supabase.storage.from('meeting-recordings').remove([filePath]);
           return;
         }
 
-        // Finally, trigger the transcription function
         const { error: functionError } = await supabase.functions.invoke('transcribe-meeting', { body: { meetingId } });
         if (functionError) {
           showError(`Transcription failed to start: ${functionError.message}`);
@@ -164,6 +155,11 @@ const MeetingRecorder = ({ onRecordingFinish }: MeetingRecorderProps) => {
     }
   };
 
+  // Automatically start recording when the component mounts
+  useEffect(() => {
+    startRecording();
+  }, []);
+
   return (
     <div className="flex flex-col items-center justify-center h-full p-4">
       {error && (
@@ -173,23 +169,15 @@ const MeetingRecorder = ({ onRecordingFinish }: MeetingRecorderProps) => {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      <div className="text-2xl font-semibold mb-2">{title}</div>
       <div className="text-6xl font-mono mb-4">{formatTime(timer)}</div>
-      {!isRecording ? (
-        <Button onClick={startRecording} size="lg">
-          <Mic className="mr-2 h-6 w-6" /> Record Meeting
-        </Button>
-      ) : (
-        <Button onClick={stopRecording} size="lg" variant="destructive" disabled={isUploading}>
-          {isUploading ? (
-            <><Loader2 className="mr-2 h-6 w-6 animate-spin" /> Uploading...</>
-          ) : (
-            <><StopCircle className="mr-2 h-6 w-6" /> Stop Recording</>
-          )}
-        </Button>
-      )}
+      <Button onClick={stopRecording} size="lg" variant="destructive" disabled={isUploading}>
+        {isUploading ? (
+          <><Loader2 className="mr-2 h-6 w-6 animate-spin" /> Uploading...</>
+        ) : (
+          <><StopCircle className="mr-2 h-6 w-6" /> Stop Recording</>
+        )}
+      </Button>
        <Button variant="link" onClick={onRecordingFinish} className="mt-4">Cancel</Button>
     </div>
   );
-};
-
-export default MeetingRecorder;

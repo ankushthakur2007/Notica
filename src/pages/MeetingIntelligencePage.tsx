@@ -7,6 +7,18 @@ import MeetingList from '@/components/MeetingList';
 import MeetingRecorder from '@/components/MeetingRecorder';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { showError, showSuccess } from '@/utils/toast';
 
 const fetchMeetings = async (userId: string): Promise<Meeting[]> => {
   const { data, error } = await supabase
@@ -21,6 +33,9 @@ const fetchMeetings = async (userId: string): Promise<Meeting[]> => {
 const MeetingIntelligencePage = () => {
   const { user } = useAppStore();
   const [isRecording, setIsRecording] = useState(false);
+  const [isNameMeetingDialogOpen, setIsNameMeetingDialogOpen] = useState(false);
+  const [newMeetingTitle, setNewMeetingTitle] = useState('');
+  const [selectedMeetingTitle, setSelectedMeetingTitle] = useState('');
 
   const { data: meetings, isLoading, refetch } = useQuery<Meeting[], Error>({
     queryKey: ['meetings', user?.id],
@@ -48,6 +63,46 @@ const MeetingIntelligencePage = () => {
     };
   }, [user, refetch]);
 
+  const handleStartRecording = () => {
+    if (newMeetingTitle.trim() === '') {
+      showError('Please enter a title for the meeting.');
+      return;
+    }
+    setSelectedMeetingTitle(newMeetingTitle);
+    setIsRecording(true);
+    setIsNameMeetingDialogOpen(false);
+    setNewMeetingTitle('');
+  };
+
+  const handleDeleteMeeting = async (meeting: Meeting) => {
+    if (!user) return;
+
+    // Delete the audio file from storage first
+    const filePath = `public/${user.id}/${meeting.id}.webm`;
+    const { error: storageError } = await supabase.storage
+      .from('meeting-recordings')
+      .remove([filePath]);
+
+    if (storageError && storageError.message !== 'The resource was not found') {
+      showError(`Failed to delete recording file: ${storageError.message}`);
+      return;
+    }
+
+    // Then delete the meeting record from the database
+    const { error: dbError } = await supabase
+      .from('meetings')
+      .delete()
+      .eq('id', meeting.id);
+
+    if (dbError) {
+      showError(`Failed to delete meeting record: ${dbError.message}`);
+      return;
+    }
+
+    showSuccess('Meeting deleted successfully.');
+    refetch();
+  };
+
   if (isLoading) {
     return (
         <div className="flex items-center justify-center h-full">
@@ -58,7 +113,7 @@ const MeetingIntelligencePage = () => {
   }
 
   if (isRecording) {
-    return <MeetingRecorder onRecordingFinish={() => {
+    return <MeetingRecorder title={selectedMeetingTitle} onRecordingFinish={() => {
       setIsRecording(false);
       refetch();
     }} />;
@@ -68,13 +123,39 @@ const MeetingIntelligencePage = () => {
     <div className="p-4 sm:p-6 w-full max-w-6xl mx-auto overflow-y-auto h-full animate-fade-in-up">
       <div className="flex justify-between items-center mb-6 flex-col sm:flex-row gap-4">
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground self-start sm:self-center">Meeting Intelligence</h2>
-        <Button onClick={() => setIsRecording(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Record New Meeting
-        </Button>
+        <Dialog open={isNameMeetingDialogOpen} onOpenChange={setIsNameMeetingDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Record New Meeting
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Name Your Meeting</DialogTitle>
+              <DialogDescription>
+                Give your new meeting a title before you start recording.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <Label htmlFor="meeting-title">Meeting Title</Label>
+              <Input
+                id="meeting-title"
+                value={newMeetingTitle}
+                onChange={(e) => setNewMeetingTitle(e.target.value)}
+                placeholder="e.g., Q3 Project Kickoff"
+                onKeyDown={(e) => { if (e.key === 'Enter') handleStartRecording(); }}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsNameMeetingDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleStartRecording}>Start Recording</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
       {meetings && meetings.length > 0 ? (
-        <MeetingList meetings={meetings} />
+        <MeetingList meetings={meetings} onDeleteMeeting={handleDeleteMeeting} />
       ) : (
         <div className="text-center py-16 border-2 border-dashed rounded-lg mt-8">
           <h3 className="text-xl font-semibold">No meetings recorded yet</h3>
