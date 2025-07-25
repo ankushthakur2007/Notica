@@ -30,23 +30,40 @@ serve(async (req) => {
 
     if (fetchError || !meeting || !meeting.audio_url) throw new Error('Meeting audio URL not found.');
 
+    // Parse the file path from the full public URL stored in the database.
+    const urlParts = meeting.audio_url.split('/meeting-recordings/');
+    if (urlParts.length < 2) {
+      throw new Error('Invalid audio URL format. Cannot extract path.');
+    }
+    const filePath = urlParts[1];
+
+    // Create a temporary signed URL that expires in 60 seconds.
+    const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
+      .from('meeting-recordings')
+      .createSignedUrl(filePath, 60); // Expires in 60 seconds
+
+    if (signedUrlError) {
+      throw new Error(`Failed to create signed URL: ${signedUrlError.message}`);
+    }
+    const signedUrl = signedUrlData.signedUrl;
+
     const deepgramApiKey = Deno.env.get('DEEPGRAM_API_KEY');
     if (!deepgramApiKey) throw new Error('Deepgram API key not set.');
 
-    // Enhanced Deepgram API call with more features
     const url = new URL('https://api.deepgram.com/v1/listen');
     url.searchParams.append('model', 'nova-2-meeting');
-    url.searchParams.append('utterances', 'true'); // Get sentence-level timestamps and speakers
-    url.searchParams.append('diarize', 'true'); // Identify different speakers
-    url.searchParams.append('smart_format', 'true'); // Add punctuation and formatting
+    url.searchParams.append('utterances', 'true');
+    url.searchParams.append('diarize', 'true');
+    url.searchParams.append('smart_format', 'true');
 
+    // Send the temporary signed URL to Deepgram.
     const deepgramResponse = await fetch(url.toString(), {
       method: 'POST',
       headers: {
         'Authorization': `Token ${deepgramApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ url: meeting.audio_url }),
+      body: JSON.stringify({ url: signedUrl }),
     });
 
     if (!deepgramResponse.ok) {
@@ -56,7 +73,6 @@ serve(async (req) => {
 
     const deepgramData = await deepgramResponse.json();
 
-    // Save the entire rich JSON object to the database
     const { error: updateError } = await supabaseAdmin
       .from('meetings')
       .update({ transcript: deepgramData, status: 'analyzing' })
@@ -64,7 +80,6 @@ serve(async (req) => {
 
     if (updateError) throw new Error(`DB update failed: ${updateError.message}`);
 
-    // Invoke the next function in the chain
     const { error: invokeError } = await supabaseAdmin.functions.invoke('generate-insights', {
       body: { meetingId },
     });
