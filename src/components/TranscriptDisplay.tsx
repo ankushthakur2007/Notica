@@ -11,11 +11,21 @@ const formatTimestamp = (seconds: number) => {
   return `${m}:${s}`;
 };
 
-const TranscriptDisplay = ({ transcript }: TranscriptDisplayProps) => {
-  const utterances = transcript?.results?.channels?.[0]?.alternatives?.[0]?.utterances;
+// A type for the processed transcript chunk
+interface TranscriptChunk {
+  startTime: number;
+  speakerGroups: {
+    speaker: number;
+    text: string;
+  }[];
+}
 
-  if (!utterances || utterances.length === 0) {
-    // Fallback for old text-based transcripts or empty transcripts
+const TranscriptDisplay = ({ transcript }: TranscriptDisplayProps) => {
+  // Deepgram's response structure for words with diarization
+  const words = transcript?.results?.channels?.[0]?.alternatives?.[0]?.words;
+
+  // Fallback for old text-based transcripts or if the detailed words array is missing
+  if (!words || words.length === 0) {
     const plainText = typeof transcript === 'string' ? transcript : transcript?.results?.channels?.[0]?.alternatives?.[0]?.transcript;
     return (
       <div>
@@ -27,18 +37,65 @@ const TranscriptDisplay = ({ transcript }: TranscriptDisplayProps) => {
     );
   }
 
+  // Process words into 5-second chunks
+  const chunks = words.reduce((acc, word) => {
+    const intervalStart = Math.floor(word.start / 5) * 5;
+    if (!acc[intervalStart]) {
+      acc[intervalStart] = [];
+    }
+    acc[intervalStart].push(word);
+    return acc;
+  }, {} as Record<number, any[]>);
+
+  // Group words within each chunk by speaker
+  const processedChunks: TranscriptChunk[] = Object.entries(chunks).map(([startTimeStr, wordsInChunk]) => {
+    const startTime = parseInt(startTimeStr, 10);
+    const speakerGroups: { speaker: number; text: string }[] = [];
+    
+    if (wordsInChunk.length > 0) {
+      let currentSpeaker = wordsInChunk[0].speaker;
+      let currentText = '';
+
+      wordsInChunk.forEach((word, index) => {
+        // Use punctuated_word for better formatting, fallback to word
+        const wordText = word.punctuated_word || word.word;
+
+        if (word.speaker === currentSpeaker) {
+          currentText += wordText + ' ';
+        } else {
+          // New speaker found, push the previous group
+          speakerGroups.push({ speaker: currentSpeaker, text: currentText.trim() });
+          // Start a new group
+          currentSpeaker = word.speaker;
+          currentText = wordText + ' ';
+        }
+
+        // Push the last group when the chunk ends
+        if (index === wordsInChunk.length - 1) {
+          speakerGroups.push({ speaker: currentSpeaker, text: currentText.trim() });
+        }
+      });
+    }
+
+    return { startTime, speakerGroups };
+  });
+
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-3 text-foreground">Full Transcript</h2>
       <div className="space-y-4">
-        {utterances.map((utterance: any, index: number) => (
-          <div key={index} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30">
+        {processedChunks.map((chunk) => (
+          <div key={chunk.startTime} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30">
             <div className="text-sm font-mono text-muted-foreground pt-1 w-16 flex-shrink-0">
-              {formatTimestamp(utterance.start)}
+              {formatTimestamp(chunk.startTime)}
             </div>
-            <div className="flex-grow">
-              <p className="font-bold text-primary mb-1">Speaker {utterance.speaker + 1}</p>
-              <p className="text-foreground leading-relaxed">{utterance.transcript}</p>
+            <div className="flex-grow space-y-2">
+              {chunk.speakerGroups.map((group, index) => (
+                <div key={index}>
+                  <p className="font-bold text-primary mb-1">Speaker {group.speaker + 1}</p>
+                  <p className="text-foreground leading-relaxed">{group.text}</p>
+                </div>
+              ))}
             </div>
           </div>
         ))}
