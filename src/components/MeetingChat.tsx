@@ -78,7 +78,7 @@ const MeetingChat = ({ meetingId, initialMessages }: MeetingChatProps) => {
         <div className="space-y-4">
           {messages.map((msg, index) => (
             <div key={index} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              {msg.sender === 'ai' && <Avatar className="h-8 w-8"><AvatarFallback>AI</AvatarFallback></Avatar>}
+              {msg.sender === 'ai' && <Avatar className="h-8 w-8"><AvatarFallback>NA</AvatarFallback></Avatar>}
               <div className={`rounded-lg px-3 py-2 max-w-[85%] break-words ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card'}`}>
                 {msg.text}
               </div>
@@ -86,7 +86,7 @@ const MeetingChat = ({ meetingId, initialMessages }: MeetingChatProps) => {
           ))}
           {isLoading && (
             <div className="flex items-end gap-2 justify-start">
-              <Avatar className="h-8 w-8"><AvatarFallback>AI</AvatarFallback></Avatar>
+              <Avatar className="h-8 w-8"><AvatarFallback>NA</AvatarFallback></Avatar>
               <div className="rounded-lg px-3 py-2 bg-card flex items-center">
                 <Loader2 className="h-4 w-4 animate-spin" />
               </div>
