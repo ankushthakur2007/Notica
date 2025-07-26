@@ -71,13 +71,18 @@ async function summarizeTextWithGemini(transcriptText: string) {
     finalJsonText = finalJsonText.slice(7, -3).trim();
   }
   
-  return JSON.parse(finalJsonText);
+  try {
+    return JSON.parse(finalJsonText);
+  } catch (e) {
+    console.error("Failed to parse Gemini JSON response:", finalJsonText);
+    throw new Error("AI failed to generate a valid JSON response.");
+  }
 }
 // --- End of Embedded Shared Code ---
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   const supabaseAdmin = createClient(
