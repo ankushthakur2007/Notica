@@ -33,7 +33,6 @@ const CreateFromUrlDialog = ({ isOpen, onOpenChange }: CreateFromUrlDialogProps)
       showError('You must be logged in.');
       return;
     }
-    // Basic YouTube URL validation
     const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
     if (!youtubeRegex.test(url)) {
       setError('Please enter a valid YouTube URL.');
@@ -49,11 +48,16 @@ const CreateFromUrlDialog = ({ isOpen, onOpenChange }: CreateFromUrlDialogProps)
       });
 
       if (functionError) {
-        throw new Error(functionError.message);
+        // This is the key change to handle specific backend errors
+        const message = functionError.context?.error || functionError.message || 'An unknown error occurred.';
+        setError(message);
+        // We don't show a toast here, as the error is displayed in the dialog
+        return; 
       }
       
       if (data.error) {
-        throw new Error(data.error);
+        setError(data.error);
+        return;
       }
 
       showSuccess('Note created successfully!');
@@ -62,15 +66,21 @@ const CreateFromUrlDialog = ({ isOpen, onOpenChange }: CreateFromUrlDialogProps)
       navigate(`/dashboard/edit-note/${data.noteId}`);
 
     } catch (e: any) {
+      // This outer catch is for unexpected client-side errors or network failures
       setError(e.message || 'An unknown error occurred.');
-      showError(`Failed to create note: ${e.message}`);
     } finally {
       setIsCreating(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      onOpenChange(open);
+      if (!open) {
+        setError(null); // Reset error when dialog is closed
+        setUrl('');
+      }
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create Note from YouTube URL</DialogTitle>
@@ -97,7 +107,7 @@ const CreateFromUrlDialog = ({ isOpen, onOpenChange }: CreateFromUrlDialogProps)
               }}
             />
           </div>
-          {error && <p className="text-sm text-destructive text-center">{error}</p>}
+          {error && <p className="text-sm text-destructive text-center col-span-4">{error}</p>}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>

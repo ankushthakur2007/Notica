@@ -11,7 +11,6 @@ const corsHeaders = {
 async function getTranscript(url: string): Promise<string> {
   const videoPageResponse = await fetch(url, {
     headers: {
-      // Use a common user-agent to avoid bot detection
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
   });
@@ -20,7 +19,6 @@ async function getTranscript(url: string): Promise<string> {
   }
   const videoPageText = await videoPageResponse.text();
 
-  // Regex to find the player response JSON embedded in the HTML
   const playerResponseRegex = /var ytInitialPlayerResponse = ({.*?});/;
   const match = videoPageText.match(playerResponseRegex);
   if (!match || !match[1]) {
@@ -34,7 +32,6 @@ async function getTranscript(url: string): Promise<string> {
     throw new Error('No caption tracks found for this video. Transcripts may be disabled by the creator.');
   }
 
-  // Find the first available transcript URL (prefer non-auto-generated if possible)
   const transcriptTrack = captionTracks.find((track: any) => track.vssId.startsWith('.')) || captionTracks[0];
   const transcriptUrl = transcriptTrack.baseUrl;
 
@@ -44,10 +41,8 @@ async function getTranscript(url: string): Promise<string> {
   }
   const transcriptXmlText = await transcriptXmlResponse.text();
 
-  // Simple regex to parse the XML and extract text content
   const textParts = [...transcriptXmlText.matchAll(/<text.*?>(.*?)<\/text>/gs)].map(part => part[1]);
   
-  // Decode HTML entities like &amp; and &#39;
   const decodedParts = textParts.map(part => 
     part.replace(/&amp;/g, '&')
         .replace(/&quot;/g, '"')
@@ -134,7 +129,6 @@ async function summarizeTextWithGemini(transcriptText: string) {
 }
 // --- End of Embedded Shared Code ---
 
-// Helper to format insights into HTML
 function formatInsightsToHtml(insights: any, videoTitle: string): string {
   let html = `<h1>${videoTitle}</h1>`;
   if (insights.summary) {
@@ -162,38 +156,41 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  let youtubeUrl; // Define here to be available in the final catch block
-
   try {
-    const { youtubeUrl: reqUrl, userId } = await req.json();
-    youtubeUrl = reqUrl; // Assign to the outer scope variable
-
+    const { youtubeUrl, userId } = await req.json();
     if (!youtubeUrl || !userId) {
       throw new Error('youtubeUrl and userId are required.');
     }
 
-    // 1. Fetch transcript with our new custom function
-    const transcriptText = await getTranscript(youtubeUrl);
-    
-    if (!transcriptText) {
-      throw new Error('Could not fetch transcript for this video. It might be disabled by the creator.');
+    let transcriptText;
+    try {
+      transcriptText = await getTranscript(youtubeUrl);
+    } catch (e) {
+      if (e.message.includes('No caption tracks found') || e.message.includes('transcripts are not available')) {
+        return new Response(JSON.stringify({ error: 'No transcript available for this video. Please try another.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404,
+        });
+      }
+      throw e; // Re-throw other errors
     }
 
-    // 2. Summarize transcript using the embedded function
+    if (!transcriptText) {
+      throw new Error('Could not fetch transcript for this video.');
+    }
+
     const insights = await summarizeTextWithGemini(transcriptText);
 
-    // 3. Create new note in DB
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Fetch video title
     let videoTitle = "Note from YouTube";
     try {
         const videoPageResponse = await fetch(youtubeUrl);
-        const videoPageText = await videoPageResponse.text();
-        const titleMatch = videoPageText.match(/<title>(.*?)<\/title>/);
+        const pageText = await videoPageResponse.text();
+        const titleMatch = pageText.match(/<title>(.*?)<\/title>/);
         if (titleMatch && titleMatch[1]) {
             videoTitle = titleMatch[1].replace(' - YouTube', '').trim();
         }
@@ -205,11 +202,7 @@ serve(async (req) => {
 
     const { data: newNote, error: insertError } = await supabaseAdmin
       .from('notes')
-      .insert({
-        user_id: userId,
-        title: videoTitle,
-        content: noteContent,
-      })
+      .insert({ user_id: userId, title: videoTitle, content: noteContent })
       .select('id')
       .single();
 
@@ -224,7 +217,7 @@ serve(async (req) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Error in summarize-youtube-video for URL ${youtubeUrl}:`, error);
+    console.error(`Error in summarize-youtube-video:`, error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
