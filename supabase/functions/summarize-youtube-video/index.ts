@@ -104,25 +104,37 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const { youtubeUrl, userId } = await req.json();
+
   try {
-    const { youtubeUrl, userId } = await req.json();
     if (!youtubeUrl || !userId) {
       throw new Error('youtubeUrl and userId are required.');
     }
 
-    const transcriptParts = await YoutubeTranscript.fetchTranscript(youtubeUrl);
+    // 1. Fetch transcript with improved error handling
+    let transcriptParts;
+    try {
+      transcriptParts = await YoutubeTranscript.fetchTranscript(youtubeUrl);
+    } catch (transcriptError) {
+      console.error(`youtube-transcript library failed for URL: ${youtubeUrl}`, transcriptError);
+      throw new Error("Failed to fetch transcript. The video may not have one, or it might be private or region-locked.");
+    }
+    
     if (!transcriptParts || transcriptParts.length === 0) {
-      throw new Error('Could not fetch transcript for this video. It might be disabled.');
+      throw new Error('Could not fetch transcript for this video. It might be disabled by the creator.');
     }
     const transcriptText = transcriptParts.map(part => part.text).join(' ');
 
+    // 2. Summarize transcript
     const insights = await summarizeTextWithGemini(transcriptText);
 
+    // 3. Create new note in DB
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // Fetch video title
     let videoTitle = "Note from YouTube";
     try {
         const videoPageResponse = await fetch(youtubeUrl);
@@ -132,7 +144,7 @@ serve(async (req) => {
             videoTitle = titleMatch[1].replace(' - YouTube', '').trim();
         }
     } catch (e) {
-        console.warn("Could not fetch video title, using default.");
+        console.warn(`Could not fetch video title for ${youtubeUrl}, using default.`);
     }
 
     const noteContent = formatInsightsToHtml(insights, videoTitle);
@@ -157,6 +169,8 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    // Add more detailed logging for any error that occurs
+    console.error(`Error in summarize-youtube-video for URL ${youtubeUrl}:`, error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
