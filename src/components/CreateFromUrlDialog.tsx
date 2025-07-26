@@ -48,14 +48,20 @@ const CreateFromUrlDialog = ({ isOpen, onOpenChange }: CreateFromUrlDialogProps)
       });
 
       if (functionError) {
-        // This is the key change to handle specific backend errors
-        const message = functionError.context?.error || functionError.message || 'An unknown error occurred.';
-        setError(message);
-        // We don't show a toast here, as the error is displayed in the dialog
-        return; 
+        // The function returned a non-2xx status. The custom error is in the context.
+        // The context can be an object, so we check for our specific 'error' property.
+        let specificError = null;
+        if (functionError.context && typeof functionError.context === 'object' && functionError.context.error) {
+          specificError = functionError.context.error;
+        }
+        
+        // Set the error state. Use the specific error if we found it, otherwise use the generic one.
+        setError(specificError || functionError.message);
+        return;
       }
       
-      if (data.error) {
+      if (data && data.error) {
+        // The function returned 2xx but with an error payload.
         setError(data.error);
         return;
       }
