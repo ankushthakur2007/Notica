@@ -17,13 +17,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Search } from 'lucide-react';
+import { PlusCircle, Search, Link as LinkIcon } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import CreateFromUrlDialog from '@/components/CreateFromUrlDialog';
 
 const NoteList = () => {
   const { user, notes, isFetchingNotes, addNote } = useAppStore();
   const navigate = useNavigate();
   const [isCreateNoteDialogOpen, setIsCreateNoteDialogOpen] = useState(false);
+  const [isCreateFromUrlDialogOpen, setIsCreateFromUrlDialogOpen] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState('Untitled Note');
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,24 +88,30 @@ const NoteList = () => {
   }
 
   return (
-    <div className="p-6 w-full max-w-6xl mx-auto overflow-y-auto h-full animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.2s' }}>
-      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">Your Notes</h2>
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="relative">
+    <div className="p-4 sm:p-6 w-full max-w-6xl mx-auto overflow-y-auto h-full animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.2s' }}>
+      <div className="flex justify-between items-center mb-6 flex-col sm:flex-row gap-4">
+        <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground self-start sm:self-center">Your Notes</h2>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search your notes..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full sm:w-64 bg-card/50 dark:bg-gray-900/50 border-border/50 backdrop-blur-md"
+              className="pl-10 w-full bg-card/50 dark:bg-gray-900/50 border-border/50 backdrop-blur-md"
             />
           </div>
+          
+          <Button variant="outline" onClick={() => setIsCreateFromUrlDialogOpen(true)}>
+            <LinkIcon className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">From URL</span>
+          </Button>
+
           <Dialog open={isCreateNoteDialogOpen} onOpenChange={setIsCreateNoteDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Create New Note
+                <span className="hidden sm:inline">New Note</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
@@ -140,13 +148,15 @@ const NoteList = () => {
         </div>
       </div>
       
+      <CreateFromUrlDialog isOpen={isCreateFromUrlDialogOpen} onOpenChange={setIsCreateFromUrlDialogOpen} />
+      
       {filteredNotes.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.4s' }}>
-          <h2 className="text-2xl font-bold mb-2">{searchTerm ? 'No notes found' : 'No notes yet!'}</h2>
-          <p className="text-muted-foreground">{searchTerm ? 'Try a different search term.' : 'Click "Create New Note" to get started.'}</p>
+          <h2 className="text-xl sm:text-2xl font-bold mb-2">{searchTerm ? 'No notes found' : 'No notes yet!'}</h2>
+          <p className="text-muted-foreground">{searchTerm ? 'Try a different search term.' : 'Click "New Note" to get started.'}</p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredNotes.map((note, index) => (
             <Card 
               key={note.id} 
