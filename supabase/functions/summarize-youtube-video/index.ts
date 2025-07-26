@@ -120,7 +120,7 @@ serve(async (req) => {
         throw new Error('RapidAPI credentials are not set in environment variables.');
     }
     
-    const response = await fetch(`https://${rapidApiHost}/transcript/${videoId}`, {
+    const response = await fetch(`https://${rapidApiHost}/transcript?video_id=${videoId}`, {
       method: 'GET',
       headers: {
         'X-RapidAPI-Key': rapidApiKey,
@@ -188,7 +188,7 @@ ${finalInsights.key_decisions.map((item: string) => `- ${item}`).join('\n')}
   } catch (error) {
     console.error('Error in summarize-youtube-video:', error);
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content--Type': 'application/json' },
       status: 500,
     });
   }
