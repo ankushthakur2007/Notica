@@ -167,7 +167,7 @@ serve(async (req) => {
       transcriptText = await getTranscript(youtubeUrl);
     } catch (e) {
       if (e.message.includes('No caption tracks found') || e.message.includes('transcripts are not available')) {
-        return new Response(JSON.stringify({ error: 'No transcript available for this video. Please try another.' }), {
+        return new Response(JSON.stringify({ error: 'Could not retrieve captions for this video. They may be disabled or temporarily unavailable.' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 404,
         });
