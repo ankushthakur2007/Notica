@@ -104,9 +104,12 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const { youtubeUrl, userId } = await req.json();
+  let youtubeUrl; // Define here to be available in the final catch block
 
   try {
+    const { youtubeUrl: reqUrl, userId } = await req.json();
+    youtubeUrl = reqUrl; // Assign to the outer scope variable
+
     if (!youtubeUrl || !userId) {
       throw new Error('youtubeUrl and userId are required.');
     }
@@ -169,9 +172,9 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    // Add more detailed logging for any error that occurs
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`Error in summarize-youtube-video for URL ${youtubeUrl}:`, error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });
