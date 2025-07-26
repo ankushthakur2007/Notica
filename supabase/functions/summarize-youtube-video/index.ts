@@ -1,12 +1,64 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { YoutubeTranscript } from "https://esm.sh/youtube-transcript@1.0.6";
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// --- Start of Custom Transcript Fetcher ---
+async function getTranscript(url: string): Promise<string> {
+  const videoPageResponse = await fetch(url, {
+    headers: {
+      // Use a common user-agent to avoid bot detection
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+  });
+  if (!videoPageResponse.ok) {
+    throw new Error(`Failed to fetch YouTube page: ${videoPageResponse.statusText}`);
+  }
+  const videoPageText = await videoPageResponse.text();
+
+  // Regex to find the player response JSON embedded in the HTML
+  const playerResponseRegex = /var ytInitialPlayerResponse = ({.*?});/;
+  const match = videoPageText.match(playerResponseRegex);
+  if (!match || !match[1]) {
+    throw new Error('Could not find player response in YouTube page. The page structure may have changed or transcripts are not available.');
+  }
+
+  const playerResponse = JSON.parse(match[1]);
+  const captionTracks = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+
+  if (!captionTracks || captionTracks.length === 0) {
+    throw new Error('No caption tracks found for this video. Transcripts may be disabled by the creator.');
+  }
+
+  // Find the first available transcript URL (prefer non-auto-generated if possible)
+  const transcriptTrack = captionTracks.find((track: any) => track.vssId.startsWith('.')) || captionTracks[0];
+  const transcriptUrl = transcriptTrack.baseUrl;
+
+  const transcriptXmlResponse = await fetch(transcriptUrl);
+  if (!transcriptXmlResponse.ok) {
+    throw new Error(`Failed to fetch transcript XML: ${transcriptXmlResponse.statusText}`);
+  }
+  const transcriptXmlText = await transcriptXmlResponse.text();
+
+  // Simple regex to parse the XML and extract text content
+  const textParts = [...transcriptXmlText.matchAll(/<text.*?>(.*?)<\/text>/gs)].map(part => part[1]);
+  
+  // Decode HTML entities like &amp; and &#39;
+  const decodedParts = textParts.map(part => 
+    part.replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+  );
+
+  return decodedParts.join(' ');
+}
+// --- End of Custom Transcript Fetcher ---
 
 // --- Start of Embedded Shared Code ---
 function chunkText(text: string, chunkSize: number, overlap: number): string[] {
@@ -120,19 +172,12 @@ serve(async (req) => {
       throw new Error('youtubeUrl and userId are required.');
     }
 
-    // 1. Fetch transcript with improved error handling
-    let transcriptParts;
-    try {
-      transcriptParts = await YoutubeTranscript.fetchTranscript(youtubeUrl);
-    } catch (transcriptError) {
-      console.error(`youtube-transcript library failed for URL: ${youtubeUrl}`, transcriptError);
-      throw new Error("Failed to fetch transcript. The video may not have one, or it might be private or region-locked.");
-    }
+    // 1. Fetch transcript with our new custom function
+    const transcriptText = await getTranscript(youtubeUrl);
     
-    if (!transcriptParts || transcriptParts.length === 0) {
+    if (!transcriptText) {
       throw new Error('Could not fetch transcript for this video. It might be disabled by the creator.');
     }
-    const transcriptText = transcriptParts.map(part => part.text).join(' ');
 
     // 2. Summarize transcript using the embedded function
     const insights = await summarizeTextWithGemini(transcriptText);
