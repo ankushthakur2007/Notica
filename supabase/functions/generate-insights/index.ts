@@ -1,89 +1,133 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
+import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
+import { GoogleGenerativeAI } from 'https://esm.sh/@google/generative-ai@0.15.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
+// Main function execution starts here
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  );
-  let meetingId;
+  )
+
+  const { meetingId } = await req.json()
 
   try {
-    const body = await req.json();
-    meetingId = body.meetingId;
-    if (!meetingId) throw new Error('Meeting ID is required.');
-
+    // 1. Fetch the meeting data
     const { data: meeting, error: fetchError } = await supabaseAdmin
       .from('meetings')
       .select('transcript')
       .eq('id', meetingId)
-      .single();
+      .single()
 
-    if (fetchError || !meeting || !meeting.transcript) {
-      throw new Error('Transcript not found for this meeting.');
+    if (fetchError || !meeting) {
+      throw new Error(`Meeting not found: ${fetchError?.message}`)
     }
 
-    // Extract plain text from the rich transcript object
-    const transcriptText = meeting.transcript?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+    // 2. Extract plain text from the Deepgram JSON response
+    const transcriptJson = meeting.transcript as any; // Cast to any to access nested properties
+    const transcriptText = transcriptJson?.results?.channels[0]?.alternatives[0]?.transcript || '';
+
     if (!transcriptText) {
-      throw new Error('Could not extract plain text from transcript object.');
+      throw new Error('Transcript text is empty or in an invalid format.');
     }
 
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!geminiApiKey) throw new Error('Gemini API key not set.');
+    // 3. Chunk the long transcript into smaller parts
+    function chunkText(text: string, chunkSize: number, overlap: number): string[] {
+        const chunks: string[] = [];
+        // Use words as the unit for chunking
+        const words = text.split(' ');
+        if (words.length <= chunkSize) {
+            return [text];
+        }
+        let i = 0;
+        while (i < words.length) {
+            const chunk = words.slice(i, i + chunkSize).join(' ');
+            chunks.push(chunk);
+            i += chunkSize - overlap;
+        }
+        return chunks;
+    }
 
-    const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const textChunks = chunkText(transcriptText, 2000, 200); // 2000-word chunks, 200-word overlap
 
-    const prompt = `Analyze the following meeting transcript and extract a concise summary, a list of action items, and a list of key decisions. Respond with ONLY a valid JSON object with the keys "summary" (string), "action_items" (array of strings), and "key_decisions" (array of strings).
+    // 4. Initialize Gemini Client
+    const genAI = new GoogleGenerativeAI(Deno.env.get('GEMINI_API_KEY')!);
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-Transcript:
----
-${transcriptText}
----`;
+    // 5. MAP PHASE: Summarize each chunk individually
+    const chunkSummaries = await Promise.all(
+      textChunks.map(async (chunk) => {
+        const prompt = `You are an expert meeting analyst. This is one chunk of a larger meeting transcript. Your task is to extract the key points, any decisions made, and any action items mentioned ONLY within this text. Be concise.
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let rawJson = response.text();
+        Transcript Chunk:
+        ---
+        ${chunk}
+        ---
+
+        Summary of this chunk:`
+
+        const result = await model.generateContent(prompt);
+        return result.response.text();
+      })
+    );
+
+    // 6. REDUCE PHASE: Combine summaries and get the final result
+    const combinedSummaries = chunkSummaries.join('\n---\n');
+
+    const finalPrompt = `You are an expert meeting analyst. You will be given a series of summaries from sequential chunks of a single meeting. Your task is to synthesize all of this information into a single, cohesive final output.
+
+    Generate a JSON object with three keys: "summary" (a brief, overall summary of the entire meeting), "action_items" (an array of strings, each being a clear, actionable task), and "key_decisions" (an array of strings, each being a significant decision made). Respond with ONLY the raw JSON object, without any markdown formatting.
+
+    Summaries from meeting chunks:
+    ---
+    ${combinedSummaries}
+    ---
+
+    Final JSON Output:`
+
+    const finalResult = await model.generateContent(finalPrompt);
+    let finalJsonText = finalResult.response.text();
     
-    rawJson = rawJson.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    // Clean up potential markdown wrappers from the JSON response
+    finalJsonText = finalJsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
 
-    const insights = JSON.parse(rawJson);
+    const finalInsights = JSON.parse(finalJsonText);
 
-    const { error: updateError } = await supabaseAdmin
+    // 7. Save the final insights to the database
+    await supabaseAdmin
       .from('meetings')
       .update({
-        summary: insights.summary,
-        action_items: insights.action_items,
-        key_decisions: insights.key_decisions,
+        summary: finalInsights.summary,
+        action_items: finalInsights.action_items,
+        key_decisions: finalInsights.key_decisions,
         status: 'completed',
       })
       .eq('id', meetingId);
 
-    if (updateError) throw new Error(`DB update failed: ${updateError.message}`);
-
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
-    });
-
+    })
   } catch (error) {
+    console.error('Error in generate-insights:', error)
     if (meetingId) {
-      await supabaseAdmin.from('meetings').update({ status: 'failed' }).eq('id', meetingId);
+        await supabaseAdmin
+          .from('meetings')
+          .update({ status: 'failed' })
+          .eq('id', meetingId)
     }
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
-    });
+    })
   }
-});
+})
