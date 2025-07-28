@@ -55,6 +55,7 @@ serve(async (req) => {
     url.searchParams.append('utterances', 'true');
     url.searchParams.append('diarize', 'true');
     url.searchParams.append('smart_format', 'true');
+    url.searchParams.append('detect_language', 'true'); // Enabled multi-language support
 
     // Send the temporary signed URL to Deepgram.
     const deepgramResponse = await fetch(url.toString(), {

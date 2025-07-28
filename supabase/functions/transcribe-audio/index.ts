@@ -18,7 +18,8 @@ serve(async (req) => {
 
     const audioBlob = await req.blob();
 
-    const deepgramResponse = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2', {
+    // Added detect_language=true to enable multi-language support
+    const deepgramResponse = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2&detect_language=true', {
       method: 'POST',
       headers: {
         'Authorization': `Token ${deepgramApiKey}`,
