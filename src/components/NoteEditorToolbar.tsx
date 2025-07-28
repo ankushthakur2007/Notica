@@ -60,14 +60,12 @@ const NoteEditorToolbar = ({
     const toastId = showLoading('Generating PDF...');
   
     try {
-      // 1. Precisely target the inner content element of the TipTap editor.
-      const editorContentElement = document.querySelector<HTMLElement>('[data-editor="true"] .ProseMirror');
+      // THE FIX: Use the correct selector for the TipTap editor's content area.
+      const editorContentElement = document.querySelector<HTMLElement>('.ProseMirror');
       if (!editorContentElement) {
-        throw new Error("Could not find the editor content to export.");
+        throw new Error("Could not find the editor content to export. The selector '.ProseMirror' failed.");
       }
 
-      // 2. Create a temporary, off-screen container to stage the content.
-      // This isolates the content and allows us to apply print-specific styles.
       const container = document.createElement('div');
       container.style.position = 'absolute';
       container.style.left = '-9999px';
@@ -75,7 +73,6 @@ const NoteEditorToolbar = ({
       container.style.padding = '20px';
       container.style.background = 'white';
 
-      // 3. Inject styles to ensure text is black and visible on the white PDF background.
       const style = document.createElement('style');
       style.innerHTML = `
         div, p, h1, h2, h3, h4, h5, h6, li, span, strong, em { 
@@ -85,24 +82,27 @@ const NoteEditorToolbar = ({
       `;
       container.appendChild(style);
 
-      // 4. Clone the editor's content and append it to our prepared container.
       const contentClone = editorContentElement.cloneNode(true) as HTMLElement;
       container.appendChild(contentClone);
+      
       document.body.appendChild(container);
 
-      // 5. Configure html2pdf.js to render the full height of our container.
       const options = {
         margin:       [0.5, 0.5, 0.5, 0.5],
         filename:     `${noteTitle || 'untitled-note'}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        html2canvas:  { 
+          scale: 2, 
+          useCORS: true, 
+          logging: false,
+          // Ensure the full height of the content is captured
+          windowHeight: editorContentElement.scrollHeight
+        },
         jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
       };
 
-      // 6. Generate the PDF from the container.
       await html2pdf().set(options).from(container).save();
 
-      // 7. Clean up by removing the temporary container.
       document.body.removeChild(container);
       dismissToast(toastId);
       showSuccess('PDF exported successfully!');
