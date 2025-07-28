@@ -8,7 +8,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import VoiceRecorder from '@/components/VoiceRecorder';
@@ -16,6 +15,7 @@ import jsPDF from 'jspdf';
 import { showError } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Session } from '@supabase/supabase-js';
+import { SUPPORTED_LANGUAGES } from '@/lib/constants';
 
 interface NoteEditorToolbarProps {
   editor: Editor | null;
@@ -51,6 +51,7 @@ const NoteEditorToolbar = ({
   noteTitle,
 }: NoteEditorToolbarProps) => {
   const isMobileView = useIsMobile();
+  const [voiceLanguage, setVoiceLanguage] = React.useState('en');
 
   const getPlainTextContent = React.useCallback(() => {
     if (!editor) return '';
@@ -99,7 +100,7 @@ const NoteEditorToolbar = ({
           <Button variant="ghost" size="icon" onClick={() => editor?.chain().focus().toggleBold().run()} disabled={!editor?.can().toggleBold() || !canEdit}><Bold className="h-5 w-5" /></Button>
           <Button variant="ghost" size="icon" onClick={() => editor?.chain().focus().toggleItalic().run()} disabled={!editor?.can().toggleItalic() || !canEdit}><Italic className="h-5 w-5" /></Button>
           <Button variant="ghost" size="icon" onClick={() => editor?.chain().focus().toggleBulletList().run()} disabled={!editor?.can().toggleBulletList() || !canEdit}><List className="h-5 w-5" /></Button>
-          <VoiceRecorder onTranscription={onTranscription} isIconButton={true} />
+          <VoiceRecorder onTranscription={onTranscription} language={voiceLanguage} isIconButton={true} />
           <Button variant="ghost" size="icon" onClick={onRefineAI} disabled={isRefiningAI || !editor?.getHTML() || editor.getHTML() === '<p></p>' || !canEdit || !session}><Sparkles className="h-5 w-5" /></Button>
           <Drawer>
             <DrawerTrigger asChild><Button variant="ghost" size="icon"><Plus className="h-5 w-5" /></Button></DrawerTrigger>
@@ -138,7 +139,21 @@ const NoteEditorToolbar = ({
         <label htmlFor="image-upload-desktop" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 cursor-pointer"><ImageIcon className="h-4 w-4 mr-2" />{isUploadingImage ? 'Uploading...' : 'Upload Image'}</label>
         <input id="image-upload-desktop" type="file" accept="image/*" onChange={handleFileSelect} className="hidden" disabled={isUploadingImage || !canEdit} />
         <Button variant="outline" size="sm" onClick={onRefineAI} disabled={isRefiningAI || !editor?.getHTML() || editor.getHTML() === '<p></p>' || !canEdit || !session}><Sparkles className="mr-2 h-4 w-4" />{isRefiningAI ? 'Refining...' : 'Refine with AI'}</Button>
-        <VoiceRecorder onTranscription={onTranscription} isIconButton={true} />
+        
+        <div className="flex items-center gap-1">
+          <Select value={voiceLanguage} onValueChange={setVoiceLanguage} disabled={!canEdit}>
+            <SelectTrigger className="w-[110px] h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SUPPORTED_LANGUAGES.map(lang => (
+                <SelectItem key={lang.value} value={lang.value} className="text-xs">{lang.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <VoiceRecorder onTranscription={onTranscription} language={voiceLanguage} isIconButton={true} />
+        </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button variant="outline" size="sm"><Download className="h-4 w-4" /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end">
