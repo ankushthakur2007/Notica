@@ -20,7 +20,7 @@ serve(async (req) => {
   try {
     const body = await req.json();
     meetingId = body.meetingId;
-    const language = body.language || 'en'; // Default to English
+    const language = body.language || 'en';
     if (!meetingId) throw new Error('Meeting ID is required.');
 
     const { data: meeting, error: fetchError } = await supabaseAdmin
@@ -54,7 +54,17 @@ serve(async (req) => {
     dgUrl.searchParams.append('utterances', 'true');
     dgUrl.searchParams.append('diarize', 'true');
     dgUrl.searchParams.append('smart_format', 'true');
-    dgUrl.searchParams.append('language', language); // Use selected language
+    dgUrl.searchParams.append('language', language);
+
+    // Add keyword boosting for Hinglish to improve accuracy
+    if (language === 'en-IN') {
+      const hinglishKeywords = [
+        'aur', 'bhi', 'bahut', 'chalo', 'dost', 'ghar', 'hai', 'haan', 'kaise', 
+        'kya', 'kahan', 'kab', 'kyun', 'lekin', 'matlab', 'nahi', 'paisa', 
+        'yaar', 'theek', 'toh', 'bilkul', 'baat', 'karo', 'kaam', 'bohot'
+      ];
+      hinglishKeywords.forEach(k => dgUrl.searchParams.append('keywords', k));
+    }
 
     const deepgramResponse = await fetch(dgUrl.toString(), {
       method: 'POST',

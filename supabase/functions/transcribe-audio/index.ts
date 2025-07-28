@@ -16,18 +16,30 @@ serve(async (req) => {
       throw new Error('Deepgram API key not set in environment variables.');
     }
 
-    // The language is now sent in the request body along with the audio
     const formData = await req.formData();
     const audioBlob = formData.get('audio') as Blob;
-    const language = formData.get('language') as string || 'en'; // Default to English
+    const language = formData.get('language') as string || 'en';
 
     if (!audioBlob) {
       throw new Error('Audio blob not found in request.');
     }
 
-    const deepgramUrl = `https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2&language=${language}`;
+    const dgUrl = new URL('https://api.deepgram.com/v1/listen');
+    dgUrl.searchParams.append('punctuate', 'true');
+    dgUrl.searchParams.append('model', 'nova-2');
+    dgUrl.searchParams.append('language', language);
 
-    const deepgramResponse = await fetch(deepgramUrl, {
+    // Add keyword boosting for Hinglish to improve accuracy
+    if (language === 'en-IN') {
+      const hinglishKeywords = [
+        'aur', 'bhi', 'bahut', 'chalo', 'dost', 'ghar', 'hai', 'haan', 'kaise', 
+        'kya', 'kahan', 'kab', 'kyun', 'lekin', 'matlab', 'nahi', 'paisa', 
+        'yaar', 'theek', 'toh', 'bilkul', 'baat', 'karo', 'kaam', 'bohot'
+      ];
+      hinglishKeywords.forEach(k => dgUrl.searchParams.append('keywords', k));
+    }
+
+    const deepgramResponse = await fetch(dgUrl.toString(), {
       method: 'POST',
       headers: {
         'Authorization': `Token ${deepgramApiKey}`,
