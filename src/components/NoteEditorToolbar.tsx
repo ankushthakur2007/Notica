@@ -11,8 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import VoiceRecorder from '@/components/VoiceRecorder';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2pdf from 'html2pdf.js';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Session } from '@supabase/supabase-js';
@@ -61,14 +60,11 @@ const NoteEditorToolbar = ({
     const toastId = showLoading('Generating PDF...');
   
     try {
-      // Target the live editor element to ensure all styles are correctly captured.
       const editorElement = document.querySelector<HTMLElement>('[data-editor="true"]');
       if (!editorElement) {
         throw new Error("Could not find the editor content to export.");
       }
 
-      // Create a temporary container to assemble the final printable content,
-      // including the title, which isn't part of the editor itself.
       const container = document.createElement('div');
       container.style.position = 'absolute';
       container.style.left = '-9999px';
@@ -77,7 +73,6 @@ const NoteEditorToolbar = ({
       container.style.background = 'white';
       container.style.color = 'black';
       
-      // 1. Add the title
       const titleElement = document.createElement('h1');
       titleElement.textContent = noteTitle || 'Untitled Note';
       titleElement.style.fontSize = '24pt';
@@ -86,34 +81,25 @@ const NoteEditorToolbar = ({
       titleElement.style.fontFamily = 'sans-serif';
       container.appendChild(titleElement);
 
-      // 2. Clone the live editor content and append it.
-      // Cloning preserves the structure and classes, allowing styles to be
-      // correctly computed in the temporary container.
       const contentClone = editorElement.cloneNode(true) as HTMLElement;
       container.appendChild(contentClone);
       
       document.body.appendChild(container);
-  
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'pt',
-        format: 'a4',
-      });
-  
-      // The modern doc.html() method will now render our prepared container.
-      await pdf.html(container, {
-        callback: function (doc) {
-          doc.save(`${noteTitle || 'untitled-note'}.pdf`);
-          document.body.removeChild(container); // Clean up
-          dismissToast(toastId);
-          showSuccess('PDF exported successfully!');
-        },
-        margin: [40, 40, 40, 40],
-        autoPaging: 'text',
-        width: 595,
-        windowWidth: 800,
-      });
-  
+
+      const options = {
+        margin:       [0.5, 0.5, 0.5, 0.5],
+        filename:     `${noteTitle || 'untitled-note'}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      await html2pdf().set(options).from(container).save();
+
+      document.body.removeChild(container);
+      dismissToast(toastId);
+      showSuccess('PDF exported successfully!');
+
     } catch (error: any) {
       console.error('Failed to export PDF:', error);
       showError('Failed to export PDF: ' + error.message);
