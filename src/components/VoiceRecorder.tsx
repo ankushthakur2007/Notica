@@ -22,33 +22,26 @@ const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderP
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
+    recognition.continuous = false; // Process after a single utterance
     recognition.interimResults = false;
     // The 'lang' property is no longer set, allowing the browser to auto-detect.
 
     recognition.onresult = (event) => {
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        }
-      }
-      if (finalTranscript) {
-        onTranscription(finalTranscript.trim() + ' ');
+      const transcript = event.results[0][0].transcript;
+      if (transcript) {
+        onTranscription(transcript.trim() + ' ');
       }
     };
 
     recognition.onerror = (event) => {
-      if (event.error !== 'no-speech') {
+      if (event.error !== 'no-speech' && event.error !== 'aborted') {
         showError(`Speech recognition error: ${event.error}`);
       }
       setIsListening(false);
     };
 
     recognition.onend = () => {
-      if (recognitionRef.current) {
-        setIsListening(false);
-      }
+      setIsListening(false);
     };
 
     recognitionRef.current = recognition;
@@ -83,7 +76,7 @@ const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderP
   ) : (
     <>
       {isListening ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
-      {isListening ? 'Stop Listening' : 'Start Listening'}
+      {isListening ? 'Listening...' : 'Start Listening'}
     </>
   );
 
