@@ -48,15 +48,19 @@ const CreateFromUrlDialog = ({ isOpen, onOpenChange }: CreateFromUrlDialogProps)
       });
 
       if (functionError) {
-        // The function returned a non-2xx status. The custom error is in the context.
-        // The context can be an object, so we check for our specific 'error' property.
-        let specificError = null;
-        if (functionError.context && typeof functionError.context === 'object' && functionError.context.error) {
-          specificError = functionError.context.error;
+        let message = 'An unexpected error occurred. Please try again.';
+        // The actual error from the function is nested in the context property
+        if (functionError.context && typeof functionError.context === 'object' && 'error' in functionError.context) {
+            const serverError = (functionError.context as any).error;
+            if (serverError.includes('does not have captions')) {
+                message = 'This YouTube video does not have captions available, so a note cannot be created. Please try a different video.';
+            } else if (serverError.includes('Invalid YouTube URL')) {
+                message = 'The URL provided does not seem to be a valid YouTube video link. Please check the URL and try again.';
+            } else {
+                message = serverError; // Show other specific errors from the backend
+            }
         }
-        
-        // Set the error state. Use the specific error if we found it, otherwise use the generic one.
-        setError(specificError || functionError.message);
+        setError(message);
         return;
       }
       
