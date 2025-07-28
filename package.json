@@ -52,7 +52,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
-    "dayjs": "^1.11.11",
+    "dayjs": "^1.11.13",
     "dexie": "^4.0.11",
     "embla-carousel-react": "^8.3.0",
     "input-otp": "^1.2.4",
