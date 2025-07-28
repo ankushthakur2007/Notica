@@ -16,10 +16,18 @@ serve(async (req) => {
       throw new Error('Deepgram API key not set in environment variables.');
     }
 
-    const audioBlob = await req.blob();
+    // The language is now sent in the request body along with the audio
+    const formData = await req.formData();
+    const audioBlob = formData.get('audio') as Blob;
+    const language = formData.get('language') as string || 'en'; // Default to English
 
-    // Added detect_language=true to enable multi-language support
-    const deepgramResponse = await fetch('https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2&detect_language=true', {
+    if (!audioBlob) {
+      throw new Error('Audio blob not found in request.');
+    }
+
+    const deepgramUrl = `https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2&language=${language}`;
+
+    const deepgramResponse = await fetch(deepgramUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Token ${deepgramApiKey}`,

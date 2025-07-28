@@ -18,7 +18,9 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showError, showSuccess } from '@/utils/toast';
+import { SUPPORTED_LANGUAGES } from '@/lib/constants';
 
 const fetchMeetings = async (userId: string): Promise<Meeting[]> => {
   const { data, error } = await supabase
@@ -36,6 +38,7 @@ const MeetingIntelligencePage = () => {
   const [isNameMeetingDialogOpen, setIsNameMeetingDialogOpen] = useState(false);
   const [newMeetingTitle, setNewMeetingTitle] = useState('');
   const [selectedMeetingTitle, setSelectedMeetingTitle] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
 
   const { data: meetings, isLoading, refetch } = useQuery<Meeting[], Error>({
     queryKey: ['meetings', user?.id],
@@ -77,7 +80,6 @@ const MeetingIntelligencePage = () => {
   const handleDeleteMeeting = async (meeting: Meeting) => {
     if (!user) return;
 
-    // Delete the audio file from storage first
     const filePath = `${user.id}/${meeting.id}.webm`;
     const { error: storageError } = await supabase.storage
       .from('meeting-recordings')
@@ -88,7 +90,6 @@ const MeetingIntelligencePage = () => {
       return;
     }
 
-    // Then delete the meeting record from the database
     const { error: dbError } = await supabase
       .from('meetings')
       .delete()
@@ -113,7 +114,7 @@ const MeetingIntelligencePage = () => {
   }
 
   if (isRecording) {
-    return <MeetingRecorder title={selectedMeetingTitle} onRecordingFinish={() => {
+    return <MeetingRecorder title={selectedMeetingTitle} language={selectedLanguage} onRecordingFinish={() => {
       setIsRecording(false);
       refetch();
     }} />;
@@ -132,20 +133,34 @@ const MeetingIntelligencePage = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Name Your Meeting</DialogTitle>
+              <DialogTitle>New Meeting</DialogTitle>
               <DialogDescription>
-                Give your new meeting a title before you start recording.
+                Give your meeting a title and select the primary language that will be spoken.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <Label htmlFor="meeting-title">Meeting Title</Label>
-              <Input
-                id="meeting-title"
-                value={newMeetingTitle}
-                onChange={(e) => setNewMeetingTitle(e.target.value)}
-                placeholder="e.g., Q3 Project Kickoff"
-                onKeyDown={(e) => { if (e.key === 'Enter') handleStartRecording(); }}
-              />
+              <div>
+                <Label htmlFor="meeting-title">Meeting Title</Label>
+                <Input
+                  id="meeting-title"
+                  value={newMeetingTitle}
+                  onChange={(e) => setNewMeetingTitle(e.target.value)}
+                  placeholder="e.g., Q3 Project Kickoff"
+                />
+              </div>
+              <div>
+                <Label htmlFor="language-select">Language</Label>
+                <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                  <SelectTrigger id="language-select">
+                    <SelectValue placeholder="Select a language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_LANGUAGES.map(lang => (
+                      <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsNameMeetingDialogOpen(false)}>Cancel</Button>

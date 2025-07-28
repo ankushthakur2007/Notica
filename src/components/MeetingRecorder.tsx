@@ -9,10 +9,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface MeetingRecorderProps {
   title: string;
+  language: string;
   onRecordingFinish: () => void;
 }
 
-const MeetingRecorder = ({ title, onRecordingFinish }: MeetingRecorderProps) => {
+const MeetingRecorder = ({ title, language, onRecordingFinish }: MeetingRecorderProps) => {
   const { user } = useAppStore();
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -25,7 +26,6 @@ const MeetingRecorder = ({ title, onRecordingFinish }: MeetingRecorderProps) => 
   const streamsRef = useRef<MediaStream[]>([]);
 
   useEffect(() => {
-    // Cleanup function
     return () => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       streamsRef.current.forEach(stream => stream.getTracks().forEach(track => track.stop()));
@@ -114,7 +114,7 @@ const MeetingRecorder = ({ title, onRecordingFinish }: MeetingRecorderProps) => 
           return;
         }
 
-        const { error: functionError } = await supabase.functions.invoke('transcribe-meeting', { body: { meetingId } });
+        const { error: functionError } = await supabase.functions.invoke('transcribe-meeting', { body: { meetingId, language } });
         if (functionError) {
           showError(`Transcription failed to start: ${functionError.message}`);
           await supabase.from('meetings').update({ status: 'failed' }).eq('id', meetingId);

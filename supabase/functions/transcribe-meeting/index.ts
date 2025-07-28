@@ -20,6 +20,7 @@ serve(async (req) => {
   try {
     const body = await req.json();
     meetingId = body.meetingId;
+    const language = body.language || 'en'; // Default to English
     if (!meetingId) throw new Error('Meeting ID is required.');
 
     const { data: meeting, error: fetchError } = await supabaseAdmin
@@ -30,17 +31,15 @@ serve(async (req) => {
 
     if (fetchError || !meeting || !meeting.audio_url) throw new Error('Meeting audio URL not found.');
 
-    // Parse the file path from the full public URL stored in the database.
     const urlParts = meeting.audio_url.split('/meeting-recordings/');
     if (urlParts.length < 2) {
       throw new Error('Invalid audio URL format. Cannot extract path.');
     }
     const filePath = urlParts[1];
 
-    // Create a temporary signed URL that expires in 60 seconds.
     const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
       .from('meeting-recordings')
-      .createSignedUrl(filePath, 60); // Expires in 60 seconds
+      .createSignedUrl(filePath, 60);
 
     if (signedUrlError) {
       throw new Error(`Failed to create signed URL: ${signedUrlError.message}`);
@@ -50,15 +49,14 @@ serve(async (req) => {
     const deepgramApiKey = Deno.env.get('DEEPGRAM_API_KEY');
     if (!deepgramApiKey) throw new Error('Deepgram API key not set.');
 
-    const url = new URL('https://api.deepgram.com/v1/listen');
-    url.searchParams.append('model', 'nova-2-meeting');
-    url.searchParams.append('utterances', 'true');
-    url.searchParams.append('diarize', 'true');
-    url.searchParams.append('smart_format', 'true');
-    url.searchParams.append('detect_language', 'true'); // Enabled multi-language support
+    const dgUrl = new URL('https://api.deepgram.com/v1/listen');
+    dgUrl.searchParams.append('model', 'nova-2-meeting');
+    dgUrl.searchParams.append('utterances', 'true');
+    dgUrl.searchParams.append('diarize', 'true');
+    dgUrl.searchParams.append('smart_format', 'true');
+    dgUrl.searchParams.append('language', language); // Use selected language
 
-    // Send the temporary signed URL to Deepgram.
-    const deepgramResponse = await fetch(url.toString(), {
+    const deepgramResponse = await fetch(dgUrl.toString(), {
       method: 'POST',
       headers: {
         'Authorization': `Token ${deepgramApiKey}`,
