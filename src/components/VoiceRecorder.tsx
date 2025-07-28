@@ -6,11 +6,10 @@ import { cn } from '@/lib/utils';
 
 interface VoiceRecorderProps {
   onTranscription: (text: string) => void;
-  language: string;
   isIconButton?: boolean;
 }
 
-const VoiceRecorder = ({ onTranscription, language, isIconButton = false }: VoiceRecorderProps) => {
+const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderProps) => {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -23,20 +22,18 @@ const VoiceRecorder = ({ onTranscription, language, isIconButton = false }: Voic
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = true; // Keep listening even after a pause
-    recognition.interimResults = false; // We only want the final transcript for each utterance
-    recognition.lang = language;
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    // The 'lang' property is no longer set, allowing the browser to auto-detect.
 
     recognition.onresult = (event) => {
       let finalTranscript = '';
-      // Concatenate all final results since the last start
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
           finalTranscript += event.results[i][0].transcript;
         }
       }
       if (finalTranscript) {
-        // Add a space at the end for continuous typing feel
         onTranscription(finalTranscript.trim() + ' ');
       }
     };
@@ -49,7 +46,6 @@ const VoiceRecorder = ({ onTranscription, language, isIconButton = false }: Voic
     };
 
     recognition.onend = () => {
-      // Only set to false if it wasn't manually stopped
       if (recognitionRef.current) {
         setIsListening(false);
       }
@@ -57,12 +53,11 @@ const VoiceRecorder = ({ onTranscription, language, isIconButton = false }: Voic
 
     recognitionRef.current = recognition;
 
-    // Cleanup on component unmount or language change
     return () => {
       recognition.stop();
       recognitionRef.current = null;
     };
-  }, [language, onTranscription]);
+  }, [onTranscription]);
 
   const handleToggleListening = () => {
     if (!isSupported) {
@@ -78,7 +73,6 @@ const VoiceRecorder = ({ onTranscription, language, isIconButton = false }: Voic
         recognitionRef.current?.start();
         setIsListening(true);
       } catch (e) {
-        // This can happen if it's already started
         console.error("Could not start recognition", e);
       }
     }
