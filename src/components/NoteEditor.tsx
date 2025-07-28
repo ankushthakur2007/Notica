@@ -113,7 +113,10 @@ const NoteEditor = () => {
     extensions: [StarterKit, Link.configure({ openOnClick: false, autolink: true }), Placeholder.configure({ placeholder: 'Start typing...' }), TextAlign.configure({ types: ['heading', 'paragraph'] }), Underline, TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), ResizableImage.configure({ inline: true, allowBase64: true }), FontFamily.configure({ types: ['textStyle'] })],
     content: '',
     editorProps: {
-      attributes: { class: `prose dark:prose-invert max-w-none focus:outline-none text-foreground ${isMobileView ? 'text-base' : ''}` },
+      attributes: { 
+        class: `prose dark:prose-invert max-w-none focus:outline-none text-foreground ${isMobileView ? 'text-base' : ''}`,
+        'data-editor': 'true',
+      },
       handleDrop: (view, event) => {
         if (!canEdit || !event.dataTransfer?.files[0]) return false;
         if (event.dataTransfer.files[0].type.startsWith('image/')) {

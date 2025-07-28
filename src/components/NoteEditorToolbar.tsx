@@ -12,6 +12,7 @@ import {
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import VoiceRecorder from '@/components/VoiceRecorder';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Session } from '@supabase/supabase-js';
@@ -60,25 +61,37 @@ const NoteEditorToolbar = ({
     const toastId = showLoading('Generating PDF...');
   
     try {
-      const contentHTML = editor.getHTML();
-      const titleHTML = `<h1 style="font-size: 24pt; font-weight: bold; margin-bottom: 20px;">${noteTitle || 'Untitled Note'}</h1>`;
-  
-      // Create a temporary container to render the HTML for PDF generation
+      // Target the live editor element to ensure all styles are correctly captured.
+      const editorElement = document.querySelector<HTMLElement>('[data-editor="true"]');
+      if (!editorElement) {
+        throw new Error("Could not find the editor content to export.");
+      }
+
+      // Create a temporary container to assemble the final printable content,
+      // including the title, which isn't part of the editor itself.
       const container = document.createElement('div');
-      
-      // Apply styles directly to ensure they are picked up by html2canvas
-      // This forces a light theme for the PDF regardless of the app's current theme
       container.style.position = 'absolute';
-      container.style.left = '-9999px'; // Keep it off-screen
-      container.style.width = '800px'; // A standard width for rendering
+      container.style.left = '-9999px';
+      container.style.width = '800px';
       container.style.padding = '40px';
-      container.style.background = 'white'; // Explicitly set white background
-      container.style.color = 'black'; // Explicitly set black text color for base
+      container.style.background = 'white';
+      container.style.color = 'black';
       
-      // We will use the 'prose' class for Tailwind's typography styling, but ensure it's in light mode
-      container.className = 'prose'; 
-      container.innerHTML = titleHTML + contentHTML;
-  
+      // 1. Add the title
+      const titleElement = document.createElement('h1');
+      titleElement.textContent = noteTitle || 'Untitled Note';
+      titleElement.style.fontSize = '24pt';
+      titleElement.style.fontWeight = 'bold';
+      titleElement.style.marginBottom = '20px';
+      titleElement.style.fontFamily = 'sans-serif';
+      container.appendChild(titleElement);
+
+      // 2. Clone the live editor content and append it.
+      // Cloning preserves the structure and classes, allowing styles to be
+      // correctly computed in the temporary container.
+      const contentClone = editorElement.cloneNode(true) as HTMLElement;
+      container.appendChild(contentClone);
+      
       document.body.appendChild(container);
   
       const pdf = new jsPDF({
@@ -87,17 +100,18 @@ const NoteEditorToolbar = ({
         format: 'a4',
       });
   
+      // The modern doc.html() method will now render our prepared container.
       await pdf.html(container, {
         callback: function (doc) {
           doc.save(`${noteTitle || 'untitled-note'}.pdf`);
-          document.body.removeChild(container); // Clean up the temporary element
+          document.body.removeChild(container); // Clean up
           dismissToast(toastId);
           showSuccess('PDF exported successfully!');
         },
         margin: [40, 40, 40, 40],
         autoPaging: 'text',
-        width: 595, // A4 width in points
-        windowWidth: 800, // The width of our temporary container
+        width: 595,
+        windowWidth: 800,
       });
   
     } catch (error: any) {
