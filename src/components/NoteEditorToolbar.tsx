@@ -61,19 +61,24 @@ const NoteEditorToolbar = ({
   
     try {
       const contentHTML = editor.getHTML();
-      const titleHTML = `<h1>${noteTitle || 'Untitled Note'}</h1>`;
+      const titleHTML = `<h1 style="font-size: 24pt; font-weight: bold; margin-bottom: 20px;">${noteTitle || 'Untitled Note'}</h1>`;
   
-      // Create a temporary container to render the HTML with styles
+      // Create a temporary container to render the HTML for PDF generation
       const container = document.createElement('div');
-      const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-      // Apply styles that match the editor for a consistent look
-      container.className = `prose dark:prose-invert p-8 ${theme}`;
+      
+      // Apply styles directly to ensure they are picked up by html2canvas
+      // This forces a light theme for the PDF regardless of the app's current theme
+      container.style.position = 'absolute';
+      container.style.left = '-9999px'; // Keep it off-screen
+      container.style.width = '800px'; // A standard width for rendering
+      container.style.padding = '40px';
+      container.style.background = 'white'; // Explicitly set white background
+      container.style.color = 'black'; // Explicitly set black text color for base
+      
+      // We will use the 'prose' class for Tailwind's typography styling, but ensure it's in light mode
+      container.className = 'prose'; 
       container.innerHTML = titleHTML + contentHTML;
   
-      // Make it invisible but part of the DOM for style computation
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.width = '800px'; // A reasonable width for a document page
       document.body.appendChild(container);
   
       const pdf = new jsPDF({
@@ -85,15 +90,14 @@ const NoteEditorToolbar = ({
       await pdf.html(container, {
         callback: function (doc) {
           doc.save(`${noteTitle || 'untitled-note'}.pdf`);
-          // Cleanup
-          document.body.removeChild(container);
+          document.body.removeChild(container); // Clean up the temporary element
           dismissToast(toastId);
           showSuccess('PDF exported successfully!');
         },
         margin: [40, 40, 40, 40],
         autoPaging: 'text',
-        width: 595, // A4 width in points, minus margins
-        windowWidth: 800, // The width of the container we created
+        width: 595, // A4 width in points
+        windowWidth: 800, // The width of our temporary container
       });
   
     } catch (error: any) {
