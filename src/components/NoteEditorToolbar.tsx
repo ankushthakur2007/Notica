@@ -2,7 +2,7 @@ import React from 'react';
 import { Editor } from '@tiptap/react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Sparkles, Download, Plus, Minus as MinusIcon } from 'lucide-react';
+import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Sparkles, Plus, Minus as MinusIcon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,8 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import VoiceRecorder from '@/components/VoiceRecorder';
-import html2pdf from 'html2pdf.js';
-import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
+import { showError } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Session } from '@supabase/supabase-js';
 
@@ -50,69 +49,6 @@ const NoteEditorToolbar = ({
   noteTitle,
 }: NoteEditorToolbarProps) => {
   const isMobileView = useIsMobile();
-
-  const handleExportAsPDF = async () => {
-    if (!editor || editor.isEmpty) {
-      showError('Note is empty, nothing to export.');
-      return;
-    }
-  
-    const toastId = showLoading('Generating PDF...');
-  
-    try {
-      // THE FIX: Use the correct selector for the TipTap editor's content area.
-      const editorContentElement = document.querySelector<HTMLElement>('.ProseMirror');
-      if (!editorContentElement) {
-        throw new Error("Could not find the editor content to export. The selector '.ProseMirror' failed.");
-      }
-
-      const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.width = '800px';
-      container.style.padding = '20px';
-      container.style.background = 'white';
-
-      const style = document.createElement('style');
-      style.innerHTML = `
-        div, p, h1, h2, h3, h4, h5, h6, li, span, strong, em { 
-          color: black !important; 
-          background-color: transparent !important;
-        }
-      `;
-      container.appendChild(style);
-
-      const contentClone = editorContentElement.cloneNode(true) as HTMLElement;
-      container.appendChild(contentClone);
-      
-      document.body.appendChild(container);
-
-      const options = {
-        margin:       [0.5, 0.5, 0.5, 0.5],
-        filename:     `${noteTitle || 'untitled-note'}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { 
-          scale: 2, 
-          useCORS: true, 
-          logging: false,
-          // Ensure the full height of the content is captured
-          windowHeight: editorContentElement.scrollHeight
-        },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
-
-      await html2pdf().set(options).from(container).save();
-
-      document.body.removeChild(container);
-      dismissToast(toastId);
-      showSuccess('PDF exported successfully!');
-
-    } catch (error: any) {
-      console.error('Failed to export PDF:', error);
-      showError('Failed to export PDF: ' + error.message);
-      dismissToast(toastId);
-    }
-  };
 
   const handleFileSelect = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -186,12 +122,6 @@ const NoteEditorToolbar = ({
         
         <VoiceRecorder onTranscription={onTranscription} isIconButton={true} />
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild><Button variant="outline" size="sm"><Download className="h-4 w-4" /></Button></DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleExportAsPDF} disabled={!editor || editor.isEmpty}>Export as PDF</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </div>
   );

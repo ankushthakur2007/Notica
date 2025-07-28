@@ -54,10 +54,7 @@
     "date-fns": "^3.6.0",
     "dexie": "^4.0.11",
     "embla-carousel-react": "^8.3.0",
-    "html2canvas": "^1.4.1",
-    "html2pdf.js": "^0.10.3",
     "input-otp": "^1.2.4",
-    "jspdf": "^2.5.2",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
@@ -93,13 +90,5 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^6.3.4"
-  },
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview",
-    "postinstall": ""
-  },
-  "packageManager": "pnpm@10.12.1+sha512.f0dda8580f0ee9481c5c79a1d927b9164f2c478e90992ad268bbb2465a736984391d6333d2c327913578b2804af33474ca554ba29c04a8b13060a717675ae3ac"
+  }
 }
