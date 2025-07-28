@@ -60,24 +60,50 @@ const NoteEditorToolbar = ({
     const toastId = showLoading('Generating PDF...');
   
     try {
-      // 1. Find the specific HTML element that contains the note content, as you suggested.
-      const noteContentElement = document.querySelector<HTMLElement>('[data-editor="true"]');
-      if (!noteContentElement) {
+      const editorElement = document.querySelector<HTMLElement>('[data-editor="true"]');
+      if (!editorElement) {
         throw new Error("Could not find the editor content to export.");
       }
 
-      // 2. Define the options for the PDF export.
+      // Create a temporary container to stage the content for printing.
+      // This allows us to apply print-specific styles without affecting the live view.
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px'; // Move it off-screen
+      container.style.width = '800px'; // A reasonable width for layout
+      container.style.padding = '20px';
+      container.style.background = 'white';
+
+      // Inject a style block to force all text to be black for the PDF.
+      // This is the key fix for the text visibility issue.
+      const style = document.createElement('style');
+      style.innerHTML = `
+        div { 
+          color: black !important; 
+        }
+      `;
+      container.appendChild(style);
+
+      // Clone the editor's content and add it to our container.
+      const contentClone = editorElement.cloneNode(true) as HTMLElement;
+      container.appendChild(contentClone);
+      
+      // Add the container to the DOM so html2canvas can render it.
+      document.body.appendChild(container);
+
       const options = {
-        margin:       1,
+        margin:       [0.5, 0.5, 0.5, 0.5],
         filename:     `${noteTitle || 'untitled-note'}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
         jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
       };
 
-      // 3. Use html2pdf.js to create and save the PDF from the live editor element.
-      await html2pdf().set(options).from(noteContentElement).save();
+      // Generate the PDF from our styled container.
+      await html2pdf().set(options).from(container).save();
 
+      // Clean up by removing the temporary container from the DOM.
+      document.body.removeChild(container);
       dismissToast(toastId);
       showSuccess('PDF exported successfully!');
 
