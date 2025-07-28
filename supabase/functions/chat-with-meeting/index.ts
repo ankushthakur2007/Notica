@@ -7,6 +7,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface Message {
+  sender: 'user' | 'ai';
+  text: string;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -23,22 +28,25 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // Fetch both transcript and the existing chat history
     const { data: meeting, error: fetchError } = await supabaseAdmin
       .from('meetings')
-      .select('transcript')
+      .select('transcript, chat_history')
       .eq('id', meetingId)
       .single();
 
-    if (fetchError || !meeting || !meeting.transcript) {
-      throw new Error('Transcript not found for this meeting.');
+    if (fetchError || !meeting) {
+      throw new Error(`Meeting not found or failed to fetch: ${fetchError?.message}`);
     }
 
-    // Extract plain text from the rich transcript object
     const transcriptText = meeting.transcript?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
     if (!transcriptText) {
       throw new Error('Could not extract plain text from transcript object.');
     }
+    
+    const existingHistory: Message[] = meeting.chat_history || [];
 
+    // Generate AI response
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     if (!geminiApiKey) throw new Error('Gemini API key not set.');
 
@@ -58,6 +66,22 @@ User Question: ${userQuestion}`;
     const response = await result.response;
     const answer = response.text();
 
+    // Prepare the new history and save it to the database
+    const userMessage: Message = { sender: 'user', text: userQuestion };
+    const aiMessage: Message = { sender: 'ai', text: answer };
+    const newHistory = [...existingHistory, userMessage, aiMessage];
+
+    const { error: updateError } = await supabaseAdmin
+      .from('meetings')
+      .update({ chat_history: newHistory })
+      .eq('id', meetingId);
+
+    if (updateError) {
+      // Log the error, but still return the answer to the user
+      console.error('Failed to save chat history:', updateError.message);
+    }
+
+    // Return only the new answer to the client
     return new Response(JSON.stringify({ answer }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

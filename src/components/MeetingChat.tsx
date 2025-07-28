@@ -47,23 +47,13 @@ const MeetingChat = ({ meetingId, initialMessages }: MeetingChatProps) => {
       if (error) throw error;
 
       const aiMessage: Message = { sender: 'ai', text: data.answer };
-      const finalMessages = [...updatedMessagesWithUser, aiMessage];
-      setMessages(finalMessages);
-
-      // Save the complete history to DB
-      const { error: updateError } = await supabase
-        .from('meetings')
-        .update({ chat_history: finalMessages })
-        .eq('id', meetingId);
-
-      if (updateError) {
-        showError('Failed to save chat history.');
-        console.error(updateError);
-      }
+      // The backend now saves the history, so we just update the local state for the UI
+      setMessages(prev => [...prev, aiMessage]);
 
     } catch (error: any) {
       const errorMessage: Message = { sender: 'ai', text: `Sorry, I encountered an error: ${error.message}` };
       setMessages(prev => [...prev, errorMessage]);
+      showError(`Chat error: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
