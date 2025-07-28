@@ -12,7 +12,7 @@ import {
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import VoiceRecorder from '@/components/VoiceRecorder';
 import jsPDF from 'jspdf';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Session } from '@supabase/supabase-js';
 
@@ -51,22 +51,57 @@ const NoteEditorToolbar = ({
 }: NoteEditorToolbarProps) => {
   const isMobileView = useIsMobile();
 
-  const getPlainTextContent = React.useCallback(() => {
-    if (!editor) return '';
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = editor.getHTML();
-    return tempDiv.textContent || tempDiv.innerText || '';
-  }, [editor]);
-
-  const handleExportAsPDF = React.useCallback(() => {
+  const handleExportAsPDF = async () => {
     if (!editor || editor.isEmpty) {
       showError('Note is empty, nothing to export.');
       return;
     }
-    const pdf = new jsPDF();
-    pdf.text(getPlainTextContent(), 10, 10);
-    pdf.save(`${noteTitle || 'untitled-note'}.pdf`);
-  }, [editor, getPlainTextContent, noteTitle]);
+  
+    const toastId = showLoading('Generating PDF...');
+  
+    try {
+      const contentHTML = editor.getHTML();
+      const titleHTML = `<h1>${noteTitle || 'Untitled Note'}</h1>`;
+  
+      // Create a temporary container to render the HTML with styles
+      const container = document.createElement('div');
+      const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      // Apply styles that match the editor for a consistent look
+      container.className = `prose dark:prose-invert p-8 ${theme}`;
+      container.innerHTML = titleHTML + contentHTML;
+  
+      // Make it invisible but part of the DOM for style computation
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.width = '800px'; // A reasonable width for a document page
+      document.body.appendChild(container);
+  
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'pt',
+        format: 'a4',
+      });
+  
+      await pdf.html(container, {
+        callback: function (doc) {
+          doc.save(`${noteTitle || 'untitled-note'}.pdf`);
+          // Cleanup
+          document.body.removeChild(container);
+          dismissToast(toastId);
+          showSuccess('PDF exported successfully!');
+        },
+        margin: [40, 40, 40, 40],
+        autoPaging: 'text',
+        width: 595, // A4 width in points, minus margins
+        windowWidth: 800, // The width of the container we created
+      });
+  
+    } catch (error: any) {
+      console.error('Failed to export PDF:', error);
+      showError('Failed to export PDF: ' + error.message);
+      dismissToast(toastId);
+    }
+  };
 
   const handleFileSelect = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
