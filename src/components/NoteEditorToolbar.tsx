@@ -60,43 +60,24 @@ const NoteEditorToolbar = ({
     const toastId = showLoading('Generating PDF...');
   
     try {
-      const editorElement = document.querySelector<HTMLElement>('[data-editor="true"]');
-      if (!editorElement) {
+      // 1. Find the specific HTML element that contains the note content, as you suggested.
+      const noteContentElement = document.querySelector<HTMLElement>('[data-editor="true"]');
+      if (!noteContentElement) {
         throw new Error("Could not find the editor content to export.");
       }
 
-      const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.width = '800px';
-      container.style.padding = '40px';
-      container.style.background = 'white';
-      container.style.color = 'black';
-      
-      const titleElement = document.createElement('h1');
-      titleElement.textContent = noteTitle || 'Untitled Note';
-      titleElement.style.fontSize = '24pt';
-      titleElement.style.fontWeight = 'bold';
-      titleElement.style.marginBottom = '20px';
-      titleElement.style.fontFamily = 'sans-serif';
-      container.appendChild(titleElement);
-
-      const contentClone = editorElement.cloneNode(true) as HTMLElement;
-      container.appendChild(contentClone);
-      
-      document.body.appendChild(container);
-
+      // 2. Define the options for the PDF export.
       const options = {
-        margin:       [0.5, 0.5, 0.5, 0.5],
+        margin:       1,
         filename:     `${noteTitle || 'untitled-note'}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        html2canvas:  { scale: 2, useCORS: true },
         jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
       };
 
-      await html2pdf().set(options).from(container).save();
+      // 3. Use html2pdf.js to create and save the PDF from the live editor element.
+      await html2pdf().set(options).from(noteContentElement).save();
 
-      document.body.removeChild(container);
       dismissToast(toastId);
       showSuccess('PDF exported successfully!');
 
