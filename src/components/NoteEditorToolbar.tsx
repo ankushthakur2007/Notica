@@ -2,7 +2,7 @@ import React from 'react';
 import { Editor } from '@tiptap/react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Sparkles, Plus, Minus as MinusIcon, Strikethrough } from 'lucide-react';
+import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Sparkles, Plus, Minus as MinusIcon, Strikethrough, MessageSquarePlus } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +30,7 @@ interface NoteEditorToolbarProps {
   onIncreaseFontSize: () => void;
   onDecreaseFontSize: () => void;
   noteTitle: string;
+  onAddComment: () => void;
 }
 
 const NoteEditorToolbar = ({
@@ -47,6 +48,7 @@ const NoteEditorToolbar = ({
   onIncreaseFontSize,
   onDecreaseFontSize,
   noteTitle,
+  onAddComment,
 }: NoteEditorToolbarProps) => {
   const isMobileView = useIsMobile();
 
@@ -55,6 +57,8 @@ const NoteEditorToolbar = ({
       onImageUpload(event.target.files[0]);
     }
   }, [onImageUpload]);
+
+  const isSelectionEmpty = !editor?.state.selection.content().size;
 
   const AdvancedFormattingTools = () => (
     <div className="flex flex-wrap gap-2 justify-center">
@@ -121,7 +125,7 @@ const NoteEditorToolbar = ({
         <label htmlFor="image-upload-desktop" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 cursor-pointer"><ImageIcon className="h-4 w-4 mr-2" />{isUploadingImage ? 'Uploading...' : 'Upload Image'}</label>
         <input id="image-upload-desktop" type="file" accept="image/*" onChange={handleFileSelect} className="hidden" disabled={isUploadingImage || !canEdit} />
         <Button variant="outline" size="sm" onClick={onRefineAI} disabled={isRefiningAI || !editor?.getHTML() || editor.getHTML() === '<p></p>' || !canEdit || !session}><Sparkles className="mr-2 h-4 w-4" />{isRefiningAI ? 'Refining...' : 'Refine with AI'}</Button>
-        
+        <Button variant="outline" size="sm" onClick={onAddComment} disabled={isSelectionEmpty || !canEdit}><MessageSquarePlus className="h-4 w-4 mr-2" />Comment</Button>
         <VoiceRecorder onTranscription={onTranscription} isIconButton={true} />
 
       </div>

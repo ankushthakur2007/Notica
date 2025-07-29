@@ -389,6 +389,7 @@ const NoteEditor = ({ note }: NoteEditorProps) => {
     onIncreaseFontSize: handleIncreaseFontSize,
     onDecreaseFontSize: handleDecreaseFontSize,
     noteTitle: title,
+    onAddComment: handleOpenCommentDialog,
   };
 
   return (
@@ -408,7 +409,6 @@ const NoteEditor = ({ note }: NoteEditorProps) => {
             <BubbleMenu editor={editor} tippyOptions={{ 
               duration: 100,
               zIndex: 99,
-              placement: 'bottom-start',
               shouldShow: ({ editor, view, state, from, to }) => {
                 return from !== to
               }
