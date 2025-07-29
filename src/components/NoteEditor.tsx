@@ -12,7 +12,7 @@ import FontFamily from '@tiptap/extension-font-family';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Note } from '@/types';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import { useAppStore } from '@/stores/appStore';
 import { useNavigate, useParams } from 'react-router-dom';
