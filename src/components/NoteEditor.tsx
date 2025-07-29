@@ -12,7 +12,7 @@ import FontFamily from '@tiptap/extension-font-family';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Note } from '@/types';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import { useAppStore } from '@/stores/appStore';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -23,8 +23,17 @@ import { Extension } from '@tiptap/core';
 import ResizableImage from './editor/ResizableImageNode';
 import { usePresence } from '@/hooks/use-presence';
 import { useDebounce } from '@/hooks/use-debounce';
-import { MessageSquarePlus } from 'lucide-react';
+import { MessageSquarePlus, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from './ui/textarea';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -92,6 +101,11 @@ const NoteEditor = () => {
   const [lastSavedContent, setLastSavedContent] = useState('');
   const isBroadcastingRef = useRef(false);
 
+  // State for commenting
+  const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [highlightedTextForComment, setHighlightedTextForComment] = useState<string | null>(null);
+
   const { data: note, isLoading, isError } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
     queryFn: async () => {
@@ -158,6 +172,47 @@ const NoteEditor = () => {
     },
   });
 
+  const addCommentMutation = useMutation({
+    mutationFn: async ({ content, highlighted_text }: { content: string; highlighted_text: string | null }) => {
+      if (!user || !noteId) throw new Error('User or Note ID is missing.');
+      const { error } = await supabase.from('comments').insert({
+        note_id: noteId,
+        user_id: user.id,
+        content,
+        highlighted_text,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess('Comment added!');
+      queryClient.invalidateQueries({ queryKey: ['comments', noteId] });
+      setIsCommentDialogOpen(false);
+      setCommentText('');
+      setHighlightedTextForComment(null);
+    },
+    onError: (error: any) => {
+      showError(`Failed to add comment: ${error.message}`);
+    },
+  });
+
+  const handleOpenCommentDialog = useCallback(() => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    const text = editor.state.doc.textBetween(from, to, ' ');
+    if (!text.trim()) return;
+    
+    setHighlightedTextForComment(text);
+    setIsCommentDialogOpen(true);
+  }, [editor]);
+
+  const handleCommentSubmit = () => {
+    if (!commentText.trim()) {
+      showError("Comment cannot be empty.");
+      return;
+    }
+    addCommentMutation.mutate({ content: commentText, highlighted_text: highlightedTextForComment });
+  };
+
   useEffect(() => {
     if (debouncedTitle && debouncedTitle !== title) {
       channel?.send({
@@ -187,9 +242,10 @@ const NoteEditor = () => {
     };
     channel.on('broadcast', { event: 'content-update' }, contentUpdateHandler);
     channel.on('broadcast', { event: 'title-update' }, titleUpdateHandler);
-
-    // The cleanup logic that was causing the crash has been removed.
-    // The usePresence hook now handles the entire lifecycle of the channel.
+    return () => {
+      channel.off('broadcast', { event: 'content-update' }, contentUpdateHandler);
+      channel.off('broadcast', { event: 'title-update' }, titleUpdateHandler);
+    };
   }, [channel, editor, user?.id]);
 
   useEffect(() => {
@@ -348,20 +404,6 @@ const NoteEditor = () => {
     noteTitle: title,
   };
 
-  if (isMobileView) {
-    return (
-      <div className="w-full h-screen flex flex-col bg-background">
-        <div className="p-4 border-b border-border/50">
-          <NoteHeader {...commonProps} presentUsers={presentUsers} />
-        </div>
-        <div className="flex-grow overflow-y-auto px-4 pb-24">
-          <EditorContent editor={editor} />
-        </div>
-        <NoteEditorToolbar {...commonProps} />
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 w-full overflow-y-auto h-screen flex flex-col">
       <div className="max-w-4xl w-full mx-auto">
@@ -376,11 +418,16 @@ const NoteEditor = () => {
         <NoteEditorToolbar {...commonProps} />
         <div className="mt-2 flex-grow overflow-y-auto bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg p-4">
           {editor && (
-            <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
+            <BubbleMenu editor={editor} tippyOptions={{ duration: 100,
+              shouldShow: ({ editor, view, state, from, to }) => {
+                // only show the bubble menu if text is selected.
+                return from !== to
+              }
+            }}>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => alert('Add comment clicked!')}
+                onClick={handleOpenCommentDialog}
               >
                 <MessageSquarePlus className="h-4 w-4 mr-2" />
                 Comment
@@ -390,6 +437,30 @@ const NoteEditor = () => {
           <EditorContent editor={editor} />
         </div>
       </div>
+      <Dialog open={isCommentDialogOpen} onOpenChange={setIsCommentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add a comment</DialogTitle>
+            {highlightedTextForComment && (
+              <DialogDescription className="mt-2">
+                Replying to: <span className="italic">"{highlightedTextForComment}"</span>
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <Textarea 
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="What are your thoughts?"
+            className="mt-4"
+          />
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsCommentDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleCommentSubmit} disabled={addCommentMutation.isPending}>
+              {addCommentMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add Comment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
