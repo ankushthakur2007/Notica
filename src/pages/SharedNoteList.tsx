@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Search, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import SkeletonCard from '@/components/SkeletonCard';
 
 const SharedNoteList = () => {
   const { sharedNotes, isFetchingNotes } = useAppStore();
@@ -16,14 +17,6 @@ const SharedNoteList = () => {
   const filteredSharedNotes = sharedNotes.filter(note =>
     note.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  if (isFetchingNotes) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Loading shared notes...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="p-4 sm:p-6 w-full max-w-6xl mx-auto overflow-y-auto h-full animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.2s' }}>
@@ -40,7 +33,11 @@ const SharedNoteList = () => {
         </div>
       </div>
 
-      {filteredSharedNotes.length === 0 ? (
+      {isFetchingNotes ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : filteredSharedNotes.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center border-2 border-dashed rounded-lg mt-8 animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.4s' }}>
           <Users className="h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-xl sm:text-2xl font-bold mb-2">{searchTerm ? 'No notes found' : 'No shared notes yet!'}</h2>

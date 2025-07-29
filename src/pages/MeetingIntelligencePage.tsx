@@ -6,7 +6,7 @@ import { Meeting } from '@/types';
 import MeetingList from '@/components/MeetingList';
 import MeetingRecorder from '@/components/MeetingRecorder';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Loader2, BrainCircuit } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showError, showSuccess } from '@/utils/toast';
 import { SUPPORTED_LANGUAGES } from '@/lib/constants';
+import SkeletonMeetingCard from '@/components/SkeletonMeetingCard';
 
 const fetchMeetings = async (userId: string): Promise<Meeting[]> => {
   const { data, error } = await supabase
@@ -104,15 +105,6 @@ const MeetingIntelligencePage = () => {
     refetch();
   };
 
-  if (isLoading) {
-    return (
-        <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-4 text-muted-foreground">Loading meetings...</p>
-        </div>
-    );
-  }
-
   if (isRecording) {
     return <MeetingRecorder title={selectedMeetingTitle} language={selectedLanguage} onRecordingFinish={() => {
       setIsRecording(false);
@@ -169,10 +161,15 @@ const MeetingIntelligencePage = () => {
           </DialogContent>
         </Dialog>
       </div>
-      {meetings && meetings.length > 0 ? (
+      {isLoading ? (
+        <div className="grid gap-6 md:grid-cols-2">
+          {[...Array(4)].map((_, i) => <SkeletonMeetingCard key={i} />)}
+        </div>
+      ) : meetings && meetings.length > 0 ? (
         <MeetingList meetings={meetings} onDeleteMeeting={handleDeleteMeeting} />
       ) : (
         <div className="text-center py-16 border-2 border-dashed rounded-lg mt-8">
+          <BrainCircuit className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
           <h3 className="text-xl font-semibold">No meetings recorded yet</h3>
           <p className="text-muted-foreground mt-2">Click "Record New Meeting" to get started.</p>
         </div>

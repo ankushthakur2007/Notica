@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { PlusCircle, Search, Link as LinkIcon, NotebookText } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import CreateFromUrlDialog from '@/components/CreateFromUrlDialog';
+import SkeletonCard from './SkeletonCard';
 
 const NoteList = () => {
   const { user, notes, isFetchingNotes, addNote } = useAppStore();
@@ -62,7 +63,7 @@ const NoteList = () => {
 
       if (error) throw error;
 
-      addNote(data); // Add to store for immediate UI update
+      addNote(data);
       showSuccess('Note created successfully!');
       setIsCreateNoteDialogOpen(false);
       setNewNoteTitle('Untitled Note');
@@ -78,14 +79,6 @@ const NoteList = () => {
   const filteredNotes = notes.filter(note =>
     note.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  if (isFetchingNotes) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Loading your notes...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="p-4 sm:p-6 w-full max-w-6xl mx-auto overflow-y-auto h-full animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.2s' }}>
@@ -150,7 +143,11 @@ const NoteList = () => {
       
       <CreateFromUrlDialog isOpen={isCreateFromUrlDialogOpen} onOpenChange={setIsCreateFromUrlDialogOpen} />
       
-      {filteredNotes.length === 0 ? (
+      {isFetchingNotes ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : filteredNotes.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center border-2 border-dashed border-border/50 rounded-lg mt-8 animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.4s' }}>
           <NotebookText className="h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-xl sm:text-2xl font-bold mb-2">{searchTerm ? 'No notes found' : 'No notes yet!'}</h2>
