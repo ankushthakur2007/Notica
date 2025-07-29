@@ -403,9 +403,12 @@ const NoteEditor = ({ note }: NoteEditorProps) => {
           presentUsers={presentUsers}
         />
         <NoteEditorToolbar {...commonProps} />
-        <div className="mt-2 flex-grow overflow-y-auto bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg p-4 relative z-20">
+        <div className="mt-2 flex-grow overflow-y-auto bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg p-4 relative">
           {editor && (
-            <BubbleMenu editor={editor} tippyOptions={{ duration: 100,
+            <BubbleMenu editor={editor} tippyOptions={{ 
+              duration: 100,
+              zIndex: 99,
+              placement: 'bottom-start',
               shouldShow: ({ editor, view, state, from, to }) => {
                 return from !== to
               }
