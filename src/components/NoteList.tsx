@@ -98,7 +98,7 @@ const NoteList = () => {
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full bg-card/50 dark:bg-gray-900/50 border-border/50 backdrop-blur-md"
+              className="pl-10 w-full bg-card/50 dark:bg-gray-900/50 border-white/10 backdrop-blur-md"
             />
           </div>
           
@@ -109,7 +109,7 @@ const NoteList = () => {
 
           <Dialog open={isCreateNoteDialogOpen} onOpenChange={setIsCreateNoteDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">
+              <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">New Note</span>
               </Button>
@@ -139,7 +139,7 @@ const NoteList = () => {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCreateNoteDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" onClick={handleCreateNewNote} disabled={isCreatingNote} variant="outline">
+                <Button type="submit" onClick={handleCreateNewNote} disabled={isCreatingNote}>
                   {isCreatingNote ? 'Creating...' : 'Create'}
                 </Button>
               </DialogFooter>
@@ -151,7 +151,7 @@ const NoteList = () => {
       <CreateFromUrlDialog isOpen={isCreateFromUrlDialogOpen} onOpenChange={setIsCreateFromUrlDialogOpen} />
       
       {filteredNotes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center border-2 border-dashed rounded-lg mt-8 animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.4s' }}>
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center border-2 border-dashed border-border/50 rounded-lg mt-8 animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.4s' }}>
           <NotebookText className="h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-xl sm:text-2xl font-bold mb-2">{searchTerm ? 'No notes found' : 'No notes yet!'}</h2>
           <p className="text-muted-foreground">{searchTerm ? 'Try a different search term.' : 'Click "New Note" to get started.'}</p>
@@ -161,7 +161,7 @@ const NoteList = () => {
           {filteredNotes.map((note, index) => (
             <Card 
               key={note.id} 
-              className="bg-card border rounded-lg shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-1 cursor-pointer"
+              className="bg-card/50 dark:bg-gray-900/50 border border-white/10 backdrop-blur-sm shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
               style={{ animationDelay: `${index * 50}ms` }}
               onClick={() => navigate(`/dashboard/edit-note/${note.id}`)}
             >
@@ -169,7 +169,7 @@ const NoteList = () => {
                 <CardTitle className="text-lg font-semibold">{note.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-2 line-clamp-3">{note.content ? 'Content available' : 'No content preview available.'}</p>
+                <p className="text-sm text-muted-foreground mb-2 line-clamp-3 min-h-[60px]">{note.content && note.content !== '<p></p>' ? 'Content available' : 'No content preview available.'}</p>
                 <p className="text-xs text-gray-500">Created: {format(new Date(note.created_at), 'PPP')}</p>
                 <p className="text-xs text-gray-500">Updated: {format(new Date(note.updated_at), 'PPP')}</p>
               </CardContent>

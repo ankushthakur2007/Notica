@@ -11,14 +11,14 @@ const TryNow = () => {
   return (
     <div className="min-h-screen w-full bg-background text-foreground overflow-x-hidden">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center p-4 bg-background/30 backdrop-blur-sm">
+      <header className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center p-4 bg-background/30 backdrop-blur-sm border-b border-white/10">
         <div className="flex items-center space-x-2">
           <img src="/logo.png" alt="Notica Logo" className="h-8 w-auto" />
           <span className="font-semibold text-lg hidden sm:inline">Notica</span>
         </div>
         <div className="flex items-center space-x-2 sm:space-x-4">
           <ThemeToggle />
-          <Button onClick={() => navigate('/login')} className="bg-foreground text-background hover:bg-foreground/90 px-3 sm:px-4">
+          <Button onClick={() => navigate('/login')} className="bg-foreground text-background hover:bg-foreground/90 px-3 sm:px-4 shadow-md hover:shadow-lg transition-shadow">
             Get Started
           </Button>
         </div>
@@ -26,8 +26,9 @@ const TryNow = () => {
 
       {/* Background Glow */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-        <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-200/50 dark:bg-purple-500/30 rounded-full filter blur-3xl animate-float-1 [will-change:transform]"></div>
-        <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-200/50 dark:bg-blue-500/30 rounded-full filter blur-3xl animate-float-2 [will-change:transform]"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-background to-background"></div>
+        <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-500 rounded-full filter blur-3xl animate-background-glow-1 [will-change:transform,opacity]"></div>
+        <div className="absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-500 rounded-full filter blur-3xl animate-background-glow-2 [will-change:transform,opacity]"></div>
       </div>
 
       {/* Main Content */}
@@ -44,13 +45,13 @@ const TryNow = () => {
 
         {/* Floating Editor Mockup */}
         <div className="relative max-w-4xl mx-auto px-4 z-10">
-          <div className="bg-card/50 dark:bg-gray-900/50 border rounded-xl shadow-lg dark:shadow-2xl dark:shadow-purple-500/10 backdrop-blur-md p-4 animate-fade-in-up opacity-0 [will-change:transform,opacity]" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>
+          <div className="bg-card/50 dark:bg-gray-900/50 border border-white/10 rounded-xl shadow-2xl shadow-black/20 backdrop-blur-md p-4 animate-fade-in-up opacity-0 [will-change:transform,opacity]" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>
             <div className="flex items-center space-x-1.5 mb-3">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
               <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
             </div>
-            <div className="bg-muted/50 dark:bg-gray-800/50 rounded-lg p-6 min-h-[200px]">
+            <div className="bg-muted/30 dark:bg-gray-800/50 rounded-lg p-6 min-h-[200px]">
               <h2 className="text-xl font-bold text-foreground mb-2">Meeting Recap & AI Insights</h2>
               <p className="text-muted-foreground">✅ Key decision: Proceed with Q3 launch.</p>
               <p className="text-muted-foreground">💡 Idea: Integrate new user feedback module.</p>
@@ -61,7 +62,7 @@ const TryNow = () => {
 
         {/* Features Section */}
         <div className="max-w-6xl mx-auto mt-24 px-4 grid md:grid-cols-3 gap-8 relative z-10">
-          <Card className="bg-card/80 dark:bg-gray-900/50 border text-center p-6 flex flex-col items-center hover:border-purple-500/50 transition-colors duration-300">
+          <Card className="bg-card/50 dark:bg-gray-900/50 border border-white/10 text-center p-6 flex flex-col items-center backdrop-blur-sm shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
             <Sparkles className="h-10 w-10 text-purple-500 dark:text-purple-400 mb-4" />
             <CardHeader>
               <CardTitle className="text-xl font-semibold text-card-foreground">AI Superpowers</CardTitle>
@@ -73,7 +74,7 @@ const TryNow = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/80 dark:bg-gray-900/50 border text-center p-6 flex flex-col items-center hover:border-blue-500/50 transition-colors duration-300">
+          <Card className="bg-card/50 dark:bg-gray-900/50 border border-white/10 text-center p-6 flex flex-col items-center backdrop-blur-sm shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
             <Mic className="h-10 w-10 text-blue-500 dark:text-blue-400 mb-4" />
             <CardHeader>
               <CardTitle className="text-xl font-semibold text-card-foreground">Seamless Voice Capture</CardTitle>
@@ -85,7 +86,7 @@ const TryNow = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/80 dark:bg-gray-900/50 border text-center p-6 flex flex-col items-center hover:border-green-500/50 transition-colors duration-300">
+          <Card className="bg-card/50 dark:bg-gray-900/50 border border-white/10 text-center p-6 flex flex-col items-center backdrop-blur-sm shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
             <Users className="h-10 w-10 text-green-500 dark:text-green-400 mb-4" />
             <CardHeader>
               <CardTitle className="text-xl font-semibold text-card-foreground">Effortless Collaboration</CardTitle>
