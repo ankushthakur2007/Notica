@@ -14,7 +14,10 @@ serve(async (req) => {
   try {
     const { note_id, email, permission_level } = await req.json()
     if (!note_id || !email || !permission_level) {
-      throw new Error('note_id, email, and permission_level are required.');
+      return new Response(JSON.stringify({ error: 'note_id, email, and permission_level are required.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
     }
 
     const supabaseAdmin = createClient(
@@ -22,23 +25,22 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Find the user to add as a collaborator by email
-    const { data: { users }, error: listUsersError } = await supabaseAdmin.auth.admin.listUsers();
-    if (listUsersError) throw listUsersError;
+    // Use the more efficient and secure admin method to get the user by their email
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
 
-    const collaboratorUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
-
-    if (!collaboratorUser) {
-      throw new Error('User with that email not found.');
+    if (userError || !user) {
+        return new Response(JSON.stringify({ error: "User with that email not found." }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 404, // Not Found
+        });
     }
 
     // Insert the new collaborator
-    // RLS policy "Note owner can add collaborators" will enforce that only the owner can perform this action.
     const { error: insertError } = await supabaseAdmin
       .from('collaborators')
       .insert({
         note_id,
-        user_id: collaboratorUser.id,
+        user_id: user.id,
         permission_level,
       })
       .select();
