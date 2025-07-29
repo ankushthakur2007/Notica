@@ -45,7 +45,12 @@ const SettingsDashboard = () => {
   }, [user]);
 
   useEffect(() => {
-    document.documentElement.className = selectedFont;
+    const root = window.document.documentElement;
+    // Remove any old font classes before adding the new one
+    FONT_OPTIONS.forEach(font => root.classList.remove(font.value));
+    // Add the new font class
+    root.classList.add(selectedFont);
+    // Save the preference
     localStorage.setItem('app-font', selectedFont);
   }, [selectedFont]);
 
