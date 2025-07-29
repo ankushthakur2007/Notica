@@ -27,7 +27,7 @@ import { Note } from '@/types';
 import { User } from '@supabase/supabase-js';
 import PresenceAvatars from './PresenceAvatars';
 import { PresentUser } from '@/hooks/use-presence';
-import { exportAsPdf, exportAsDocx, exportAsPlainText, copyToClipboard } from '@/utils/export';
+import { exportAsPdf, exportAsPlainText, copyToClipboard } from '@/utils/export';
 import { showError } from '@/utils/toast';
 
 interface NoteHeaderProps {
@@ -71,7 +71,7 @@ const NoteHeader = ({
 }: NoteHeaderProps) => {
   const isMobileView = useIsMobile();
 
-  const handleExport = (format: 'pdf' | 'docx' | 'txt' | 'clipboard') => {
+  const handleExport = (format: 'pdf' | 'txt' | 'clipboard') => {
     if (!editorContent || editorContent === '<p></p>') {
       showError("There is no content to export.");
       return;
@@ -79,9 +79,6 @@ const NoteHeader = ({
     switch (format) {
       case 'pdf':
         exportAsPdf(title, editorContent);
-        break;
-      case 'docx':
-        exportAsDocx(title, editorContent);
         break;
       case 'txt':
         exportAsPlainText(title, editorContent);
@@ -97,10 +94,6 @@ const NoteHeader = ({
       <DropdownMenuItem onSelect={() => handleExport('pdf')}>
         <FileType className="mr-2 h-4 w-4" />
         <span>Export as PDF</span>
-      </DropdownMenuItem>
-      <DropdownMenuItem onSelect={() => handleExport('docx')}>
-        <FileType className="mr-2 h-4 w-4" />
-        <span>Export as DOCX</span>
       </DropdownMenuItem>
       <DropdownMenuItem onSelect={() => handleExport('txt')}>
         <FileText className="mr-2 h-4 w-4" />

@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import htmlDocx from 'html-docx-js';
 import { saveAs } from 'file-saver';
 import { showSuccess, showError } from './toast';
 
@@ -41,30 +40,6 @@ export const exportAsPdf = (title: string, htmlContent: string) => {
   } catch (error) {
     console.error('PDF Export Error:', error);
     showError('Failed to export as PDF.');
-  }
-};
-
-export const exportAsDocx = async (title: string, htmlContent: string) => {
-  try {
-    const fullHtml = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <title>${title}</title>
-      </head>
-      <body>
-        <h1>${title}</h1>
-        ${htmlContent}
-      </body>
-      </html>
-    `;
-    const data = htmlDocx.asBlob(fullHtml);
-    saveAs(data, `${title}.docx`);
-    showSuccess('DOCX export started!');
-  } catch (error) {
-    console.error('DOCX Export Error:', error);
-    showError('Failed to export as DOCX.');
   }
 };
 

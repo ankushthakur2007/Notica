@@ -1,9 +1,4 @@
 {
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
   "dependencies": {
     "@capacitor/android": "^7.4.0",
     "@capacitor/cli": "^7.4.0",
@@ -63,8 +58,6 @@
     "dexie": "^4.0.11",
     "embla-carousel-react": "^8.3.0",
     "file-saver": "^2.0.5",
-    "html-docx-js": "^0.3.1",
-    "html-to-docx": "^1.8.0",
     "input-otp": "^1.2.4",
     "jspdf": "^3.0.1",
     "lucide-react": "^0.462.0",
@@ -102,6 +95,5 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^6.3.4"
-  },
-  "packageManager": "pnpm@10.12.1+sha512.f0dda8580f0ee9481c5c79a1d927b9164f2c478e90992ad268bbb2465a736984391d6333d2c327913578b2804af33474ca554ba29c04a8b13060a717675ae3ac"
+  }
 }
