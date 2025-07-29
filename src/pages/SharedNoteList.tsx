@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useAppStore } from '@/stores/appStore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const SharedNoteList = () => {
   const { sharedNotes, isFetchingNotes } = useAppStore();
@@ -49,21 +50,37 @@ const SharedNoteList = () => {
           {filteredSharedNotes.map((note, index) => (
             <Card 
               key={note.id} 
-              className="bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md hover:border-primary/50 transition-all duration-300 cursor-pointer"
+              className="bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md hover:border-primary/50 transition-all duration-300 cursor-pointer flex flex-col"
               style={{ animationDelay: `${index * 50}ms` }}
               onClick={() => navigate(`/dashboard/edit-note/${note.id}`)}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-lg font-semibold">{note.title}</CardTitle>
-                <Badge variant={note.permission_level === 'write' ? 'default' : 'secondary'} className="ml-2">
+                <Badge variant={note.permission_level === 'write' ? 'default' : 'secondary'} className="ml-2 flex-shrink-0">
                   {note.permission_level === 'write' ? 'Editable' : 'Read-Only'}
                 </Badge>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-2 line-clamp-3">{note.content ? 'Content available' : 'No content preview available.'}</p>
-                <p className="text-xs text-gray-500">Created: {format(new Date(note.created_at), 'PPP')}</p>
-                <p className="text-xs text-gray-500">Updated: {format(new Date(note.updated_at), 'PPP')}</p>
+              <CardContent className="flex-grow">
+                <p className="text-sm text-muted-foreground line-clamp-3 min-h-[60px]">
+                  {note.content && note.content !== '<p></p>' ? 'Content available' : 'No content preview available.'}
+                </p>
               </CardContent>
+              <CardFooter className="flex items-center justify-between pt-3 border-t mt-auto">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <Avatar className="h-6 w-6 flex-shrink-0">
+                    <AvatarImage src={note.profiles?.avatar_url || undefined} alt={note.profiles?.first_name || 'Owner'} />
+                    <AvatarFallback>
+                      {note.profiles?.first_name?.[0] || 'O'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs text-muted-foreground truncate">
+                    Shared by {note.profiles?.first_name || 'the owner'}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground flex-shrink-0">
+                  {format(new Date(note.updated_at), 'MMM d')}
+                </p>
+              </CardFooter>
             </Card>
           ))}
         </div>

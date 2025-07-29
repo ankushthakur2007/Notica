@@ -33,10 +33,10 @@ const Dashboard = () => {
         setNotes(notes as Note[]);
       }
 
-      // Fetch notes shared with the user
+      // Fetch notes shared with the user, including the owner's profile
       const { data: shared, error: sharedError } = await supabase
         .from('collaborators')
-        .select('permission_level, notes(*)')
+        .select('permission_level, notes(*, profiles(first_name, last_name, avatar_url))')
         .eq('user_id', session.user.id);
 
       if (sharedError) {
@@ -76,7 +76,6 @@ const Dashboard = () => {
             updateNote(payload.new as Note);
           }
           if (payload.eventType === 'DELETE') {
-            // The old record is available in the payload on delete
             deleteNote((payload.old as Note).id);
           }
         }

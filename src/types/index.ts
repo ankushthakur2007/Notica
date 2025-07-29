@@ -1,3 +1,9 @@
+export interface Profile {
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+}
+
 export interface Note {
   id: string;
   user_id: string;
@@ -5,9 +11,10 @@ export interface Note {
   content: string | null;
   created_at: string;
   updated_at: string;
-  is_sharable_link_enabled: boolean; // New property for shareable link status
-  sharable_link_permission_level?: 'read' | 'write'; // New property for public link permission
-  permission_level?: 'read' | 'write'; // For notes shared via collaboration
+  is_sharable_link_enabled: boolean;
+  sharable_link_permission_level?: 'read' | 'write';
+  permission_level?: 'read' | 'write';
+  profiles?: Profile; // For note owner's profile
 }
 
 export interface Collaborator {
@@ -16,12 +23,10 @@ export interface Collaborator {
   user_id: string;
   permission_level: 'read' | 'write';
   created_at: string;
-  // Add profile details if needed for display, e.g., first_name, last_name, avatar_url
-  // These would be fetched separately or joined in a view/function
   first_name?: string;
   last_name?: string;
   avatar_url?: string | null;
-  email?: string; // Email from auth.users for display
+  email?: string;
 }
 
 export interface Meeting {
