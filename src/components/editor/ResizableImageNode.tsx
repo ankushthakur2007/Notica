@@ -1,27 +1,30 @@
 import React, { useRef, useCallback } from 'react';
-import { Node, mergeAttributes } from '@tiptap/core';
-import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
+import { Node } from '@tiptap/core';
+import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import Image from '@tiptap/extension-image';
 
 // The React component that will be rendered for our custom node
-const ResizableImageView = (props: any) => {
-  const { node, updateAttributes, editor } = props;
-  const imgRef = useRef<HTMLImageElement>(null);
+const ResizableImageView = (props: NodeViewProps) => {
+  const { node, updateAttributes, editor, selected } = props;
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const isResizable = editor.isEditable;
+  const isEditable = editor.isEditable;
 
-  const onMouseDown = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    if (!isResizable || !imgRef.current) return;
+  const onResizeStart = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (!isEditable || !containerRef.current) return;
     event.preventDefault();
 
-    const handle = event.currentTarget;
-    const initialImgWidth = imgRef.current.offsetWidth;
+    const initialWidth = containerRef.current.offsetWidth;
     const startX = event.clientX;
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       const currentX = moveEvent.clientX;
-      const newWidth = initialImgWidth + (currentX - startX);
-      updateAttributes({ width: newWidth });
+      const newWidth = initialWidth + (currentX - startX);
+      
+      // Enforce a minimum width
+      if (newWidth > 50) {
+        updateAttributes({ width: `${newWidth}px` });
+      }
     };
 
     const onMouseUp = () => {
@@ -31,31 +34,30 @@ const ResizableImageView = (props: any) => {
 
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
-  }, [isResizable, updateAttributes]);
+  }, [isEditable, updateAttributes]);
 
   return (
     <NodeViewWrapper
-      className={`relative inline-block ${node.attrs.align === 'left' ? 'float-left mr-4' : ''} ${node.attrs.align === 'right' ? 'float-right ml-4' : ''}`}
+      ref={containerRef}
+      className={`relative my-2 inline-block ${node.attrs.align === 'left' ? 'float-left mr-4' : ''} ${node.attrs.align === 'right' ? 'float-right ml-4' : ''}`}
       style={{ width: node.attrs.width }}
-      data-drag-handle // Important for Tiptap's drag and drop
+      data-drag-handle
     >
       <img
-        ref={imgRef}
         src={node.attrs.src}
         alt={node.attrs.alt}
-        className="block"
-        style={{ width: '100%' }}
+        className="block rounded-md w-full h-auto"
       />
-      {isResizable && (
+      {isEditable && selected && (
         <>
-          <div
-            className="absolute top-0 right-0 w-2 h-full bg-blue-400 opacity-50 cursor-col-resize"
-            onMouseDown={onMouseDown}
-          />
-          <div
-            className="absolute top-0 left-0 w-2 h-full bg-blue-400 opacity-50 cursor-col-resize"
-            onMouseDown={onMouseDown}
-          />
+          {/* Top-left */}
+          <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded z-10 cursor-nwse-resize" onMouseDown={onResizeStart} />
+          {/* Top-right */}
+          <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded z-10 cursor-nesw-resize" onMouseDown={onResizeStart} />
+          {/* Bottom-left */}
+          <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded z-10 cursor-nesw-resize" onMouseDown={onResizeStart} />
+          {/* Bottom-right */}
+          <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-blue-500 border-2 border-white rounded z-10 cursor-nwse-resize" onMouseDown={onResizeStart} />
         </>
       )}
     </NodeViewWrapper>
@@ -73,8 +75,9 @@ export const ResizableImage = Image.extend({
       width: {
         default: '100%',
         renderHTML: attributes => ({
-          width: attributes.width,
+          style: `width: ${attributes.width}`,
         }),
+        parseHTML: element => element.style.width,
       },
       align: {
         default: 'none',
@@ -83,6 +86,21 @@ export const ResizableImage = Image.extend({
         }),
       }
     };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: 'img[src]',
+        getAttrs: (dom) => {
+          if (typeof dom === 'string') return {};
+          const element = dom as HTMLElement;
+          const width = element.style.width;
+          if (!width) return {};
+          return { width };
+        },
+      },
+    ];
   },
 
   addNodeView() {
