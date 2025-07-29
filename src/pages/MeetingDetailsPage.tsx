@@ -102,7 +102,7 @@ const MeetingDetailsPage = () => {
             <h1 className="text-lg font-bold truncate">{meeting.title}</h1>
             <p className="text-xs text-muted-foreground truncate">{`Recorded on ${format(new Date(meeting.created_at), "M/d/yy, p")}`}</p>
           </div>
-          <Button onClick={handleConvertToNote} disabled={isConverting} size="icon" className="ml-2 flex-shrink-0">
+          <Button onClick={handleConvertToNote} disabled={isConverting} size="icon" className="ml-2 flex-shrink-0" variant="outline">
             {isConverting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus2 className="h-4 w-4" />}
             <span className="sr-only">Convert to Note</span>
           </Button>
@@ -145,7 +145,7 @@ const MeetingDetailsPage = () => {
                   <h1 className="text-3xl font-bold mb-2">{meeting.title}</h1>
                   <p className="text-muted-foreground">{`Recorded on ${format(new Date(meeting.created_at), "MMMM d, yyyy 'at' p")}`}</p>
                 </div>
-                <Button onClick={handleConvertToNote} disabled={isConverting}>
+                <Button onClick={handleConvertToNote} disabled={isConverting} variant="outline">
                   {isConverting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FilePlus2 className="mr-2 h-4 w-4" />}
                   {isConverting ? 'Converting...' : 'Convert to Note'}
                 </Button>

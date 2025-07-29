@@ -31,11 +31,11 @@ const Login = () => {
             variables: {
               default: {
                 colors: {
-                  brand: 'hsl(var(--primary))',
-                  brandAccent: 'hsl(var(--primary-foreground))',
-                  brandButtonText: 'hsl(var(--primary-foreground))',
-                  defaultButtonBackground: 'hsl(var(--secondary))',
-                  defaultButtonBackgroundHover: 'hsl(var(--secondary-foreground))',
+                  brand: 'hsl(var(--background))',
+                  brandAccent: 'hsl(var(--accent))',
+                  brandButtonText: 'hsl(var(--foreground))',
+                  defaultButtonBackground: 'hsl(var(--background))',
+                  defaultButtonBackgroundHover: 'hsl(var(--accent))',
                   defaultButtonBorder: 'hsl(var(--border))',
                   defaultButtonText: 'hsl(var(--foreground))',
                   inputBackground: 'hsl(var(--input))',
@@ -49,7 +49,7 @@ const Login = () => {
                   messageBorder: 'hsl(var(--border))',
                   dividerBackground: 'hsl(var(--border))',
                   anchorTextColor: 'hsl(var(--primary))',
-                  anchorTextHoverColor: 'hsl(var(--primary-foreground))',
+                  anchorTextHoverColor: 'hsl(var(--primary))',
                 },
               },
             },

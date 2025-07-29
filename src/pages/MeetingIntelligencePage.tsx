@@ -126,7 +126,7 @@ const MeetingIntelligencePage = () => {
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground self-start sm:self-center">Meeting Intelligence</h2>
         <Dialog open={isNameMeetingDialogOpen} onOpenChange={setIsNameMeetingDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button variant="outline">
               <PlusCircle className="mr-2 h-4 w-4" />
               Record New Meeting
             </Button>
@@ -164,7 +164,7 @@ const MeetingIntelligencePage = () => {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsNameMeetingDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleStartRecording}>Start Recording</Button>
+              <Button onClick={handleStartRecording} variant="outline">Start Recording</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

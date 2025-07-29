@@ -79,7 +79,7 @@ const SettingsDashboard = () => {
   };
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !event.target.files || event.target.files.length === 0) return;
+    if (!user || !event.target.files || !event.target.files.length === 0) return;
     const file = event.target.files[0];
     const filePath = `${user.id}/${user.id}.${file.name.split('.').pop()}`;
     setIsUploadingAvatar(true);
@@ -135,7 +135,7 @@ const SettingsDashboard = () => {
               <Label htmlFor="last-name">Last Name</Label>
               <Input id="last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" />
             </div>
-            <Button type="submit" disabled={isSavingProfile}>{isSavingProfile ? 'Saving...' : 'Save Profile'}</Button>
+            <Button type="submit" disabled={isSavingProfile} variant="outline">{isSavingProfile ? 'Saving...' : 'Save Profile'}</Button>
           </form>
         </CardContent>
       </Card>

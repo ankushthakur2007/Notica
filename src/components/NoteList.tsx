@@ -139,7 +139,7 @@ const NoteList = () => {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCreateNoteDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" onClick={handleCreateNewNote} disabled={isCreatingNote}>
+                <Button type="submit" onClick={handleCreateNewNote} disabled={isCreatingNote} variant="outline">
                   {isCreatingNote ? 'Creating...' : 'Create'}
                 </Button>
               </DialogFooter>

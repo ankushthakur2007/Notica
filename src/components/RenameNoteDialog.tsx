@@ -74,7 +74,7 @@ const RenameNoteDialog = ({ currentTitle, onRename, children }: RenameNoteDialog
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-          <Button type="submit" onClick={handleSave}>Save Changes</Button>
+          <Button type="submit" onClick={handleSave} variant="outline">Save Changes</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
