@@ -14,21 +14,23 @@ export interface PresentUser {
 export const usePresence = (noteId: string | undefined) => {
   const { user } = useAppStore();
   const [presentUsers, setPresentUsers] = useState<PresentUser[]>([]);
+  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!noteId || !user) return;
 
     const channelName = `note:${noteId}`;
-    const channel: RealtimeChannel = supabase.channel(channelName, {
+    const newChannel: RealtimeChannel = supabase.channel(channelName, {
       config: {
         presence: {
           key: user.id,
         },
       },
     });
+    setChannel(newChannel);
 
-    channel.on('presence', { event: 'sync' }, async () => {
-      const presenceState = channel.presenceState();
+    newChannel.on('presence', { event: 'sync' }, async () => {
+      const presenceState = newChannel.presenceState();
       const userIds = Object.keys(presenceState);
       
       if (userIds.length > 0) {
@@ -57,19 +59,19 @@ export const usePresence = (noteId: string | undefined) => {
       }
     });
 
-    channel.subscribe(async (status) => {
+    newChannel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
-        await channel.track({
+        await newChannel.track({
           email: user.email,
         });
       }
     });
 
     return () => {
-      channel.untrack();
-      supabase.removeChannel(channel);
+      newChannel.untrack();
+      supabase.removeChannel(newChannel);
     };
   }, [noteId, user]);
 
-  return { presentUsers };
+  return { presentUsers, channel };
 };

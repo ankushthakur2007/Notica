@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -22,6 +22,7 @@ import NoteHeader from './NoteHeader';
 import { Extension } from '@tiptap/core';
 import ResizableImage from './editor/ResizableImageNode';
 import { usePresence } from '@/hooks/use-presence';
+import { useDebounce } from '@/hooks/use-debounce';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -73,10 +74,12 @@ const NoteEditor = () => {
   const navigate = useNavigate();
   const { noteId } = useParams<{ noteId: string }>();
   const isMobileView = useIsMobile();
-  const { presentUsers } = usePresence(noteId);
+  const { presentUsers, channel } = usePresence(noteId);
 
   const [title, setTitle] = useState('');
   const [currentTitleInput, setCurrentTitleInput] = useState('');
+  const debouncedTitle = useDebounce(currentTitleInput, 500);
+  
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefiningAI, setIsRefiningAI] = useState(false);
@@ -85,6 +88,7 @@ const NoteEditor = () => {
   const [currentFontFamily, setCurrentFontFamily] = useState('Inter');
   const [lastSavedTitle, setLastSavedTitle] = useState('');
   const [lastSavedContent, setLastSavedContent] = useState('');
+  const isBroadcastingRef = useRef(false);
 
   const { data: note, isLoading, isError } = useQuery<Note, Error>({
     queryKey: ['note', noteId],
@@ -136,12 +140,56 @@ const NoteEditor = () => {
         return false;
       },
     },
+    onUpdate: ({ editor }) => {
+      if (isBroadcastingRef.current) return;
+      const content = editor.getHTML();
+      channel?.send({
+        type: 'broadcast',
+        event: 'content-update',
+        payload: { content, senderId: user?.id },
+      });
+    },
     onSelectionUpdate: ({ editor }) => {
       const attrs = editor.getAttributes('textStyle');
       setCurrentFontSize(attrs.fontSize?.replace('px', '') || '16');
       setCurrentFontFamily(attrs.fontFamily || 'Inter');
     },
   });
+
+  useEffect(() => {
+    if (debouncedTitle && debouncedTitle !== title) {
+      channel?.send({
+        type: 'broadcast',
+        event: 'title-update',
+        payload: { title: debouncedTitle, senderId: user?.id },
+      });
+    }
+  }, [debouncedTitle, title, channel, user?.id]);
+
+  useEffect(() => {
+    if (!channel || !editor) return;
+    const contentUpdateHandler = (payload: any) => {
+      if (payload.payload.senderId !== user?.id) {
+        isBroadcastingRef.current = true;
+        const { from, to } = editor.state.selection;
+        editor.commands.setContent(payload.payload.content, false);
+        editor.commands.setTextSelection({ from, to });
+        isBroadcastingRef.current = false;
+      }
+    };
+    const titleUpdateHandler = (payload: any) => {
+      if (payload.payload.senderId !== user?.id) {
+        setCurrentTitleInput(payload.payload.title);
+        setTitle(payload.payload.title);
+      }
+    };
+    channel.on('broadcast', { event: 'content-update' }, contentUpdateHandler);
+    channel.on('broadcast', { event: 'title-update' }, titleUpdateHandler);
+    return () => {
+      channel.off('broadcast', { event: 'content-update' }, contentUpdateHandler);
+      channel.off('broadcast', { event: 'title-update' }, titleUpdateHandler);
+    };
+  }, [channel, editor, user?.id]);
 
   useEffect(() => {
     if (editor) {
