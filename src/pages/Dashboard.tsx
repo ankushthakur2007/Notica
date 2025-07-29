@@ -39,7 +39,7 @@ const Dashboard = () => {
       // Fetch notes shared with the user
       const { data: shared, error: sharedError } = await supabase
         .from('collaborators')
-        .select('permission_level, notes(*, profiles:user_id(id, first_name, last_name, avatar_url))')
+        .select('permission_level, notes(*, profiles!user_id(id, first_name, last_name, avatar_url))')
         .eq('user_id', session.user.id);
 
       if (sharedError) {
