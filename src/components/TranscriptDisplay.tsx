@@ -25,7 +25,7 @@ const TranscriptDisplay = ({ transcript }: TranscriptDisplayProps) => {
   const words = transcript?.results?.channels?.[0]?.alternatives?.[0]?.words;
 
   // Fallback for old text-based transcripts or if the detailed words array is missing
-  if (!words || words.length === 0) {
+  if (!Array.isArray(words) || words.length === 0) {
     const plainText = typeof transcript === 'string' ? transcript : transcript?.results?.channels?.[0]?.alternatives?.[0]?.transcript;
     return (
       <div>
@@ -52,7 +52,7 @@ const TranscriptDisplay = ({ transcript }: TranscriptDisplayProps) => {
     const startTime = parseInt(startTimeStr, 10);
     const speakerGroups: { speaker: number; text: string }[] = [];
     
-    if (wordsInChunk.length > 0) {
+    if (Array.isArray(wordsInChunk) && wordsInChunk.length > 0) {
       let currentSpeaker = wordsInChunk[0].speaker;
       let currentText = '';
 

@@ -42,7 +42,7 @@ const CommentThread = ({ comment, isNoteOwner, onReply, onResolve, onDelete }: C
         <p className="text-sm text-muted-foreground mt-1">{c.content}</p>
         <div className="flex items-center gap-2 mt-2">
           {user?.id === c.user_id && (
-            <Button variant="ghost" size="xs" className="text-destructive" onClick={() => onDelete(c.id)}>
+            <Button variant="ghost" size="sm" className="text-destructive h-auto px-2 py-1 text-xs" onClick={() => onDelete(c.id)}>
               <Trash2 className="h-3 w-3 mr-1" /> Delete
             </Button>
           )}
@@ -60,11 +60,11 @@ const CommentThread = ({ comment, isNoteOwner, onReply, onResolve, onDelete }: C
       )}
       <CommentCard c={comment} />
       <div className="flex items-center gap-2 mt-2 ml-11">
-        <Button variant="ghost" size="xs" onClick={() => setIsReplying(!isReplying)}>
+        <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs" onClick={() => setIsReplying(!isReplying)}>
           <CornerDownRight className="h-3 w-3 mr-1" /> Reply
         </Button>
         {isNoteOwner && (
-          <Button variant="ghost" size="xs" onClick={() => onResolve(comment.id, !comment.is_resolved)}>
+          <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs" onClick={() => onResolve(comment.id, !comment.is_resolved)}>
             <Check className="h-3 w-3 mr-1" /> {comment.is_resolved ? 'Unresolve' : 'Resolve'}
           </Button>
         )}

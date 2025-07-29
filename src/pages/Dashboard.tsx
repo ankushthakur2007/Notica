@@ -37,43 +37,25 @@ const Dashboard = () => {
       // Fetch notes shared with the user
       const { data: shared, error: sharedError } = await supabase
         .from('collaborators')
-        .select('permission_level, notes(*)')
+        .select('permission_level, notes(*, profiles(id, first_name, last_name, avatar_url))')
         .eq('user_id', session.user.id);
 
       if (sharedError) {
         console.error('Error fetching shared notes:', sharedError);
       } else {
-        const notesFromCollaborations = shared?.map(item => item.notes).filter(Boolean) as Note[];
-        const ownerIds = [...new Set(notesFromCollaborations.map(n => n.user_id))];
-
-        if (ownerIds.length > 0) {
-          const { data: profiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, first_name, last_name, avatar_url')
-            .in('id', ownerIds);
-
-          if (profilesError) {
-            console.error('Error fetching owner profiles:', profilesError);
-          } else {
-            const profilesMap = new Map(profiles.map(p => [p.id, p]));
-            const sharedNotesData = shared?.map(item => {
-              const noteData = item.notes as unknown as Note;
-              if (noteData) {
-                return { 
-                  ...noteData, 
-                  permission_level: item.permission_level as 'read' | 'write',
-                  profiles: profilesMap.get(noteData.user_id) 
-                };
-              }
-              return null;
-            }).filter(Boolean);
-            
-            if (sharedNotesData) {
-              setSharedNotes(sharedNotesData as Note[]);
-            }
+        const sharedNotesData = shared?.map(item => {
+          const noteData = item.notes as unknown as Note;
+          if (noteData) {
+            return { 
+              ...noteData, 
+              permission_level: item.permission_level as 'read' | 'write',
+            };
           }
-        } else {
-          setSharedNotes([]);
+          return null;
+        }).filter((note): note is Note => note !== null);
+        
+        if (sharedNotesData) {
+          setSharedNotes(sharedNotesData);
         }
       }
       
@@ -105,7 +87,7 @@ const Dashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session]);
+  }, [session, setNotes, setSharedNotes, startFetchingNotes, finishFetchingNotes, addNote, updateNote, deleteNote]);
 
   if (!session) {
     navigate('/login', { replace: true });

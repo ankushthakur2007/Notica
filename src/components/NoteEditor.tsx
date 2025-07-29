@@ -406,13 +406,16 @@ const NoteEditor = ({ note }: NoteEditorProps) => {
         <NoteEditorToolbar {...commonProps} />
         <div className="mt-2 flex-grow overflow-y-auto bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg p-4 relative">
           {editor && (
-            <BubbleMenu editor={editor} tippyOptions={{ 
-              duration: 100,
-              zIndex: 99,
-              shouldShow: ({ editor, view, state, from, to }) => {
+            <BubbleMenu 
+              editor={editor} 
+              tippyOptions={{ 
+                duration: 100,
+                zIndex: 99,
+              }}
+              shouldShow={({ editor, view, state, from, to }) => {
                 return from !== to
-              }
-            }}>
+              }}
+            >
               <Button
                 size="sm"
                 variant="outline"

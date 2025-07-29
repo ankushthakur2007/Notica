@@ -4,6 +4,29 @@ import { Mic, MicOff } from 'lucide-react';
 import { showError } from '@/utils/toast';
 import { cn } from '@/lib/utils';
 
+// Add type definitions for the Web Speech API
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: Event & { error: string }) => void;
+  onend: () => void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
+
 interface VoiceRecorderProps {
   onTranscription: (text: string) => void;
   isIconButton?: boolean;
@@ -15,7 +38,7 @@ const VoiceRecorder = ({ onTranscription, isIconButton = false }: VoiceRecorderP
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setIsSupported(false);
       return;

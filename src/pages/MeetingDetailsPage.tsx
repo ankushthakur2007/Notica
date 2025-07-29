@@ -76,12 +76,12 @@ const MeetingDetailsPage = () => {
       if (insertError) throw insertError;
 
       addNote(newNote);
-      dismissToast(toastId);
+      dismissToast(String(toastId));
       showSuccess('Note created successfully!');
       navigate(`/dashboard/edit-note/${newNoteId}`);
 
     } catch (error: any) {
-      dismissToast(toastId);
+      dismissToast(String(toastId));
       showError(`Failed to create note: ${error.message}`);
     } finally {
       setIsConverting(false);

@@ -187,7 +187,7 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, s
             <div className="space-y-4">
               <Label htmlFor="user-search">Add Collaborator by Email</Label>
               <div className="flex space-x-2">
-                <Input id="user-search" placeholder="Enter user's email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} disabled={!isNoteOwner || addCollaboratorMutation.isLoading} />
+                <Input id="user-search" placeholder="Enter user's email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} disabled={!isNoteOwner || addCollaboratorMutation.isPending} />
                 <Select value={newPermissionLevel} onValueChange={(value: 'read' | 'write') => setNewPermissionLevel(value)} disabled={!isNoteOwner}>
                   <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -195,8 +195,8 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, s
                     <SelectItem value="write">Editable</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={handleAddCollaborator} disabled={!searchTerm.trim() || addCollaboratorMutation.isLoading}>
-                  {addCollaboratorMutation.isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                <Button onClick={handleAddCollaborator} disabled={!searchTerm.trim() || addCollaboratorMutation.isPending}>
+                  {addCollaboratorMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
                 </Button>
               </div>
               <div>
