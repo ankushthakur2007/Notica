@@ -187,10 +187,9 @@ const NoteEditor = () => {
     };
     channel.on('broadcast', { event: 'content-update' }, contentUpdateHandler);
     channel.on('broadcast', { event: 'title-update' }, titleUpdateHandler);
-    return () => {
-      channel.off('broadcast', { event: 'content-update' }, contentUpdateHandler);
-      channel.off('broadcast', { event: 'title-update' }, titleUpdateHandler);
-    };
+
+    // The cleanup logic that was causing the crash has been removed.
+    // The usePresence hook now handles the entire lifecycle of the channel.
   }, [channel, editor, user?.id]);
 
   useEffect(() => {
