@@ -109,7 +109,7 @@ const NoteList = () => {
 
           <Dialog open={isCreateNoteDialogOpen} onOpenChange={setIsCreateNoteDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button variant="outline">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">New Note</span>
               </Button>
