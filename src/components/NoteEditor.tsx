@@ -21,6 +21,7 @@ import NoteEditorToolbar from './NoteEditorToolbar';
 import NoteHeader from './NoteHeader';
 import { Extension } from '@tiptap/core';
 import ResizableImage from './editor/ResizableImageNode';
+import { usePresence } from '@/hooks/use-presence';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -72,6 +73,7 @@ const NoteEditor = () => {
   const navigate = useNavigate();
   const { noteId } = useParams<{ noteId: string }>();
   const isMobileView = useIsMobile();
+  const { presentUsers } = usePresence(noteId);
 
   const [title, setTitle] = useState('');
   const [currentTitleInput, setCurrentTitleInput] = useState('');
@@ -301,7 +303,7 @@ const NoteEditor = () => {
     return (
       <div className="w-full h-screen flex flex-col bg-background">
         <div className="p-4 border-b border-border/50">
-          <NoteHeader {...commonProps} />
+          <NoteHeader {...commonProps} presentUsers={presentUsers} />
         </div>
         <div className="flex-grow overflow-y-auto px-4 pb-24">
           <EditorContent editor={editor} />
@@ -320,6 +322,7 @@ const NoteEditor = () => {
           setCurrentTitleInput={setCurrentTitleInput}
           onSaveNote={() => saveNote(currentTitleInput, editor?.getHTML() || '')}
           editorContent={editor?.getHTML() || ''}
+          presentUsers={presentUsers}
         />
         <NoteEditorToolbar {...commonProps} />
         <div className="mt-2 flex-grow overflow-y-auto bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg p-4">

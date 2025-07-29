@@ -25,6 +25,8 @@ import RenameNoteDialog from '@/components/RenameNoteDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Note } from '@/types';
 import { User } from '@supabase/supabase-js';
+import PresenceAvatars from './PresenceAvatars';
+import { PresentUser } from '@/hooks/use-presence';
 
 interface NoteHeaderProps {
   noteId: string | undefined;
@@ -43,6 +45,7 @@ interface NoteHeaderProps {
   onToggleShareableLink: (checked: boolean, permissionLevel: 'read' | 'write') => Promise<void>;
   editorContent?: string;
   onNavigateToYourNotes: () => void;
+  presentUsers: PresentUser[];
 }
 
 const NoteHeader = ({
@@ -62,6 +65,7 @@ const NoteHeader = ({
   onToggleShareableLink,
   editorContent,
   onNavigateToYourNotes,
+  presentUsers,
 }: NoteHeaderProps) => {
   const isMobileView = useIsMobile();
 
@@ -144,7 +148,8 @@ const NoteHeader = ({
         disabled={!canEdit}
       />
       
-      <div className="flex space-x-2">
+      <div className="flex items-center space-x-2">
+        <PresenceAvatars users={presentUsers} selfId={user?.id} />
         {noteId && note && user && !isNewNote && (
           <NoteCollaborationDialog 
             noteId={noteId} 
