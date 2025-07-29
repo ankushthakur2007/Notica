@@ -1,7 +1,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Trash2, MoreVertical, ChevronLeft, Share2 } from 'lucide-react';
+import { Trash2, MoreVertical, ChevronLeft, Share2, Download, FileType, FileText, Copy } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +27,8 @@ import { Note } from '@/types';
 import { User } from '@supabase/supabase-js';
 import PresenceAvatars from './PresenceAvatars';
 import { PresentUser } from '@/hooks/use-presence';
+import { exportAsPdf, exportAsDocx, exportAsPlainText, copyToClipboard } from '@/utils/export';
+import { showError } from '@/utils/toast';
 
 interface NoteHeaderProps {
   noteId: string | undefined;
@@ -69,6 +71,48 @@ const NoteHeader = ({
 }: NoteHeaderProps) => {
   const isMobileView = useIsMobile();
 
+  const handleExport = (format: 'pdf' | 'docx' | 'txt' | 'clipboard') => {
+    if (!editorContent || editorContent === '<p></p>') {
+      showError("There is no content to export.");
+      return;
+    }
+    switch (format) {
+      case 'pdf':
+        exportAsPdf(title, editorContent);
+        break;
+      case 'docx':
+        exportAsDocx(title, editorContent);
+        break;
+      case 'txt':
+        exportAsPlainText(title, editorContent);
+        break;
+      case 'clipboard':
+        copyToClipboard(editorContent);
+        break;
+    }
+  };
+
+  const ExportMenuItems = () => (
+    <>
+      <DropdownMenuItem onSelect={() => handleExport('pdf')}>
+        <FileType className="mr-2 h-4 w-4" />
+        <span>Export as PDF</span>
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => handleExport('docx')}>
+        <FileType className="mr-2 h-4 w-4" />
+        <span>Export as DOCX</span>
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => handleExport('txt')}>
+        <FileText className="mr-2 h-4 w-4" />
+        <span>Export as Plain Text</span>
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => handleExport('clipboard')}>
+        <Copy className="mr-2 h-4 w-4" />
+        <span>Copy Content</span>
+      </DropdownMenuItem>
+    </>
+  );
+
   if (isMobileView) {
     return (
       <div className="flex justify-between items-center">
@@ -104,6 +148,8 @@ const NoteHeader = ({
                 </DropdownMenuItem>
               </NoteCollaborationDialog>
             )}
+            <DropdownMenuSeparator />
+            <ExportMenuItems />
             <DropdownMenuSeparator />
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -164,6 +210,17 @@ const NoteHeader = ({
             <Button variant="outline">Rename</Button>
           </RenameNoteDialog>
         )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <ExportMenuItems />
+          </DropdownMenuContent>
+        </DropdownMenu>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" disabled={isDeleting || !isNoteOwner}>
