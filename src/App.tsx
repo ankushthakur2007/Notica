@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -19,6 +19,7 @@ import MeetingDetailsPage from "./pages/MeetingDetailsPage";
 // Component imports
 import NoteList from "./components/NoteList";
 import SharedNoteList from "./components/SharedNoteList";
+import { Loader2 } from "lucide-react";
 
 // Zustand store and Supabase client
 import { useAppStore } from './stores/appStore';
@@ -29,16 +30,7 @@ const queryClient = new QueryClient();
 // Component to handle protected routes
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const session = useAppStore((state) => state.session);
-    const isLoadingSession = useAppStore((state) => state.isLoadingSession);
     const location = useLocation();
-
-    if (isLoadingSession) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-                <p>Loading application...</p>
-            </div>
-        );
-    }
 
     if (!session) {
         return <Navigate to="/login" state={{ from: location }} replace />;
@@ -48,7 +40,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppContent = () => {
-  const { session, setSession, startLoadingSession, finishLoadingSession } = useAppStore();
+  const { session, setSession, startLoadingSession, finishLoadingSession, isLoadingSession } = useAppStore();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     startLoadingSession();
@@ -66,6 +63,15 @@ const AppContent = () => {
 
     return () => subscription.unsubscribe();
   }, [setSession, startLoadingSession, finishLoadingSession]);
+
+  // Show a loader while the session is loading OR before the component has mounted on the client
+  if (isLoadingSession || !isMounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <Loader2 className="h-10 w-10 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <Routes>
