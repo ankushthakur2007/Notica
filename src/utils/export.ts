@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import { asBlob } from 'html-to-docx';
+import * as HTMLToDOCX from 'html-to-docx';
 import { saveAs } from 'file-saver';
 import { showSuccess, showError } from './toast';
 
@@ -59,7 +59,7 @@ export const exportAsDocx = async (title: string, htmlContent: string) => {
       </body>
       </html>
     `;
-    const data = await asBlob(fullHtml);
+    const data = await HTMLToDOCX.asBlob(fullHtml);
     saveAs(data, `${title}.docx`);
     showSuccess('DOCX export started!');
   } catch (error) {
