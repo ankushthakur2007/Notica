@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useEditor, EditorContent, Editor } from '@tiptap/react';
+import { useEditor, EditorContent, Editor, BubbleMenu } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -23,6 +23,8 @@ import { Extension } from '@tiptap/core';
 import ResizableImage from './editor/ResizableImageNode';
 import { usePresence } from '@/hooks/use-presence';
 import { useDebounce } from '@/hooks/use-debounce';
+import { MessageSquarePlus } from 'lucide-react';
+import { Button } from './ui/button';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -374,6 +376,18 @@ const NoteEditor = () => {
         />
         <NoteEditorToolbar {...commonProps} />
         <div className="mt-2 flex-grow overflow-y-auto bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg p-4">
+          {editor && (
+            <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => alert('Add comment clicked!')}
+              >
+                <MessageSquarePlus className="h-4 w-4 mr-2" />
+                Comment
+              </Button>
+            </BubbleMenu>
+          )}
           <EditorContent editor={editor} />
         </div>
       </div>

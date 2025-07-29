@@ -42,3 +42,16 @@ export interface Meeting {
   key_decisions: string[] | null;
   chat_history?: { sender: 'user' | 'ai'; text: string }[] | null;
 }
+
+export interface Comment {
+  id: string;
+  created_at: string;
+  note_id: string;
+  user_id: string;
+  content: string;
+  highlighted_text: string | null;
+  is_resolved: boolean;
+  parent_comment_id: string | null;
+  profiles: Profile | null;
+  replies?: Comment[];
+}
