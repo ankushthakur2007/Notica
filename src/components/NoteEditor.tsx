@@ -12,7 +12,7 @@ import FontFamily from '@tiptap/extension-font-family';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Note } from '@/types';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import { useAppStore } from '@/stores/appStore';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -34,6 +34,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from './ui/textarea';
+
+interface NoteEditorProps {
+  note: Note;
+}
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -79,7 +83,7 @@ const FontSize = Extension.create({
   },
 });
 
-const NoteEditor = () => {
+const NoteEditor = ({ note }: NoteEditorProps) => {
   const queryClient = useQueryClient();
   const { user, session, updateNote, deleteNote: deleteNoteFromStore } = useAppStore();
   const navigate = useNavigate();
@@ -87,8 +91,8 @@ const NoteEditor = () => {
   const isMobileView = useIsMobile();
   const { presentUsers, channel } = usePresence(noteId);
 
-  const [title, setTitle] = useState('');
-  const [currentTitleInput, setCurrentTitleInput] = useState('');
+  const [title, setTitle] = useState(note.title);
+  const [currentTitleInput, setCurrentTitleInput] = useState(note.title);
   const debouncedTitle = useDebounce(currentTitleInput, 500);
   
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -97,25 +101,13 @@ const NoteEditor = () => {
   const [canEdit, setCanEdit] = useState(false);
   const [currentFontSize, setCurrentFontSize] = useState('16');
   const [currentFontFamily, setCurrentFontFamily] = useState('Inter');
-  const [lastSavedTitle, setLastSavedTitle] = useState('');
-  const [lastSavedContent, setLastSavedContent] = useState('');
+  const [lastSavedTitle, setLastSavedTitle] = useState(note.title);
+  const [lastSavedContent, setLastSavedContent] = useState(note.content || '');
   const isBroadcastingRef = useRef(false);
 
-  // State for commenting
   const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [highlightedTextForComment, setHighlightedTextForComment] = useState<string | null>(null);
-
-  const { data: note, isLoading, isError } = useQuery<Note, Error>({
-    queryKey: ['note', noteId],
-    queryFn: async () => {
-      if (!noteId) throw new Error('Note ID is missing.');
-      const { data, error } = await supabase.from('notes').select('*').eq('id', noteId).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!noteId,
-  });
 
   const { data: permissionData, isLoading: isLoadingPermission } = useQuery<{ permission_level: 'read' | 'write' } | null, Error>({
     queryKey: ['notePermission', noteId, user?.id],
@@ -133,7 +125,7 @@ const NoteEditor = () => {
 
   const editor = useEditor({
     extensions: [StarterKit, Link.configure({ openOnClick: false, autolink: true }), Placeholder.configure({ placeholder: 'Start typing...' }), TextAlign.configure({ types: ['heading', 'paragraph'] }), Underline, TextStyle, FontSize, Color, Highlight.configure({ multicolor: true }), ResizableImage.configure({ inline: true, allowBase64: true }), FontFamily.configure({ types: ['textStyle'] })],
-    content: '',
+    content: note.content || '',
     editorProps: {
       attributes: { 
         class: `prose dark:prose-invert max-w-none focus:outline-none text-foreground ${isMobileView ? 'text-base' : ''}`,
@@ -242,10 +234,6 @@ const NoteEditor = () => {
     };
     channel.on('broadcast', { event: 'content-update' }, contentUpdateHandler);
     channel.on('broadcast', { event: 'title-update' }, titleUpdateHandler);
-    return () => {
-      channel.off('broadcast', { event: 'content-update' }, contentUpdateHandler);
-      channel.off('broadcast', { event: 'title-update' }, titleUpdateHandler);
-    };
   }, [channel, editor, user?.id]);
 
   useEffect(() => {
@@ -262,7 +250,9 @@ const NoteEditor = () => {
     setCurrentTitleInput(note.title);
     setLastSavedTitle(note.title);
     setLastSavedContent(note.content || '');
-    editor.commands.setContent(note.content || '');
+    if (editor.getHTML() !== note.content) {
+      editor.commands.setContent(note.content || '');
+    }
   }, [editor, note]);
 
   useEffect(() => {
@@ -386,9 +376,6 @@ const NoteEditor = () => {
     editor.chain().focus().setFontSize(`${newSize}px`).run();
   }, [editor, canEdit]);
 
-  if (isLoading || isLoadingPermission) return <div className="flex items-center justify-center h-full"><p>Loading note...</p></div>;
-  if (isError || !note) return <div className="flex items-center justify-center h-full text-destructive"><p>Error loading note.</p></div>;
-
   const commonProps = {
     noteId, note, user, isNewNote: false, isNoteOwner, canEdit, title,
     onDeleteNote: handleDelete, isDeleting, onRenameNote: setTitle,
@@ -420,7 +407,6 @@ const NoteEditor = () => {
           {editor && (
             <BubbleMenu editor={editor} tippyOptions={{ duration: 100,
               shouldShow: ({ editor, view, state, from, to }) => {
-                // only show the bubble menu if text is selected.
                 return from !== to
               }
             }}>
