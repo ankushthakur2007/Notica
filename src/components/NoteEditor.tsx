@@ -313,16 +313,18 @@ const NoteEditor = () => {
 
   return (
     <div className="p-6 w-full overflow-y-auto h-screen flex flex-col">
-      <NoteHeader
-        {...commonProps}
-        currentTitleInput={currentTitleInput}
-        setCurrentTitleInput={setCurrentTitleInput}
-        onSaveNote={() => saveNote(currentTitleInput, editor?.getHTML() || '')}
-        editorContent={editor?.getHTML() || ''}
-      />
-      <NoteEditorToolbar {...commonProps} />
-      <div className="flex-grow overflow-y-auto bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg p-4">
-        <EditorContent editor={editor} />
+      <div className="max-w-4xl w-full mx-auto">
+        <NoteHeader
+          {...commonProps}
+          currentTitleInput={currentTitleInput}
+          setCurrentTitleInput={setCurrentTitleInput}
+          onSaveNote={() => saveNote(currentTitleInput, editor?.getHTML() || '')}
+          editorContent={editor?.getHTML() || ''}
+        />
+        <NoteEditorToolbar {...commonProps} />
+        <div className="mt-2 flex-grow overflow-y-auto bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md rounded-lg p-4">
+          <EditorContent editor={editor} />
+        </div>
       </div>
     </div>
   );

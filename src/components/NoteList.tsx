@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Search, Link as LinkIcon } from 'lucide-react';
+import { PlusCircle, Search, Link as LinkIcon, NotebookText } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import CreateFromUrlDialog from '@/components/CreateFromUrlDialog';
 
@@ -151,7 +151,8 @@ const NoteList = () => {
       <CreateFromUrlDialog isOpen={isCreateFromUrlDialogOpen} onOpenChange={setIsCreateFromUrlDialogOpen} />
       
       {filteredNotes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.4s' }}>
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] p-4 text-center border-2 border-dashed rounded-lg mt-8 animate-fade-in-up opacity-0" style={{ animationFillMode: 'forwards', animationDelay: '0.4s' }}>
+          <NotebookText className="h-16 w-16 text-muted-foreground mb-4" />
           <h2 className="text-xl sm:text-2xl font-bold mb-2">{searchTerm ? 'No notes found' : 'No notes yet!'}</h2>
           <p className="text-muted-foreground">{searchTerm ? 'Try a different search term.' : 'Click "New Note" to get started.'}</p>
         </div>
@@ -160,7 +161,7 @@ const NoteList = () => {
           {filteredNotes.map((note, index) => (
             <Card 
               key={note.id} 
-              className="bg-card/50 dark:bg-gray-900/50 border border-border/50 backdrop-blur-md hover:border-primary/50 transition-all duration-300 cursor-pointer"
+              className="bg-card border rounded-lg shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-1 cursor-pointer"
               style={{ animationDelay: `${index * 50}ms` }}
               onClick={() => navigate(`/dashboard/edit-note/${note.id}`)}
             >
