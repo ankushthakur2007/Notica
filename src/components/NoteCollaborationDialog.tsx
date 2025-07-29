@@ -68,13 +68,16 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, s
       if (error) throw error;
       if (!basicCollaborators || basicCollaborators.length === 0) return [];
       const userIdsToFetch = basicCollaborators.map(collab => collab.user_id);
-      const response = await fetch('https://yibrrjblxuoebnecbntp.supabase.co/functions/v1/get-user-details-by-ids', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userIds: userIdsToFetch }),
+      
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('get-user-details-by-ids', {
+        body: { userIds: userIdsToFetch },
       });
-      if (!response.ok) throw new Error((await response.json()).error || 'Failed to fetch user details.');
-      const { users: userDetails }: { users: UserDetail[] } = await response.json();
+
+      if (functionError) {
+        throw new Error(functionError.message || 'Failed to fetch user details.');
+      }
+
+      const { users: userDetails }: { users: UserDetail[] } = functionData;
       const userDetailsMap = new Map<string, UserDetail>(userDetails.map((user) => [user.id, user]));
       return basicCollaborators.map(collab => ({ ...collab, ...userDetailsMap.get(collab.user_id) })) as Collaborator[];
     },
