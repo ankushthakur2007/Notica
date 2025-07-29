@@ -9,6 +9,7 @@ import { useAppStore } from '@/stores/appStore';
 import { supabase } from '@/integrations/supabase/client';
 import { Note } from '@/types';
 import { SearchCommand } from '@/components/SearchCommand';
+import { showError } from '@/utils/toast';
 
 const Dashboard = () => {
   const { session, setNotes, setSharedNotes, startFetchingNotes, finishFetchingNotes, addNote, updateNote, deleteNote } = useAppStore();
@@ -30,6 +31,7 @@ const Dashboard = () => {
 
       if (notesError) {
         console.error('Error fetching notes:', notesError);
+        showError(`Failed to fetch your notes: ${notesError.message}`);
       } else {
         setNotes(notes as Note[]);
       }
@@ -42,6 +44,7 @@ const Dashboard = () => {
 
       if (sharedError) {
         console.error('Error fetching shared notes:', sharedError);
+        showError(`Failed to fetch shared notes: ${sharedError.message}`);
       } else {
         const sharedNotesData = shared?.map((item): Note | null => {
           const noteData = item.notes as unknown as Note;
