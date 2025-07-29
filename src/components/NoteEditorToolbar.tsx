@@ -2,7 +2,7 @@ import React from 'react';
 import { Editor } from '@tiptap/react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Sparkles, Plus, Minus as MinusIcon } from 'lucide-react';
+import { ImageIcon, Bold, Italic, Underline as UnderlineIcon, Code, List, ListOrdered, Quote, Minus, Undo, Redo, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter, Sparkles, Plus, Minus as MinusIcon, Strikethrough } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,8 +58,7 @@ const NoteEditorToolbar = ({
 
   const AdvancedFormattingTools = () => (
     <div className="flex flex-wrap gap-2 justify-center">
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleStrike().run()} disabled={!editor?.can().toggleStrike() || !canEdit}>Strike</Button>
-      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setParagraph().run()} disabled={!editor?.can().setParagraph() || !canEdit}>P</Button>
+      <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleStrike().run()} disabled={!editor?.can().toggleStrike() || !canEdit}><Strikethrough className="h-4 w-4" /></Button>
       <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()} disabled={!editor?.can().toggleHeading({ level: 1 }) || !canEdit}><Heading1 className="h-4 w-4" /></Button>
       <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} disabled={!editor?.can().toggleHeading({ level: 2 }) || !canEdit}><Heading2 className="h-4 w-4" /></Button>
       <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBlockquote().run()} disabled={!editor?.can().toggleBlockquote() || !canEdit}><Quote className="h-4 w-4" /></Button>
@@ -97,9 +96,12 @@ const NoteEditorToolbar = ({
         <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBold().run()} disabled={!editor?.can().toggleBold() || !canEdit}><Bold className="h-4 w-4" /></Button>
         <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleItalic().run()} disabled={!editor?.can().toggleItalic() || !canEdit}><Italic className="h-4 w-4" /></Button>
         <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleUnderline().run()} disabled={!editor?.can().toggleUnderline() || !canEdit}><UnderlineIcon className="h-4 w-4" /></Button>
+        <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleStrike().run()} disabled={!editor?.can().toggleStrike() || !canEdit}><Strikethrough className="h-4 w-4" /></Button>
         <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleCode().run()} disabled={!editor?.can().toggleCode() || !canEdit}><Code className="h-4 w-4" /></Button>
         <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBulletList().run()} disabled={!editor?.can().toggleBulletList() || !canEdit}><List className="h-4 w-4" /></Button>
         <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleOrderedList().run()} disabled={!editor?.can().toggleOrderedList() || !canEdit}><ListOrdered className="h-4 w-4" /></Button>
+        <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().toggleBlockquote().run()} disabled={!editor?.can().toggleBlockquote() || !canEdit}><Quote className="h-4 w-4" /></Button>
+        <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().setHorizontalRule().run()} disabled={!editor?.can().setHorizontalRule() || !canEdit}><Minus className="h-4 w-4" /></Button>
         <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo() || !canEdit}><Undo className="h-4 w-4" /></Button>
         <Button variant="outline" size="sm" onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo() || !canEdit}><Redo className="h-4 w-4" /></Button>
         <Select value={currentFontFamily} onValueChange={onFontFamilyChange} disabled={!canEdit}>

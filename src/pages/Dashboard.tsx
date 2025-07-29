@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAppStore } from '@/stores/appStore';
 import { supabase } from '@/integrations/supabase/client';
 import { Note } from '@/types';
+import { SearchCommand } from '@/components/SearchCommand';
 
 const Dashboard = () => {
   const { session, setNotes, setSharedNotes, startFetchingNotes, finishFetchingNotes, addNote, updateNote, deleteNote } = useAppStore();
@@ -94,6 +95,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground overflow-hidden">
+      <SearchCommand />
       {/* Background Glow */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <div className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-purple-200/50 dark:bg-purple-500/30 rounded-full filter blur-3xl animate-float-1 [will-change:transform]"></div>
