@@ -43,7 +43,7 @@ const Dashboard = () => {
       if (sharedError) {
         console.error('Error fetching shared notes:', sharedError);
       } else {
-        const sharedNotesData = shared?.map(item => {
+        const sharedNotesData = shared?.map((item): Note | null => {
           const noteData = item.notes as unknown as Note;
           if (noteData) {
             return { 
