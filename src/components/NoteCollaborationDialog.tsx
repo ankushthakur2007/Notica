@@ -87,18 +87,29 @@ const NoteCollaborationDialog = ({ noteId, isNoteOwner, isSharableLinkEnabled, s
 
   const addCollaboratorMutation = useMutation({
     mutationFn: async ({ email, permission_level }: { email: string; permission_level: 'read' | 'write' }) => {
-      const { error } = await supabase.functions.invoke('add-collaborator', {
+      const { data, error } = await supabase.functions.invoke('add-collaborator', {
         body: { note_id: noteId, email, permission_level },
       });
-      if (error) throw new Error(error.message);
+      
+      // The edge function returns error details in the response body even on non-2xx status
+      if (error) {
+        throw new Error(error.message || 'Failed to add collaborator');
+      }
+      
+      // Check if the response contains an error field (from the edge function)
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+      
+      return data;
     },
     onSuccess: () => {
-      showSuccess('Collaborator added!');
+      showSuccess('Collaborator added successfully!');
       refetchCollaborators();
       setSearchTerm('');
     },
     onError: (error: any) => {
-      showError(`Failed to add collaborator: ${error.message}`);
+      showError(error.message || 'Failed to add collaborator');
     },
   });
 
